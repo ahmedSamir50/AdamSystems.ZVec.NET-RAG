@@ -5,7 +5,7 @@
 [Bb]in/
 [Oo]bj/
 .vs/
-#.agents/
+.agents/
 .codegraph/
 .idea/
 site/
