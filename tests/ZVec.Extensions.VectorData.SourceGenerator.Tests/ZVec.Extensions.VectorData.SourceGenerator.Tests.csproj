@@ -6,6 +6,8 @@
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
     <GenerateProgramFile>false</GenerateProgramFile>
+    <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
+    <NoWarn>$(NoWarn);CS8892</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

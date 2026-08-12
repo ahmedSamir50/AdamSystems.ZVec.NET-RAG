@@ -58,6 +58,7 @@ nav:
       - Native AOT & Zero-Copy Memory: architecture/native-aot-memory.md
   - Developer Guides:
       - Quickstart (60 Seconds): guides/quickstart.md
+      - Migrate from VectorData.InMemory: guides/migration-from-inmemory.md
       - Multimodal RAG (Text + Image): guides/multimodal-rag.md
       - Mobile Memory Budget & Quantization: guides/mobile-memory-budget.md
       - TDD & Testing Strategy: guides/testing-strategy.md

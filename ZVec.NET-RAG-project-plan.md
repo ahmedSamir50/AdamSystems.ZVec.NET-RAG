@@ -311,26 +311,26 @@ That's it. No Azure. No Python. No Qdrant. Single-file publish (AOT pending Phas
 ### Epic 0 — Phase 0 preconditions (MUST complete before v1 work)
 
 - [ ] **0.1 License-clean the demos repo** (`ZVec.Net-DemosAndPOCs` currently has no LICENSE file). Add Apache-2.0 to enable lifting patterns into the OSS starter.
-- [ ] **0.2 AOT / trim audit of ZVec.NET**. Annotate public API with `[DynamicallyAccessedMembers]`. Add a `dotnet publish -c Release -r linux-x64 /p:PublishAot=true` CI job. Document which paths are AOT-clean and which need fixing. The pin-based `ReadOnlyMemory<float>` + SafeHandle design is favorable but unverified.
+- [x] **0.2 AOT / trim audit of ZVec.NET**. Annotate public API with `[DynamicallyAccessedMembers]`. Add a `dotnet publish -c Release -r linux-x64 /p:PublishAot=true` CI job. Document which paths are AOT-clean and which need fixing. The pin-based `ReadOnlyMemory<float>` + SafeHandle design is favorable but unverified. *(Done — `ZVec.AotTestApp` + `aot-smoke` / `trim-warning-smoke` jobs in `.github/workflows/quality-gate.yml`; `ZVEC001` / `ZVEC002` analyzers enforce source-generated mappers.)*
 - [ ] **0.3 Confirm M.E.VectorData conformance test availability**. If Microsoft ships a conformance suite, run ZVec connector against it. If not, write one and contribute back.
 - [ ] **0.4 Monitor `microsoft/semantic-kernel#13224` and `microsoft/agent-framework#1395`** for any first-party embedded connector announcement. Quarterly check.
 - [ ] **0.5 Verify `Microsoft.Extensions.DataIngestion` API stability**. Currently Preview; abstract behind `IRagPipeline` so v1 doesn't break when DataIngestion goes GA.
 
 ### Epic 1 — `ZVec.Extensions.VectorData` connector (THE centerpiece)
 
-- [ ] 1.1 `IVectorStore` implementation backed by `IZvecFactory` (collection-per-record-type model)
-- [ ] 1.2 `IVectorizedSearch<TRecord>` delegating to `IZvecCollection<T>.Query`
-- [ ] 1.3 `IVectorizableRecordCollection<TRecord, TKey>` (Insert / Upsert / Delete / Fetch)
-- [ ] 1.4 `VectorStoreRecord` attribute → `[ZVecVector]` / `[ZVecField]` / `[ZVecId]` / `[ZVecIgnore]` mapping
-- [ ] 1.5 Source-generated record schemas (AOT-clean, no reflection)
-- [ ] 1.6 Filter expression translator: `VectorDataFilter → ZVecFilterBuilder AST`
-  - Support `==`, `!=`, `<`, `<=`, `>`, `>=`, `&&`, `||`, `!`, `ContainAny`
+- [x] 1.1 `IVectorStore` implementation backed by `IZvecFactory` (collection-per-record-type model) *(Implemented as `ZVecVectorStore : VectorStore` — uses the current M.E.VectorData abstract base, not the legacy `IVectorStore` interface.)*
+- [x] 1.2 `IVectorizedSearch<TRecord>` delegating to `IZvecCollection<T>.Query` *(Via `SearchAsync` on `ZVecVectorizableRecordCollection`.)*
+- [x] 1.3 `IVectorizableRecordCollection<TRecord, TKey>` (Insert / Upsert / Delete / Fetch) *(Upsert / Delete / Fetch implemented; M.E.VectorData v10 uses upsert semantics, no separate Insert.)*
+- [ ] 1.4 `VectorStoreRecord` attribute → `[ZVecVector]` / `[ZVecField]` / `[ZVecId]` / `[ZVecIgnore]` mapping *(Partial — source generator reads `VectorStore*` attributes for mapper emission, but dual `[VectorStore*]` + `[ZVec*]` annotation is still required on POCOs today.)*
+- [ ] 1.5 Source-generated record schemas (AOT-clean, no reflection) *(Partial — SG mappers are AOT-clean; collection schema still built via `ZVecCollectionSchemaBuilder.From<T>()` reflection.)*
+- [x] 1.6 Filter expression translator: `VectorDataFilter → ZVecFilterBuilder AST`
+  - Support `==`, `!=`, `<`, `<=`, `>`, `>=`, `&&`, `||`, `!`, `ContainAny` *(All 12 operators + explicit rejections for unsupported LINQ; 42 unit tests.)*
   - Cover the 80% case in v1; document unsupported patterns
-- [ ] 1.7 Hybrid search bridge: M.E.VectorData "hybrid" search → ZVec multi-query + `ZVecRrfReranker`
-- [ ] 1.8 DI extensions: `services.AddZVecVectorStore(...)` (works alongside existing `AddZVec()`)
-- [ ] 1.9 Conformance test suite (run against Microsoft's VectorData contract tests)
-- [ ] 1.10 AOT/trim annotations + CI AOT publish test
-- [ ] 1.11 Documentation: how to migrate from M.E.VectorData.InMemory to ZVec
+- [ ] 1.7 Hybrid search bridge: M.E.VectorData "hybrid" search → ZVec multi-query + `ZVecRrfReranker` *(Partial — dense + FTS + RRF works; tunable `ZVecHybridSearchOptions.RrfK` added; FTS field selection now honors `[ZVecFullTextSearch]`.)*
+- [x] 1.8 DI extensions: `services.AddZVecVectorStore(...)` (works alongside existing `AddZVec()`)
+- [ ] 1.9 Conformance test suite (run against Microsoft's VectorData contract tests) *(Partial — custom 13-test conformance suite; Microsoft's official suite not integrated.)*
+- [x] 1.10 AOT/trim annotations + CI AOT publish test
+- [x] 1.11 Documentation: how to migrate from M.E.VectorData.InMemory to ZVec *(Added `docs/guides/migration-from-inmemory.md`.)*
 
 ### Epic 2 — `ZVec.Rag` integration layer
 

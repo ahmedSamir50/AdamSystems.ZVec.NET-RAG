@@ -80,9 +80,10 @@ public sealed class ZVecRecordMapperAnalyzer : DiagnosticAnalyzer
 
     private static bool HasGeneratedMapperRegistration(INamedTypeSymbol symbol)
     {
-        var containingNamespace = symbol.ContainingNamespace.ToDisplayString();
-        var expectedTypeName = $"{symbol.Name}Mapper";
-        var expectedFullName = $"{containingNamespace}.{expectedTypeName}";
+        // The source generator (ZVecRecordMetadataGenerator) emits a class named
+        // `{ClassName}ZVecMetadataMapper`. Match that exact name so correctly
+        // generated records are not flagged as missing a mapper.
+        var expectedTypeName = $"{symbol.Name}ZVecMetadataMapper";
 
         foreach (var member in symbol.ContainingNamespace.GetMembers())
         {

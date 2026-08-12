@@ -31,7 +31,7 @@ namespace ZVec.Extensions.VectorData;
 /// </remarks>
 /// <typeparam name="TRecord">Record POCO type.</typeparam>
 /// <typeparam name="TKey">Primary key type.</typeparam>
-public sealed class ZVecVectorizableRecordCollection<TRecord, TKey> :
+public sealed partial class ZVecVectorizableRecordCollection<TRecord, TKey> :
                     VectorStoreCollection<TKey, TRecord>, IKeywordHybridSearchable<TRecord>
     where TRecord : class
     where TKey : notnull
@@ -93,70 +93,6 @@ public sealed class ZVecVectorizableRecordCollection<TRecord, TKey> :
             _nativeCollection = OpenNativeCollection();
             return _nativeCollection;
         }
-    }
-
-    private ZVecCollectionSchema BuildCollectionSchema()
-    {
-        var schemaBuilder = ZVecCollectionSchemaBuilder.From<TRecord>();
-        var schema = schemaBuilder.Build();
-
-        var ftsFieldNames = new HashSet<string>(StringComparer.Ordinal);
-        var ftsVectors = new List<ZVecVectorSchema>(schema.Vectors);
-
-        foreach (var field in schema.Fields)
-        {
-            if (field.DataType != ZVecDataType.String)
-                continue;
-
-            var prop = typeof(TRecord).GetProperty(field.Name);
-            if (prop == null || !IsFullTextIndexedProperty(prop) || ftsVectors.Any(v => v.Name == field.Name))
-                continue;
-
-            ftsFieldNames.Add(field.Name);
-            ftsVectors.Add(new ZVecVectorSchema
-            {
-                Name = field.Name,
-                DataType = ZVecDataType.String,
-                Dimension = 0,
-                IndexParam = new ZVecFtsIndexParam()
-            });
-        }
-
-        var updatedFields = schema.Fields.Where(f => !ftsFieldNames.Contains(f.Name)).ToArray();
-
-        return new ZVecCollectionSchema
-        {
-            Name = schema.Name,
-            MaxDocCountPerSegment = schema.MaxDocCountPerSegment,
-            Fields = updatedFields,
-            Vectors = ftsVectors.ToArray()
-        };
-    }
-
-    /// <summary>
-    /// Resolves whether a record property participates in full-text search indexing.
-    /// </summary>
-    /// <remarks>
-    /// <c>[ZVecFullTextSearch]</c> takes precedence. <c>[VectorStoreData(IsFullTextIndexed = true)]</c>
-    /// is recognized as a fallback when no ZVec FTS attribute is present.
-    /// </remarks>
-    private static bool IsFullTextIndexedProperty(PropertyInfo prop)
-    {
-        var zvecFtsAttr = (ZVecFullTextSearchAttribute?)Attribute.GetCustomAttribute(prop, typeof(ZVecFullTextSearchAttribute));
-        if (zvecFtsAttr != null)
-            return zvecFtsAttr.IsFullTextIndexed;
-
-        var vectorDataAttr = (VectorStoreDataAttribute?)Attribute.GetCustomAttribute(prop, typeof(VectorStoreDataAttribute));
-        return vectorDataAttr?.IsFullTextIndexed == true;
-    }
-
-    private IZvecCollection OpenNativeCollection()
-    {
-        if (!_factory.IsInitialized)
-            _factory.Initialize();
-
-        Directory.CreateDirectory(_options.EffectiveCollectionBasePath);
-        return _factory.OpenOrCreate(CollectionPath, BuildCollectionSchema());
     }
 
     /// <inheritdoc />
@@ -271,8 +207,14 @@ public sealed class ZVecVectorizableRecordCollection<TRecord, TKey> :
         var filterBuilder = ZVecFilterExpressionVisitor.TranslateToBuilder(filter);
         int effectiveTop = top > 0 ? top : ZVecConstants.DefaultQueryLimit;
 
-        string vectorFieldName = _typeModel?.Vectors.FirstOrDefault()?.StorageName ?? "Vector";
-        var dummyQuery = new ZVecQuery { FieldName = vectorFieldName, Vector = new float[768] };
+        // Filter-only retrieval: ZVec requires a vector query to drive QueryAsync, but the
+        // vector itself is irrelevant when a filter selects the rows. Use a zero-filled
+        // vector sized to the collection's actual vector dimension (read from the type
+        // model) so non-768-dim collections do not produce malformed queries.
+        var firstVector = _typeModel?.Vectors.FirstOrDefault();
+        string vectorFieldName = firstVector?.StorageName ?? "Vector";
+        int vectorDimension = firstVector?.Dimension > 0 ? firstVector.Dimension : ZVecConstants.DefaultVectorDimension;
+        var dummyQuery = new ZVecQuery { FieldName = vectorFieldName, Vector = new float[vectorDimension] };
         var docs = await collection.QueryAsync(dummyQuery, effectiveTop, filterBuilder, includeVector: options?.IncludeVectors ?? true, ct: cancellationToken);
 
         if (_typeModel != null)
@@ -393,13 +335,31 @@ public sealed class ZVecVectorizableRecordCollection<TRecord, TKey> :
         int effectiveTop = top > 0 ? top : ZVecConstants.DefaultQueryLimit;
         double scoreThreshold = options?.ScoreThreshold ?? ZVecConstants.DefaultMinScoreThreshold;
 
-        string vectorFieldName = _typeModel?.Vectors.FirstOrDefault()?.StorageName ?? "Vector";
-        string ftsFieldName = _typeModel?.Fields.FirstOrDefault()?.StorageName ?? "Content";
+        // Resolve the dense vector field. If the caller specified VectorProperty on the
+        // options, honor it; otherwise fall back to the first (default) vector on the
+        // type model.
+        string? optionsVectorProperty = TryGetPropertyName(options?.VectorProperty);
+        string vectorFieldName = !string.IsNullOrEmpty(optionsVectorProperty)
+            ? optionsVectorProperty!
+            : (_typeModel?.Vectors.FirstOrDefault()?.StorageName ?? "Vector");
+
+        // Resolve the FTS field. Honor AdditionalProperty when supplied; otherwise pick
+        // the first field marked [ZVecFullTextSearch] / IsFullTextIndexed on the type
+        // model, falling back to the first scalar field only when no FTS field exists.
+        string? optionsAdditionalProperty = TryGetPropertyName(options?.AdditionalProperty);
+        string ftsFieldName = !string.IsNullOrEmpty(optionsAdditionalProperty)
+            ? optionsAdditionalProperty!
+            : ResolveFullTextField();
+
         string ftsQueryString = string.Join(" ", keywords);
 
         var denseQuery = new ZVecQuery { FieldName = vectorFieldName, Vector = floatMemory };
         var ftsQuery = new ZVecQuery { FieldName = ftsFieldName, Fts = new ZVecFtsQuery { QueryString = ftsQueryString } };
-        var reranker = new ZVecRrfReranker();
+
+        // Tunable RRF: callers can pass ZVecHybridSearchOptions<TRecord> to override the
+        // native rank constant; otherwise the default (k=60) is used.
+        int rrfK = (options as ZVecHybridSearchOptions<TRecord>)?.RrfK ?? ZVecConstants.DefaultRrfRankConstant;
+        var reranker = new ZVecRrfReranker { RankConstant = rrfK };
 
         IReadOnlyList<ZVecDoc> docs;
         if (options?.Filter != null)
@@ -424,24 +384,6 @@ public sealed class ZVecVectorizableRecordCollection<TRecord, TKey> :
                 }
             }
         }
-    }
-
-    /// <summary>
-    /// Normalizes a native ZVec score into a similarity score where higher = better match.
-    /// Switches on the configured <see cref="ZVecMetricType"/> for the collection.
-    /// </summary>
-    private float NormalizeScore(float nativeScore)
-    {
-        var indexParam = _typeModel?.Vectors.FirstOrDefault()?.IndexParam;
-        ZVecMetricType metric = (indexParam as ZVecHnswIndexParam)?.MetricType ?? ZVecMetricType.Cosine;
-
-        return metric switch
-        {
-            ZVecMetricType.Cosine => 1.0f - nativeScore,
-            ZVecMetricType.L2 => 1.0f / (1.0f + nativeScore),
-            ZVecMetricType.Ip => nativeScore,
-            _ => 1.0f - nativeScore
-        };
     }
 
     /// <summary>
@@ -489,49 +431,6 @@ public sealed class ZVecVectorizableRecordCollection<TRecord, TKey> :
                 throw;
             }
         }
-    }
-
-    [RequiresUnreferencedCode("Source generated mappers should be used for Native AOT. Reflection fallback may be trimmed.")]
-    [RequiresDynamicCode("Reflection fallback requires dynamic code generation.")]
-    private ZVecDoc MapToDoc(TRecord record)
-    {
-        if (_mapper != null)
-        {
-            return _mapper.ToDoc(record, _typeModel!);
-        }
-        return ZVecMapper.ToDoc(record, _typeModel!);
-    }
-
-    [RequiresUnreferencedCode("Source generated mappers should be used for Native AOT. Reflection fallback may be trimmed.")]
-    [RequiresDynamicCode("Reflection fallback requires dynamic code generation.")]
-    private TRecord MapFromDoc(ZVecDoc doc)
-    {
-        if (_typeModel == null) throw new InvalidOperationException("Type model is uninitialized.");
-
-        if (_mapper != null)
-        {
-            return _mapper.FromDoc(doc, _typeModel);
-        }
-
-        // Reflection fallback — only used for Dictionary<string, object?> dynamic collections
-        // or when SG mapper is not generated (e.g. during early development).
-        var record = (TRecord)Activator.CreateInstance(typeof(TRecord))!;
-        _typeModel.Id.Property.SetValue(record, doc.Id);
-        foreach (var field in _typeModel.Fields)
-        {
-            if (doc.Fields.TryGetValue(field.StorageName, out var val) && val != null)
-            {
-                field.Property.SetValue(record, val);
-            }
-        }
-        foreach (var vec in _typeModel.Vectors)
-        {
-            if (doc.DenseVectors.TryGetValue(vec.StorageName, out var dense))
-            {
-                vec.Property.SetValue(record, dense);
-            }
-        }
-        return record;
     }
 
     /// <inheritdoc />

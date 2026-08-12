@@ -8,6 +8,21 @@ public static class ZVecConstants
     /// <summary>Default maximum result limit for vector queries if unspecified.</summary>
     public const int DefaultQueryLimit = 10;
 
-    /// <summary>Default similarity score threshold floor (0.0 to 1.0).</summary>
+    /// <summary>
+    /// Fallback similarity score threshold floor (0.0 to 1.0).
+    /// </summary>
     public const float DefaultMinScoreThreshold = 0.0f;
+
+    /// <summary>
+    /// Fallback vector dimension used when a collection's vector dimension cannot be
+    /// resolved from the type model (e.g. dynamic collections). Matches the most common
+    /// embedding model dimension (nomic-embed-text / bge-small) used in samples.
+    /// </summary>
+    public const int DefaultVectorDimension = 768;
+
+    /// <summary>
+    /// Default Reciprocal Rank Fusion (RRF) smoothing constant <c>k</c>.
+    /// Standard RRF value used by the native <c>ZVecRrfReranker</c>.
+    /// </summary>
+    public const int DefaultRrfRankConstant = 60;
 }
