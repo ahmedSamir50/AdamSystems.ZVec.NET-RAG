@@ -105,6 +105,14 @@ PATTERNS_P2 = [
         "P2",
         lambda p: "src/" in p,
     ),
+    (
+        "P2-07",
+        r"new\s+HttpClient\s*\(",
+        "httpclient_no_factory",
+        "Use IHttpClientFactory instead of new HttpClient() to avoid socket exhaustion",
+        "P2",
+        lambda p: "src/" in p,
+    ),
 ]
 
 ALL_PATTERNS = PATTERNS_P1 + PATTERNS_P2

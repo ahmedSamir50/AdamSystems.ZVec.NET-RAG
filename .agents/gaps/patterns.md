@@ -54,6 +54,11 @@
 - **check:** Does the lock protect a state transition that could leave state inconsistent on exception?
 - **fix:** Use try/catch inside lock to restore previous state on failure.
 
+### P2-07: HttpClient Without Factory
+- **pattern:** `new HttpClient(` in `src/` files
+- **check:** HttpClient should be injected via `IHttpClientFactory` to avoid socket exhaustion
+- **fix:** Use `services.AddHttpClient()` and inject `IHttpClientFactory` or `HttpClient` via DI
+
 ## P3 — Polish
 
 ### P3-01: Missing XML Doc
