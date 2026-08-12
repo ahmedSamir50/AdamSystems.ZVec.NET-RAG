@@ -6,6 +6,7 @@
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
     <GenerateProgramFile>false</GenerateProgramFile>
+    <NoWarn>$(NoWarn);CS8892</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
