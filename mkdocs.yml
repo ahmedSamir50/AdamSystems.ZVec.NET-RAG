@@ -1,10 +1,10 @@
 site_name: ZVec.NET-RAG Documentation
 site_description: Local-first RAG for .NET. No cloud. No Python. No kidding.
 site_author: Ahmed Samir (Adam Systems)
-site_url: https://ahmedsamir50.github.io/ZVec.NET-RAG/
+site_url: https://ahmedsamir50.github.io/AdamSystems.ZVec.NET-RAG/
 
-repo_name: ahmedsamir50/ZVec.NET-RAG
-repo_url: https://github.com/ahmedsamir50/ZVec.NET-RAG
+repo_name: ahmedsamir50/AdamSystems.ZVec.NET-RAG
+repo_url: https://github.com/ahmedsamir50/AdamSystems.ZVec.NET-RAG
 
 theme:
   name: material
