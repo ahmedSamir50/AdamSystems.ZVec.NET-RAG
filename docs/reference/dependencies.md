@@ -4,16 +4,23 @@ This document tracks upstream Microsoft ecosystem packages, community signals, a
 
 ---
 
+> [!NOTE]
+> **Implementation Status Banner — Story 2.4 Complete**:
+> Roslyn SDK is pinned to `Microsoft.CodeAnalysis.CSharp` `4.12.0` (matching .NET 9 SDK wave) and `Microsoft.Extensions.VectorData.Abstractions` `10.9.0` in CPM.
+
+---
+
 ## 1. Upstream Microsoft Ecosystem & Tokenizer Dependencies
 
-| Package | Status | Ecosystem Role | Target Version |
-|---|---|---|---|
-| **`Microsoft.Extensions.VectorData`** | GA (May 2025) | Vector Store & Search Abstractions (`IVectorStore`, `IVectorizedSearch<T>`) | `9.0.0+` |
-| **`Microsoft.Extensions.AI`** | GA (May 2025) | Chat & Embedding Abstractions (`IChatClient`, `IEmbeddingGenerator`) | `9.0.0+` |
-| **`Microsoft.Extensions.DataIngestion`** | Preview (Dec 2025) | Ingestion & Document Chunking Pipeline | `9.0.0-preview*` |
-| **`Microsoft.ML.Tokenizers`** | GA (Official) | Default Tokenizer Engine (Tiktoken BPE, SentencePiece, WordPiece) | `1.0.0+` |
-| **`tryAGI/Tiktoken`** | OSS Community | Optional BPE Adapter for high-throughput OpenAI Tiktoken workloads | `1.0.0+` |
-| **`Microsoft.AgentFramework`** | GA (April 2026) | Multi-Agent Orchestration & Shared Memory | `1.0.0+` |
+| Package | Purpose | Target Version |
+|---|---|---|
+| **`ZVec.NET`** | Native Embedded Vector DB Engine | `1.0.0-beta.5` |
+| **`Microsoft.Extensions.VectorData.Abstractions`** | Official Vector Store Abstractions (`IVectorStore`, `IVectorizedSearch<T>`) | `10.9.0` |
+| **`Microsoft.Extensions.AI.Abstractions`** | Chat & Embedding Abstractions (`IChatClient`, `IEmbeddingGenerator`) | `10.9.0` |
+| **`Microsoft.CodeAnalysis.CSharp`** | Roslyn Source Generator SDK | `4.12.0` |
+| **`Microsoft.CodeAnalysis.Analyzers`** | Roslyn Analyzers SDK | `3.11.0` |
+| **`Microsoft.ML.Tokenizers`** | Default Tokenizer Engine (Tiktoken BPE, SentencePiece, WordPiece) | `1.0.0+` |
+| **`tryAGI/Tiktoken`** | Optional BPE Adapter for high-throughput OpenAI Tiktoken workloads | `1.0.0+` |
 
 ---
 

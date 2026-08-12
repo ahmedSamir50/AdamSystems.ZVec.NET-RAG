@@ -69,6 +69,12 @@ else
 
 ---
 
+> [!NOTE]
+> **Implementation Status Banner — Story 2.1 Complete**:
+> `ZVecVectorizableRecordCollection<TRecord, TKey>` is fully wired to native `IZvecCollection` CRUD and search APIs with zero-copy memory pinning and score formula `Score = 1.0f - Distance`.
+
+---
+
 ## 3. Central Package Management (CPM)
 
 All NuGet package versions across the solution are managed centrally in `Directory.Packages.props`:
@@ -76,10 +82,10 @@ All NuGet package versions across the solution are managed centrally in `Directo
 | Package | Purpose | Target Version |
 |---|---|---|
 | **`ZVec.NET`** | Native Embedded Vector DB Engine | `1.0.0-beta.5` |
-| **`Microsoft.Extensions.VectorData.Abstractions`** | Official Vector Store Abstractions | `10.8.2` |
+| **`Microsoft.Extensions.VectorData.Abstractions`** | Official Vector Store Abstractions | `10.9.0` |
 | **`SixLabors.ImageSharp`** | Cross-Platform Image Preprocessing | `3.1.7` |
-| **`Microsoft.CodeAnalysis.CSharp`** | Roslyn Source Generator SDK | `5.6.0` |
-| **`Microsoft.CodeAnalysis.Analyzers`** | Roslyn Analyzers SDK | `5.6.0` |
+| **`Microsoft.CodeAnalysis.CSharp`** | Roslyn Source Generator SDK | `4.12.0` |
+| **`Microsoft.CodeAnalysis.Analyzers`** | Roslyn Analyzers SDK | `3.11.0` |
 | **`xunit.v3`** | Modern Executable Test Platform | `3.2.2` |
 | **`xunit.runner.visualstudio`** | Visual Studio & VSTest Test Adapter | `3.1.5` |
 | **`Microsoft.NET.Test.Sdk`** | .NET Test SDK Host | `18.8.1` |
@@ -101,6 +107,10 @@ All NuGet package versions across the solution are managed centrally in `Directo
 
 ## 5. Score Normalization & Filter Translation Boundaries
 
-- **Score Normalization:** ZVec native Cosine distance is normalized transparently via `Score = 1.0f - ZVecDistance` so `VectorSearchResults<TRecord>.Score` returns normalized similarity (higher = better). See [Score Semantics Architecture](score-semantics.md).
-- **Filter Translation Boundaries:** `ZVecFilterExpressionVisitor` translates LINQ expressions into `ZVecFilterBuilder` AST nodes. It inspects `MethodCallExpression` for `Enumerable.Contains` / `List<T>.Contains` on tag/array properties and translates them to `ZVecFilterBuilder.ContainAny`. Method calls unsupported by ZVec engine (e.g. `StartsWith`, `EndsWith`, `Regex.IsMatch`) throw a strongly-typed `ZVecFilterTranslationException`.
+- **Score Normalization Formula:** ZVec native Cosine distance `d \in [0, 2]` is normalized transparently via `Score = 1.0f - Distance` so `VectorSearchResult<TRecord>.Score` returns similarity (higher = better).
+  - **Identical Vectors (\(d = 0.0\)):** \(\text{Score} = 1.0f - 0.0f = 1.0f\) (perfect match)
+  - **High Similarity (\(d = 0.2\)):** \(\text{Score} = 1.0f - 0.2f = 0.8f\) (strong match)
+  - **Orthogonal Vectors (\(d = 1.0\)):** \(\text{Score} = 1.0f - 1.0f = 0.0f\) (unrelated)
+  - **Opposite Vectors (\(d = 2.0\)):** \(\text{Score} = 1.0f - 2.0f = -1.0f\) (opposite)
+- **Filter Translation Boundaries:** `ZVecFilterExpressionVisitor` translates LINQ expressions into `ZVecFilterBuilder` AST nodes without dynamic compilation. String matching methods (`StartsWith`, `EndsWith`, `Regex.IsMatch`, `string.Contains`) throw `ZVecFilterTranslationException` with explicit diagnostic guidance to use Full-Text Search (FTS) keyword queries.
 

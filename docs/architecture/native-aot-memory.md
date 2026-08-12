@@ -17,10 +17,32 @@ unsafe
 
 This prevents managed heap array allocations (`float[]`) and ensures zero GC pressure during vector search operations.
 
+> [!NOTE]
+> **Implementation Status Banner — Story 2.3 & Story 1.11 Complete**:
+> - **Story 2.3**: `ZVecFilterExpressionVisitor` uses an AOT-safe recursive AST evaluator eliminating `Expression.Compile().DynamicInvoke()`.
+> - **Story 1.11**: Local dev-loop smoke testing (`win-x64`, `linux-x64`) and full GitHub Actions CI AOT matrix (`win-x64`, `linux-x64`, `linux-arm64`, `osx-arm64`, `ios-arm64`, `iossimulator-arm64`) run with `<TreatWarningsAsErrors>true</TreatWarningsAsErrors>`.
+
 ---
 
-## Native AOT Verification Status
+## Native AOT Verification & RID Matrix
 
-As of `ZVec.NET v1.0.0-beta.5`, native AOT compilation is verified clean via the Phase 0 audit harness ([`ZVec.AotTestApp`](file:///d:/A_S/ZVec_NET_RAG_SLN/tests/ZVec.AotTestApp/Program.cs)).
+### Local Dev-Loop Smoke vs CI Matrix
 
-`ZVec.Extensions.VectorData` will further enhance Native AOT performance via `ZVecRecordMetadataGenerator` (Roslyn Source Generator), emitting compile-time mappers for `[VectorStoreRecord]` POCOs with zero runtime reflection.
+| Target RID | Environment | Mode | Details |
+|---|---|---|---|
+| `win-x64` | Local Dev Machine | Manual Pre-push | Catches ~80% of AOT issues in seconds via `ZVec.AotTestApp.exe`. |
+| `linux-x64` | WSL2 / Linux | Manual Pre-push | Local Linux verification loop. |
+| `linux-arm64` | CI (`ubuntu-24.04-arm`) | GitHub Actions | Skips HNSW-RaBitQ (x86_64 AVX2 only). |
+| `osx-arm64` | CI (`macos-14`) | GitHub Actions | Apple Silicon macOS build host. |
+| `ios-arm64` | CI (`macos-14`) | GitHub Actions | Flagship iOS target (`maui-ios` workload). |
+| `iossimulator-arm64` | CI (`macos-14`) | GitHub Actions | iOS Simulator target. |
+
+### AOT Filter Evaluator Mechanics
+
+Under Native AOT, dynamic IL generation via `Expression.Compile().DynamicInvoke()` is prohibited as it causes runtime `IL3050`/`IL2026` crashes. `ZVecFilterExpressionVisitor` evaluates expressions statically without dynamic compilation:
+- **`ConstantExpression`**: Evaluates literal values directly.
+- **`MemberExpression`**: Extracts field/property values from closure objects or static classes.
+- **`NewArrayExpression`**: Constructs array instances statically.
+- **`op_Implicit` / `op_Explicit`**: Unwraps implicit/explicit conversion operator calls.
+- **`MethodCallExpression`**: Evaluates static method calls and helper functions safely under AOT.
+

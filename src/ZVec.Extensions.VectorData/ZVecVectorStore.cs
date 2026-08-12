@@ -70,14 +70,40 @@ public sealed class ZVecVectorStore : VectorStore
     /// <inheritdoc />
     public override Task<bool> CollectionExistsAsync(string name, CancellationToken cancellationToken = default)
     {
+        if (string.IsNullOrWhiteSpace(name))
+            throw new ArgumentException(ZVecErrorMessages.NullOrEmptyCollectionName, nameof(name));
+
         cancellationToken.ThrowIfCancellationRequested();
-        return Task.FromResult(false);
+
+        string basePath = AppDomain.CurrentDomain.BaseDirectory;
+        string collectionPath = Path.Combine(basePath, name);
+        bool exists = Directory.Exists(collectionPath) && Directory.EnumerateFileSystemEntries(collectionPath).Any();
+
+        return Task.FromResult(exists);
     }
 
     /// <inheritdoc />
     public override Task EnsureCollectionDeletedAsync(string name, CancellationToken cancellationToken = default)
     {
+        if (string.IsNullOrWhiteSpace(name))
+            throw new ArgumentException(ZVecErrorMessages.NullOrEmptyCollectionName, nameof(name));
+
         cancellationToken.ThrowIfCancellationRequested();
+
+        string basePath = AppDomain.CurrentDomain.BaseDirectory;
+        string collectionPath = Path.Combine(basePath, name);
+        if (Directory.Exists(collectionPath))
+        {
+            try
+            {
+                Directory.Delete(collectionPath, recursive: true);
+            }
+            catch
+            {
+                // Best effort directory cleanup
+            }
+        }
+
         return Task.CompletedTask;
     }
 
@@ -97,8 +123,19 @@ public sealed class ZVecVectorStore : VectorStore
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-
         await Task.Yield();
-        yield break;
+
+        string basePath = AppDomain.CurrentDomain.BaseDirectory;
+        if (Directory.Exists(basePath))
+        {
+            foreach (var dir in Directory.EnumerateDirectories(basePath))
+            {
+                var dirName = Path.GetFileName(dir);
+                if (!string.IsNullOrEmpty(dirName) && !dirName.StartsWith("."))
+                {
+                    yield return dirName;
+                }
+            }
+        }
     }
 }

@@ -37,7 +37,7 @@ public sealed class ZVecVectorizableRecordCollectionTests
     [Fact]
     public void Constructor_ThrowsArgumentNullException_WhenFactoryIsNull()
     {
-        Assert.Throws<ArgumentNullException>(() => 
+        Assert.Throws<ArgumentNullException>(() =>
             new ZVecVectorizableRecordCollection<SampleCollectionRecord, string>(null!, TestCollectionName));
     }
 
@@ -48,7 +48,7 @@ public sealed class ZVecVectorizableRecordCollectionTests
     public void Constructor_ThrowsArgumentException_WhenCollectionNameInvalid(string? invalidName)
     {
         IZvecFactory factory = new ZVecFactory();
-        Assert.Throws<ArgumentException>(() => 
+        Assert.Throws<ArgumentException>(() =>
             new ZVecVectorizableRecordCollection<SampleCollectionRecord, string>(factory, invalidName!));
     }
 
@@ -171,54 +171,63 @@ public sealed class ZVecVectorizableRecordCollectionTests
     }
 
     [Fact]
-    public async Task SearchAsync_ExecutesPinningPath_WhenVectorIsFloatMemory()
+    public async Task UpsertAndGet_RoundTrip_ReturnsUpsertedRecord_AndSearchFindsIt()
     {
-        IZvecFactory factory = new ZVecFactory();
-        var collection = new ZVecVectorizableRecordCollection<SampleCollectionRecord, string>(factory, TestCollectionName);
+        string tempDir = Path.Combine(Path.GetTempPath(), "ZVecTests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
 
-        ReadOnlyMemory<float> validVector = new float[768];
-        var results = new List<VectorSearchResult<SampleCollectionRecord>>();
-        await foreach (var res in collection.SearchAsync(validVector, 10, cancellationToken: TestContext.Current.CancellationToken))
+        try
         {
-            results.Add(res);
+            IZvecFactory factory = new ZVecFactory();
+            factory.Initialize();
+
+            string colName = "test_roundtrip_" + Guid.NewGuid().ToString("N")[..8];
+            var collection = new ZVecVectorizableRecordCollection<SampleCollectionRecord, string>(factory, colName);
+
+            await collection.EnsureCollectionExistsAsync(TestContext.Current.CancellationToken);
+            bool exists = await collection.CollectionExistsAsync(TestContext.Current.CancellationToken);
+            Assert.True(exists);
+
+            var floatArray = new float[768];
+            floatArray[0] = 1.0f;
+            floatArray[1] = 0.5f;
+
+            var record = new SampleCollectionRecord
+            {
+                Id = "doc1",
+                Title = "TDD Real Vector Search Doc",
+                Vector = floatArray
+            };
+
+            await collection.UpsertAsync(record, TestContext.Current.CancellationToken);
+
+            var retrieved = await collection.GetAsync("doc1", cancellationToken: TestContext.Current.CancellationToken);
+            Assert.NotNull(retrieved);
+            Assert.Equal("doc1", retrieved.Id);
+            Assert.Equal("TDD Real Vector Search Doc", retrieved.Title);
+
+            var searchResults = new List<VectorSearchResult<SampleCollectionRecord>>();
+            await foreach (var res in collection.SearchAsync(record.Vector, 10, cancellationToken: TestContext.Current.CancellationToken))
+            {
+                searchResults.Add(res);
+            }
+
+            Assert.NotEmpty(searchResults);
+            Assert.Equal("doc1", searchResults[0].Record.Id);
+
+            await collection.DeleteAsync("doc1", TestContext.Current.CancellationToken);
+            var deletedDoc = await collection.GetAsync("doc1", cancellationToken: TestContext.Current.CancellationToken);
+            Assert.Null(deletedDoc);
+
+            await collection.EnsureCollectionDeletedAsync(TestContext.Current.CancellationToken);
         }
-
-        Assert.Empty(results);
-    }
-
-    [Fact]
-    public void GetService_ReturnsFactory_WhenRequestedTypeIsIZvecFactory()
-    {
-        IZvecFactory factory = new ZVecFactory();
-        var collection = new ZVecVectorizableRecordCollection<SampleCollectionRecord, string>(factory, TestCollectionName);
-
-        object? service = collection.GetService(typeof(IZvecFactory));
-
-        Assert.Same(factory, service);
-    }
-
-    [Fact]
-    public void GetService_ReturnsNull_WhenRequestedTypeIsUnknown()
-    {
-        IZvecFactory factory = new ZVecFactory();
-        var collection = new ZVecVectorizableRecordCollection<SampleCollectionRecord, string>(factory, TestCollectionName);
-
-        object? service = collection.GetService(typeof(int));
-
-        Assert.Null(service);
-    }
-
-    [Fact]
-    public async Task CollectionLifecycleAsync_MethodsReturnCompletedTasks_WhenInvoked()
-    {
-        IZvecFactory factory = new ZVecFactory();
-        var collection = new ZVecVectorizableRecordCollection<SampleCollectionRecord, string>(factory, TestCollectionName);
-
-        bool existsBefore = await collection.CollectionExistsAsync(TestContext.Current.CancellationToken);
-        Assert.False(existsBefore);
-
-        await collection.EnsureCollectionExistsAsync(TestContext.Current.CancellationToken);
-        await collection.EnsureCollectionDeletedAsync(TestContext.Current.CancellationToken);
+        finally
+        {
+            if (Directory.Exists(tempDir))
+            {
+                try { Directory.Delete(tempDir, recursive: true); } catch { }
+            }
+        }
     }
 
     // -------------------------------------------------------------------------

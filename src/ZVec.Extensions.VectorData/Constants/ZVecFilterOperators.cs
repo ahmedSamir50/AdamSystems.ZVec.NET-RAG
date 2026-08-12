@@ -33,5 +33,11 @@ public enum ZVecFilterOperators
     Not = 9,
 
     /// <summary>Collection containment operator (ContainsAny).</summary>
-    ContainsAny = 10
+    ContainsAny = 10,
+
+    /// <summary>Null check operator (IsNull).</summary>
+    IsNull = 11,
+
+    /// <summary>Non-null check operator (IsNotNull).</summary>
+    IsNotNull = 12
 }

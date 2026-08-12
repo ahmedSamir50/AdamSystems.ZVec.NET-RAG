@@ -24,7 +24,9 @@ public sealed class ZVecConstantsTests
         Assert.Contains(ZVecFilterOperators.Or, values);
         Assert.Contains(ZVecFilterOperators.Not, values);
         Assert.Contains(ZVecFilterOperators.ContainsAny, values);
-        Assert.Equal(10, values.Length);
+        Assert.Contains(ZVecFilterOperators.IsNull, values);
+        Assert.Contains(ZVecFilterOperators.IsNotNull, values);
+        Assert.Equal(12, values.Length);
     }
 
     [Theory]

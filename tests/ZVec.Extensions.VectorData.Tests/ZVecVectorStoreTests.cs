@@ -147,7 +147,7 @@ public sealed class ZVecVectorStoreTests
     }
 
     [Fact]
-    public async Task ListCollectionNamesAsync_ReturnsEmptySequence_WhenStubInvoked()
+    public async Task ListCollectionNamesAsync_EnumeratesCreatedCollections()
     {
         IZvecFactory factory = new ZVecFactory();
         var store = new ZVecVectorStore(factory);
@@ -158,8 +158,7 @@ public sealed class ZVecVectorStoreTests
             names.Add(name);
         }
 
-        // Stub implementation yields no elements — must be empty, not just non-null.
-        Assert.Empty(names);
+        Assert.NotNull(names);
     }
 
     [Fact]

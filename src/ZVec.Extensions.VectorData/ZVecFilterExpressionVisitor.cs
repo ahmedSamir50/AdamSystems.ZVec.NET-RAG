@@ -3,21 +3,23 @@ using System.Linq.Expressions;
 using System.Reflection;
 using ZVec.Extensions.VectorData.Constants;
 using ZVec.Extensions.VectorData.Exceptions;
+using ZVec.NET;
 using ZVec.NET.Exceptions;
 using ZVec.NET.Mapping;
+using ZVec.NET.Query;
 
 namespace ZVec.Extensions.VectorData;
 
 /// <summary>
-/// Translates LINQ filter expressions over vector records into native ZVec filter strings.
+/// Translates LINQ filter expressions over vector records into native ZVec filter AST nodes and strings.
 /// </summary>
 /// <remarks>
 /// <para>
 /// <b>AST Translation Architecture:</b>
-/// Maps C# expression trees into native ZVec boolean query AST format supporting 10 primary operators:
+/// Maps C# expression trees into native ZVec boolean query AST format supporting all 12 primary operators:
 /// Equal (<c>==</c>), NotEqual (<c>!=</c>), LessThan (<c>&lt;</c>), LessThanOrEqual (<c>&lt;=</c>),
 /// GreaterThan (<c>&gt;</c>), GreaterThanOrEqual (<c>&gt;=</c>), AndAlso (<c>&amp;&amp;</c>), OrElse (<c>||</c>),
-/// Not (<c>!</c>), and ContainsAny (<c>Enumerable.Contains</c>).
+/// Not (<c>!</c>), ContainsAny (<c>Enumerable.Contains</c>), IsNull, and IsNotNull.
 /// </para>
 /// <code>
 /// ┌─────────────────────────────────────────────────────────────┐
@@ -42,11 +44,25 @@ public static class ZVecFilterExpressionVisitor
     public static string Translate<TRecord>(Expression<Func<TRecord, bool>> filter) where TRecord : class
     {
         ArgumentNullException.ThrowIfNull(filter);
+        return TranslateToBuilder(filter).Build();
+    }
+
+    /// <summary>
+    /// Translates a typed predicate expression into a <see cref="ZVecFilterBuilder"/> AST instance.
+    /// </summary>
+    /// <typeparam name="TRecord">Record POCO type.</typeparam>
+    /// <param name="filter">Boolean LINQ predicate expression.</param>
+    /// <returns><see cref="ZVecFilterBuilder"/> AST node hierarchy.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="filter"/> is null.</exception>
+    /// <exception cref="ZVecFilterTranslationException">Thrown when an unsupported LINQ expression shape is encountered.</exception>
+    public static ZVecFilterBuilder TranslateToBuilder<TRecord>(Expression<Func<TRecord, bool>> filter) where TRecord : class
+    {
+        ArgumentNullException.ThrowIfNull(filter);
 
         try
         {
             var model = ZVecTypeModel.Get<TRecord>();
-            return TranslateCore<TRecord>(model, filter.Body, filter.Parameters[0]);
+            return VisitExpression(model, filter.Body);
         }
         catch (ZVecFilterTranslationException)
         {
@@ -62,38 +78,130 @@ public static class ZVecFilterExpressionVisitor
         }
     }
 
-    /// <summary>
-    /// Core translation engine that dispatches expression body nodes to the appropriate handler.
-    /// </summary>
-    /// <typeparam name="TRecord">Record POCO type.</typeparam>
-    /// <param name="model">ZVec type model for the record.</param>
-    /// <param name="body">The body expression to translate.</param>
-    /// <param name="parameter">The original parameter expression from the user's lambda (preserves reference equality).</param>
-    /// <returns>Native ZVec filter string.</returns>
-    private static string TranslateCore<TRecord>(ZVecTypeModel model, Expression body, ParameterExpression parameter) where TRecord : class
+    private static ZVecFilterBuilder VisitExpression(ZVecTypeModel model, Expression expression)
     {
-        body = Unwrap(body);
+        expression = Unwrap(expression);
 
-        switch (body)
+        switch (expression)
         {
+            case BinaryExpression binary:
+                return VisitBinary(model, binary);
+
+            case UnaryExpression unary when unary.NodeType == ExpressionType.Not:
+                return VisitNot(model, unary);
+
             case MethodCallExpression methodCall:
                 return VisitMethodCall(model, methodCall);
 
-            case UnaryExpression { NodeType: ExpressionType.Not } unary when Unwrap(unary.Operand) is MemberExpression member:
-                // Rewrite !x.Property -> x.Property == false
-                // Preserves the original parameter reference to avoid reference-equality mismatch.
-                var eqFalse = Expression.Equal(member, Expression.Constant(false));
-                return ZVecExpressionFilter.Translate(model, Expression.Lambda<Func<TRecord, bool>>(eqFalse, parameter));
+            case MemberExpression member when member.Type == typeof(bool):
+                // Direct boolean property filter: x => x.InStock
+                var propInfo = GetPropertyInfo(member) ?? throw new ZVecFilterTranslationException(ZVecErrorMessages.UnsupportedFilterExpression(member.ToString()));
+                var storageName = model.GetRequiredByPropertyName(propInfo.Name).StorageName;
+                return ZVecFilterBuilder.Create().Where(storageName, ZVecCompareOp.Eq, true);
 
             default:
-                var lambda = Expression.Lambda<Func<TRecord, bool>>(body, parameter);
-                return ZVecExpressionFilter.Translate(model, lambda);
+                throw new ZVecFilterTranslationException(ZVecErrorMessages.UnsupportedFilterExpression(expression.ToString()));
         }
     }
 
-    private static string VisitMethodCall(ZVecTypeModel model, MethodCallExpression methodCall)
+    private static ZVecFilterBuilder VisitBinary(ZVecTypeModel model, BinaryExpression binary)
     {
-        if (methodCall.Method.Name == nameof(Enumerable.Contains))
+        if (binary.NodeType == ExpressionType.AndAlso)
+        {
+            var left = VisitExpression(model, binary.Left);
+            var right = VisitExpression(model, binary.Right);
+            return left.And(right);
+        }
+
+        if (binary.NodeType == ExpressionType.OrElse)
+        {
+            var left = VisitExpression(model, binary.Left);
+            var right = VisitExpression(model, binary.Right);
+            return left.Or(right);
+        }
+
+        // Null comparison handling (x => x.Prop == null or x.Prop != null)
+        if (IsNullCheck(binary, out var nullProp, out var isEquals))
+        {
+            var propInfoName = nullProp.Name;
+            var storageName = model.GetRequiredByPropertyName(propInfoName).StorageName;
+            return isEquals
+                ? ZVecFilterBuilder.Create().IsNull(storageName)
+                : ZVecFilterBuilder.Create().IsNotNull(storageName);
+        }
+
+        // Relational comparisons (==, !=, <, <=, >, >=)
+        var (memberExpr, valueExpr) = ExtractMemberAndValue(binary.Left, binary.Right);
+        if (memberExpr == null)
+            throw new ZVecFilterTranslationException(ZVecErrorMessages.UnsupportedFilterExpression(binary.ToString()));
+
+        var prop = GetPropertyInfo(memberExpr) ?? throw new ZVecFilterTranslationException(ZVecErrorMessages.UnsupportedFilterExpression(memberExpr.ToString()));
+        var colName = model.GetRequiredByPropertyName(prop.Name).StorageName;
+        var value = Evaluate(valueExpr);
+
+        var op = binary.NodeType switch
+        {
+            ExpressionType.Equal => ZVecCompareOp.Eq,
+            ExpressionType.NotEqual => ZVecCompareOp.Ne,
+            ExpressionType.LessThan => ZVecCompareOp.Lt,
+            ExpressionType.LessThanOrEqual => ZVecCompareOp.Le,
+            ExpressionType.GreaterThan => ZVecCompareOp.Gt,
+            ExpressionType.GreaterThanOrEqual => ZVecCompareOp.Ge,
+            _ => throw new ZVecFilterTranslationException(ZVecErrorMessages.UnsupportedFilterExpression(binary.NodeType.ToString()))
+        };
+
+        var builder = ZVecFilterBuilder.Create();
+
+        return value switch
+        {
+            int i => builder.Where(colName, op, i),
+            long l => builder.Where(colName, op, l),
+            float f => builder.Where(colName, op, f),
+            double d => builder.Where(colName, op, d),
+            bool b => builder.Where(colName, op, b),
+            string s => builder.Where(colName, op, s),
+            _ when value == null && op == ZVecCompareOp.Eq => builder.IsNull(colName),
+            _ when value == null && op == ZVecCompareOp.Ne => builder.IsNotNull(colName),
+            _ => builder.Where(colName, op, value?.ToString() ?? string.Empty)
+        };
+    }
+
+    private static ZVecFilterBuilder VisitNot(ZVecTypeModel model, UnaryExpression unary)
+    {
+        var operand = Unwrap(unary.Operand);
+
+        if (operand is MemberExpression member && member.Type == typeof(bool))
+        {
+            var propInfo = GetPropertyInfo(member) ?? throw new ZVecFilterTranslationException(ZVecErrorMessages.UnsupportedFilterExpression(member.ToString()));
+            var storageName = model.GetRequiredByPropertyName(propInfo.Name).StorageName;
+            return ZVecFilterBuilder.Create().Where(storageName, ZVecCompareOp.Eq, false);
+        }
+
+        var innerBuilder = VisitExpression(model, operand);
+        return ZVecFilterBuilder.Create().Not(innerBuilder);
+    }
+
+    private static ZVecFilterBuilder VisitMethodCall(ZVecTypeModel model, MethodCallExpression methodCall)
+    {
+        string methodName = methodCall.Method.Name;
+        Type declaringType = methodCall.Method.DeclaringType ?? typeof(object);
+
+        // Reject StartsWith, EndsWith, Regex.IsMatch with diagnostic remediation
+        if (methodName is "StartsWith" or "EndsWith" or "IsMatch")
+        {
+            throw new ZVecFilterTranslationException(
+                $"Filter method '{methodName}' is not supported in LINQ filter expressions. Use ZVec FTS keyword queries instead.");
+        }
+
+        // Reject string.Contains
+        if (methodName == "Contains" && declaringType == typeof(string))
+        {
+            throw new ZVecFilterTranslationException(
+                "string.Contains is not supported in LINQ filters. Use ZVec FTS keyword search or ContainAny on collection properties.");
+        }
+
+        // Handle Enumerable.Contains / Collection.Contains
+        if (methodName == nameof(Enumerable.Contains) || methodName == "Contains")
         {
             Expression containerExpr;
             Expression itemExpr;
@@ -109,7 +217,9 @@ public static class ZVecFilterExpressionVisitor
                 itemExpr = methodCall.Arguments[1];
             }
             else
-                throw new ZVecFilterTranslationException(ZVecErrorMessages.UnsupportedFilterExpression(methodCall.Method.Name));
+            {
+                throw new ZVecFilterTranslationException(ZVecErrorMessages.UnsupportedFilterExpression(methodName));
+            }
 
             var propInfo = GetPropertyInfo(itemExpr) ?? throw new ZVecFilterTranslationException(ZVecErrorMessages.UnsupportedFilterExpression(itemExpr.ToString()));
             var property = model.GetRequiredByPropertyName(propInfo.Name);
@@ -117,21 +227,92 @@ public static class ZVecFilterExpressionVisitor
 
             if (rawValue is IEnumerable enumerable)
             {
-                var elements = new List<string>();
+                var nonNullValues = new List<object>();
+                bool containsNull = false;
+
                 foreach (var element in enumerable)
                 {
-                    if (element == null) continue;
-                    elements.Add($"\"{element}\"");
+                    if (element == null)
+                    {
+                        containsNull = true;
+                    }
+                    else
+                    {
+                        nonNullValues.Add(element);
+                    }
                 }
 
-                if (elements.Count > 0)
-                    return $"{property.StorageName} IN ({string.Join(", ", elements)})";
+                var builder = ZVecFilterBuilder.Create();
+
+                if (nonNullValues.Count > 0)
+                {
+                    var containBuilder = ZVecFilterBuilder.Create().In(property.StorageName, nonNullValues.ToArray());
+                    builder = containsNull ? containBuilder.Or(b => b.IsNull(property.StorageName)) : containBuilder;
+                }
+                else if (containsNull)
+                {
+                    builder = ZVecFilterBuilder.Create().IsNull(property.StorageName);
+                }
+                else
+                {
+                    throw new ZVecFilterTranslationException(ZVecErrorMessages.UnsupportedFilterExpression("Empty IN clause collection."));
+                }
+
+                return builder;
             }
 
-            throw new ZVecFilterTranslationException(ZVecErrorMessages.UnsupportedFilterExpression("Empty or invalid IN clause collection."));
+            throw new ZVecFilterTranslationException(ZVecErrorMessages.UnsupportedFilterExpression("Invalid IN clause collection."));
         }
 
-        throw new ZVecFilterTranslationException(ZVecErrorMessages.UnsupportedFilterExpression(methodCall.Method.Name));
+        throw new ZVecFilterTranslationException(ZVecErrorMessages.UnsupportedFilterExpression(methodName));
+    }
+
+    private static (MemberExpression? member, Expression value) ExtractMemberAndValue(Expression left, Expression right)
+    {
+        left = Unwrap(left);
+        right = Unwrap(right);
+
+        if (left is MemberExpression leftMember && GetPropertyInfo(leftMember) != null)
+            return (leftMember, right);
+
+        if (right is MemberExpression rightMember && GetPropertyInfo(rightMember) != null)
+            return (rightMember, left);
+
+        return (null, right);
+    }
+
+    private static bool IsNullCheck(BinaryExpression binary, out PropertyInfo nullProp, out bool isEquals)
+    {
+        nullProp = null!;
+        isEquals = binary.NodeType == ExpressionType.Equal;
+
+        if (binary.NodeType != ExpressionType.Equal && binary.NodeType != ExpressionType.NotEqual)
+            return false;
+
+        var left = Unwrap(binary.Left);
+        var right = Unwrap(binary.Right);
+
+        if (left is ConstantExpression { Value: null } && right is MemberExpression rightMember)
+        {
+            var prop = GetPropertyInfo(rightMember);
+            if (prop != null)
+            {
+                nullProp = prop;
+                return true;
+            }
+        }
+
+        if (right is ConstantExpression { Value: null } && left is MemberExpression leftMember)
+        {
+            var prop = GetPropertyInfo(leftMember);
+            if (prop != null)
+            {
+                nullProp = prop;
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static PropertyInfo? GetPropertyInfo(Expression expression)
@@ -146,15 +327,16 @@ public static class ZVecFilterExpressionVisitor
     private static Expression Unwrap(Expression expression)
     {
         while (expression is UnaryExpression unary &&
-               (unary.NodeType == ExpressionType.Convert || 
-                unary.NodeType == ExpressionType.ConvertChecked)
-               )
+               (unary.NodeType == ExpressionType.Convert || unary.NodeType == ExpressionType.ConvertChecked))
         {
             expression = unary.Operand;
         }
         return expression;
     }
 
+    /// <summary>
+    /// Fully AOT-safe expression evaluator that avoids runtime Expression.Compile().DynamicInvoke().
+    /// </summary>
     private static object? Evaluate(Expression expression)
     {
         expression = Unwrap(expression);
@@ -168,33 +350,38 @@ public static class ZVecFilterExpressionVisitor
                 object? instance = memberExpr.Expression != null ? Evaluate(memberExpr.Expression) : null;
                 if (memberExpr.Member is FieldInfo fieldInfo)
                     return fieldInfo.GetValue(instance);
-                
+
                 if (memberExpr.Member is PropertyInfo propInfo)
                     return propInfo.GetValue(instance, null);
                 break;
 
             case MethodCallExpression methodCallExpr:
-                if (methodCallExpr.Object != null)
-                    return Evaluate(methodCallExpr.Object);
-                
-                if (methodCallExpr.Arguments.Count > 0)
+                if (methodCallExpr.Method.IsSpecialName && (methodCallExpr.Method.Name == "op_Implicit" || methodCallExpr.Method.Name == "op_Explicit"))
+                {
                     return Evaluate(methodCallExpr.Arguments[0]);
-                break;
+                }
+                try
+                {
+                    object? objInstance = methodCallExpr.Object != null ? Evaluate(methodCallExpr.Object) : null;
+                    var args = methodCallExpr.Arguments.Select(Evaluate).ToArray();
+                    return methodCallExpr.Method.Invoke(objInstance, args);
+                }
+                catch (Exception ex)
+                {
+                    throw new ZVecFilterTranslationException($"Cannot evaluate method '{methodCallExpr.Method.Name}' under AOT: {ex.Message}", ex);
+                }
 
             case NewArrayExpression newArray:
                 var arrayElements = Array.CreateInstance(newArray.Type.GetElementType()!, newArray.Expressions.Count);
                 for (int i = 0; i < newArray.Expressions.Count; i++)
                     arrayElements.SetValue(Evaluate(newArray.Expressions[i]), i);
-              
+
                 return arrayElements;
         }
 
         if (expression.Type.IsByRefLike)
             throw new ZVecFilterTranslationException(ZVecErrorMessages.UnsupportedFilterExpression(expression.Type.Name));
 
-
-        var delegateType = typeof(Func<>).MakeGenericType(expression.Type);
-        var lambda = Expression.Lambda(delegateType, expression);
-        return lambda.Compile().DynamicInvoke();
+        throw new ZVecFilterTranslationException(ZVecErrorMessages.UnsupportedFilterExpression($"Cannot statically evaluate expression '{expression}' under AOT without dynamic compilation."));
     }
 }

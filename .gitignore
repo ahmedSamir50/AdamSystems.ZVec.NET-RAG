@@ -8,6 +8,7 @@
 .agents/
 .codegraph/
 .idea/
+site/
 *.user
 *.suo
 *.userosscache

@@ -35,7 +35,7 @@ public sealed class VectorStoreConformanceFixture
         var recordType = typeof(SampleVectorRecord);
 
         Assert.True(recordType.IsClass, "Vector record must be a class.");
-        
+
         var properties = recordType.GetProperties();
         Assert.Equal(3, properties.Length);
 

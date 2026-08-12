@@ -31,7 +31,21 @@ public static class ZVecVectorStoreServiceCollectionExtensions
         var options = new ZVecVectorStoreOptions();
         configure?.Invoke(options);
 
-        services.TryAddSingleton<IZvecFactory>(sp => options.Factory ?? new ZVecFactory());
+        services.TryAddSingleton<IZvecFactory>(sp =>
+        {
+            if (options.Factory != null)
+            {
+                if (!options.Factory.IsInitialized)
+                {
+                    options.Factory.Initialize();
+                }
+                return options.Factory;
+            }
+
+            var factory = new ZVecFactory();
+            factory.Initialize();
+            return factory;
+        });
 
         var descriptor = ServiceDescriptor.Describe(
             typeof(ZVecVectorStore),
