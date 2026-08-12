@@ -24,6 +24,9 @@ public sealed class FilterTestRecord
 
     [ZVecVector(768)]
     public ReadOnlyMemory<float> Embedding { get; set; }
+
+    [ZVecField]
+    public string[] Tags { get; set; } = Array.Empty<string>();
 }
 
 /// <summary>
@@ -179,7 +182,116 @@ public sealed class ZVecFilterExpressionVisitorTests
     public void Translate_ThrowsZVecFilterTranslationException_WhenUnsupportedExpressionUsed()
     {
         Expression<Func<FilterTestRecord, bool>> filter = x => x.Category.StartsWith("Elec");
+        var ex = Assert.Throws<ZVecFilterTranslationException>(() => ZVecFilterExpressionVisitor.Translate(filter));
+        Assert.Contains("Remediation", ex.Message);
+        Assert.Contains("full-text search", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Translate_ThrowsZVecFilterTranslationException_WhenEndsWithUsed()
+    {
+        Expression<Func<FilterTestRecord, bool>> filter = x => x.Category.EndsWith("ics");
+        var ex = Assert.Throws<ZVecFilterTranslationException>(() => ZVecFilterExpressionVisitor.Translate(filter));
+        Assert.Equal(ZVec.Extensions.VectorData.Constants.ZVecErrorMessages.UnsupportedEndsWithMethod(), ex.Message);
+    }
+
+    [Fact]
+    public void Translate_ThrowsZVecFilterTranslationException_WhenRegexIsMatchUsed()
+    {
+        Expression<Func<FilterTestRecord, bool>> filter = x => System.Text.RegularExpressions.Regex.IsMatch(x.Category, "^Elec");
+        var ex = Assert.Throws<ZVecFilterTranslationException>(() => ZVecFilterExpressionVisitor.Translate(filter));
+        Assert.Equal(ZVec.Extensions.VectorData.Constants.ZVecErrorMessages.UnsupportedRegexMethod(), ex.Message);
+    }
+
+    [Fact]
+    public void Translate_ThrowsZVecFilterTranslationException_WhenStringContainsUsed()
+    {
+        Expression<Func<FilterTestRecord, bool>> filter = x => x.Category.Contains("Elec");
+        var ex = Assert.Throws<ZVecFilterTranslationException>(() => ZVecFilterExpressionVisitor.Translate(filter));
+        Assert.Equal(ZVec.Extensions.VectorData.Constants.ZVecErrorMessages.UnsupportedStringContainsMethod(), ex.Message);
+    }
+
+    // -------------------------------------------------------------------------
+    // Story 1.5: ContainAny on record collection properties (x.Tags.Contains)
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public void Translate_CollectionPropertyContains_SingleValue_ReturnsContainAnyFilterString()
+    {
+        Expression<Func<FilterTestRecord, bool>> filter = x => x.Tags.Contains("Electronics");
+        var result = ZVecFilterExpressionVisitor.Translate(filter);
+
+        Assert.NotNull(result);
+        Assert.Contains("Tags CONTAIN_ANY", result);
+        Assert.Contains("\"Electronics\"", result);
+    }
+
+    [Fact]
+    public void Translate_CollectionPropertyContains_CapturedVariable_ReturnsContainAnyFilterString()
+    {
+        string tag = "Books";
+        Expression<Func<FilterTestRecord, bool>> filter = x => x.Tags.Contains(tag);
+        var result = ZVecFilterExpressionVisitor.Translate(filter);
+
+        Assert.NotNull(result);
+        Assert.Contains("Tags CONTAIN_ANY", result);
+        Assert.Contains("\"Books\"", result);
+    }
+
+    [Fact]
+    public void Translate_CollectionPropertyContains_EmptyString_ReturnsContainAnyFilterString()
+    {
+        Expression<Func<FilterTestRecord, bool>> filter = x => x.Tags.Contains(string.Empty);
+        var result = ZVecFilterExpressionVisitor.Translate(filter);
+
+        Assert.NotNull(result);
+        Assert.Contains("Tags CONTAIN_ANY", result);
+        Assert.Contains("\"\"", result);
+    }
+
+    [Fact]
+    public void Translate_CollectionPropertyContains_NullValue_ThrowsZVecFilterTranslationException()
+    {
+        string? tag = null;
+        Expression<Func<FilterTestRecord, bool>> filter = x => x.Tags.Contains(tag!);
         Assert.Throws<ZVecFilterTranslationException>(() => ZVecFilterExpressionVisitor.Translate(filter));
+    }
+
+    [Fact]
+    public void Translate_CollectionPropertyContains_CombinedWithAnd_ReturnsContainAnyAndComparison()
+    {
+        Expression<Func<FilterTestRecord, bool>> filter = x => x.Tags.Contains("Sale") && x.Price < 100;
+        var result = ZVecFilterExpressionVisitor.Translate(filter);
+
+        Assert.NotNull(result);
+        Assert.Contains("Tags CONTAIN_ANY", result);
+        Assert.Contains("\"Sale\"", result);
+        Assert.Contains("Price < 100", result);
+        Assert.Contains("AND", result);
+    }
+
+    [Fact]
+    public void Translate_CollectionPropertyContains_CombinedWithOr_ReturnsContainAnyOrComparison()
+    {
+        Expression<Func<FilterTestRecord, bool>> filter = x => x.Tags.Contains("Clearance") || x.InStock;
+        var result = ZVecFilterExpressionVisitor.Translate(filter);
+
+        Assert.NotNull(result);
+        Assert.Contains("Tags CONTAIN_ANY", result);
+        Assert.Contains("\"Clearance\"", result);
+        Assert.Contains("InStock = true", result);
+        Assert.Contains("OR", result);
+    }
+
+    [Fact]
+    public void TranslateToBuilder_CollectionPropertyContains_ReturnsContainAnyBuilder()
+    {
+        Expression<Func<FilterTestRecord, bool>> filter = x => x.Tags.Contains("Featured");
+        var builder = ZVecFilterExpressionVisitor.TranslateToBuilder(filter);
+
+        Assert.NotNull(builder);
+        Assert.Contains("Tags CONTAIN_ANY", builder.Build());
+        Assert.Contains("\"Featured\"", builder.Build());
     }
 
     // -------------------------------------------------------------------------

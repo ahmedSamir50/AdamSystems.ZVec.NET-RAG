@@ -46,4 +46,31 @@ public static class ZVecErrorMessages
 
         return $"Expression '{expressionText}' cannot be translated to ZVecFilterBuilder.";
     }
+
+    /// <summary>Error message when <c>string.StartsWith</c> is used in a LINQ filter expression.</summary>
+    /// <returns>Formatted error message with remediation guidance.</returns>
+    public static string UnsupportedStartsWithMethod() =>
+        "Filter method 'StartsWith' is not supported in LINQ filter expressions. " +
+        "Remediation: Use ZVec full-text search (FTS) keyword queries for prefix matching, " +
+        "or pre-compute a normalized field for exact equality filtering.";
+
+    /// <summary>Error message when <c>string.EndsWith</c> is used in a LINQ filter expression.</summary>
+    /// <returns>Formatted error message with remediation guidance.</returns>
+    public static string UnsupportedEndsWithMethod() =>
+        "Filter method 'EndsWith' is not supported in LINQ filter expressions. " +
+        "Remediation: Use ZVec full-text search (FTS) keyword queries for suffix matching, " +
+        "or pre-compute a normalized field for exact equality filtering.";
+
+    /// <summary>Error message when <c>Regex.IsMatch</c> is used in a LINQ filter expression.</summary>
+    /// <returns>Formatted error message with remediation guidance.</returns>
+    public static string UnsupportedRegexMethod() =>
+        "Filter method 'IsMatch' is not supported in LINQ filter expressions. " +
+        "Remediation: Use ZVec full-text search (FTS) keyword queries for pattern matching, " +
+        "or pre-compute a normalized field for exact equality filtering.";
+
+    /// <summary>Error message when <c>string.Contains</c> is used in a LINQ filter expression.</summary>
+    /// <returns>Formatted error message with remediation guidance.</returns>
+    public static string UnsupportedStringContainsMethod() =>
+        "string.Contains is not supported in LINQ filters. " +
+        "Remediation: Use ZVec full-text search (FTS) keyword search, or ContainAny on collection properties.";
 }

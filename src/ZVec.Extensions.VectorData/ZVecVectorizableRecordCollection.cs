@@ -1,7 +1,9 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.VectorData;
+using ZVec.Extensions.VectorData.Attributes;
 using ZVec.Extensions.VectorData.Constants;
 using ZVec.NET;
 using ZVec.NET.Mapping;
@@ -88,54 +90,73 @@ public sealed class ZVecVectorizableRecordCollection<TRecord, TKey> :
         {
             if (_nativeCollection != null) return _nativeCollection;
 
-            if (!_factory.IsInitialized)
-            {
-                _factory.Initialize();
-            }
-
-            Directory.CreateDirectory(_options.EffectiveCollectionBasePath);
-            var schemaBuilder = ZVecCollectionSchemaBuilder.From<TRecord>();
-            var schema = schemaBuilder.Build();
-
-            var ftsFieldNames = new HashSet<string>(StringComparer.Ordinal);
-            var ftsVectors = new List<ZVecVectorSchema>(schema.Vectors);
-
-            foreach (var field in schema.Fields)
-            {
-                if (field.DataType == ZVecDataType.String)
-                {
-                    var prop = typeof(TRecord).GetProperty(field.Name);
-                    if (prop != null)
-                    {
-                        var attr = (VectorStoreDataAttribute?)Attribute.GetCustomAttribute(prop, typeof(VectorStoreDataAttribute));
-                        if (attr?.IsFullTextIndexed == true && !ftsVectors.Any(v => v.Name == field.Name))
-                        {
-                            ftsFieldNames.Add(field.Name);
-                            ftsVectors.Add(new ZVecVectorSchema
-                            {
-                                Name = field.Name,
-                                DataType = ZVecDataType.String,
-                                Dimension = 0,
-                                IndexParam = new ZVecFtsIndexParam()
-                            });
-                        }
-                    }
-                }
-            }
-
-            var updatedFields = schema.Fields.Where(f => !ftsFieldNames.Contains(f.Name)).ToArray();
-
-            var finalSchema = new ZVecCollectionSchema
-            {
-                Name = schema.Name,
-                MaxDocCountPerSegment = schema.MaxDocCountPerSegment,
-                Fields = updatedFields,
-                Vectors = ftsVectors.ToArray()
-            };
-
-            _nativeCollection = _factory.OpenOrCreate(CollectionPath, finalSchema);
+            _nativeCollection = OpenNativeCollection();
             return _nativeCollection;
         }
+    }
+
+    private ZVecCollectionSchema BuildCollectionSchema()
+    {
+        var schemaBuilder = ZVecCollectionSchemaBuilder.From<TRecord>();
+        var schema = schemaBuilder.Build();
+
+        var ftsFieldNames = new HashSet<string>(StringComparer.Ordinal);
+        var ftsVectors = new List<ZVecVectorSchema>(schema.Vectors);
+
+        foreach (var field in schema.Fields)
+        {
+            if (field.DataType != ZVecDataType.String)
+                continue;
+
+            var prop = typeof(TRecord).GetProperty(field.Name);
+            if (prop == null || !IsFullTextIndexedProperty(prop) || ftsVectors.Any(v => v.Name == field.Name))
+                continue;
+
+            ftsFieldNames.Add(field.Name);
+            ftsVectors.Add(new ZVecVectorSchema
+            {
+                Name = field.Name,
+                DataType = ZVecDataType.String,
+                Dimension = 0,
+                IndexParam = new ZVecFtsIndexParam()
+            });
+        }
+
+        var updatedFields = schema.Fields.Where(f => !ftsFieldNames.Contains(f.Name)).ToArray();
+
+        return new ZVecCollectionSchema
+        {
+            Name = schema.Name,
+            MaxDocCountPerSegment = schema.MaxDocCountPerSegment,
+            Fields = updatedFields,
+            Vectors = ftsVectors.ToArray()
+        };
+    }
+
+    /// <summary>
+    /// Resolves whether a record property participates in full-text search indexing.
+    /// </summary>
+    /// <remarks>
+    /// <c>[ZVecFullTextSearch]</c> takes precedence. <c>[VectorStoreData(IsFullTextIndexed = true)]</c>
+    /// is recognized as a fallback when no ZVec FTS attribute is present.
+    /// </remarks>
+    private static bool IsFullTextIndexedProperty(PropertyInfo prop)
+    {
+        var zvecFtsAttr = (ZVecFullTextSearchAttribute?)Attribute.GetCustomAttribute(prop, typeof(ZVecFullTextSearchAttribute));
+        if (zvecFtsAttr != null)
+            return zvecFtsAttr.IsFullTextIndexed;
+
+        var vectorDataAttr = (VectorStoreDataAttribute?)Attribute.GetCustomAttribute(prop, typeof(VectorStoreDataAttribute));
+        return vectorDataAttr?.IsFullTextIndexed == true;
+    }
+
+    private IZvecCollection OpenNativeCollection()
+    {
+        if (!_factory.IsInitialized)
+            _factory.Initialize();
+
+        Directory.CreateDirectory(_options.EffectiveCollectionBasePath);
+        return _factory.OpenOrCreate(CollectionPath, BuildCollectionSchema());
     }
 
     /// <inheritdoc />
@@ -431,24 +452,25 @@ public sealed class ZVecVectorizableRecordCollection<TRecord, TKey> :
     /// <remarks>
     /// Call this method after batch ingestion to merge vector flat buffers into HNSW index segments
     /// and atomically refresh the native collection handle for concurrent queriers.
+    /// Expensive schema rebuild and native reopen occur outside the lock; only the handle swap is synchronized.
     /// </remarks>
     public async Task OptimizeAndReopenAsync(CancellationToken cancellationToken = default)
     {
         var collection = GetOrOpenNativeCollection();
         await collection.OptimizeAsync(cancellationToken).ConfigureAwait(false);
 
+        IZvecCollection? toDispose;
         lock (_initLock)
         {
-            if (_nativeCollection != null)
+            toDispose = _nativeCollection;
+            _nativeCollection = null;
+
+            if (toDispose != null)
             {
-                try { _nativeCollection.Dispose(); } catch { }
-                _nativeCollection = null;
+                try { toDispose.Dispose(); } catch { }
             }
 
-            Directory.CreateDirectory(_options.EffectiveCollectionBasePath);
-            var schemaBuilder = ZVecCollectionSchemaBuilder.From<TRecord>();
-            var schema = schemaBuilder.Build();
-            _nativeCollection = _factory.OpenOrCreate(CollectionPath, schema);
+            _nativeCollection = OpenNativeCollection();
         }
     }
 

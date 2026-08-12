@@ -185,4 +185,131 @@ public sealed class VectorStoreContractConformanceTests : IDisposable
         Assert.NotEmpty(results);
         Assert.Equal("1", results[0].Record.Id);
     }
+
+    [Fact]
+    public async Task GetAsync_ReturnsNull_WhenKeyDoesNotExist()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var collection = _store.GetCollection<string, ConformanceRecord>("conformance_missing_key_col");
+        await collection.EnsureCollectionExistsAsync(ct);
+
+        var fetched = await collection.GetAsync("does-not-exist", cancellationToken: ct);
+
+        Assert.Null(fetched);
+    }
+
+    [Fact]
+    public async Task SearchAsync_ThrowsArgumentNullException_WhenSearchValueIsNull()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var collection = _store.GetCollection<string, ConformanceRecord>("conformance_null_search_col");
+        await collection.EnsureCollectionExistsAsync(ct);
+
+        await Assert.ThrowsAsync<ArgumentNullException>(async () =>
+        {
+            await foreach (var _ in collection.SearchAsync<float[]>(null!, top: 1, cancellationToken: ct))
+            {
+            }
+        });
+    }
+
+    [Fact]
+    public async Task EmptyCollection_SearchReturnsNoResults_AndGetReturnsNull()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var collection = _store.GetCollection<string, ConformanceRecord>("conformance_empty_col");
+        await collection.EnsureCollectionExistsAsync(ct);
+
+        var missing = await collection.GetAsync("missing", cancellationToken: ct);
+        Assert.Null(missing);
+
+        var results = new List<VectorSearchResult<ConformanceRecord>>();
+        await foreach (var result in collection.SearchAsync(new float[] { 1f, 0f, 0f, 0f }, top: 5, cancellationToken: ct))
+        {
+            results.Add(result);
+        }
+
+        Assert.Empty(results);
+    }
+
+    [Fact]
+    public async Task GetBatchAsync_ReturnsOnlyExistingRecords_WhenKeysAreMixed()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var collection = _store.GetCollection<string, ConformanceRecord>("conformance_mixed_keys_col");
+        await collection.EnsureCollectionExistsAsync(ct);
+
+        await collection.UpsertAsync(
+            new ConformanceRecord { Id = "exists", Title = "Present", CategoryId = 1, Embedding = new float[] { 1f, 0f, 0f, 0f } },
+            ct);
+
+        var fetched = new List<ConformanceRecord>();
+        await foreach (var item in collection.GetAsync(new[] { "exists", "missing" }, cancellationToken: ct))
+        {
+            fetched.Add(item);
+        }
+
+        Assert.Single(fetched);
+        Assert.Equal("exists", fetched[0].Id);
+    }
+
+    [Fact]
+    public async Task EnsureCollectionDeletedAsync_RemovesCollection_AndSubsequentExistsCheckReturnsFalse()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var collection = _store.GetCollection<string, ConformanceRecord>("conformance_deleted_col");
+        await collection.EnsureCollectionExistsAsync(ct);
+        Assert.True(await collection.CollectionExistsAsync(ct));
+
+        await collection.EnsureCollectionDeletedAsync(ct);
+
+        Assert.False(await collection.CollectionExistsAsync(ct));
+    }
+
+    [Fact]
+    public async Task ZVecFullTextSearchAttribute_EnablesHybridSearch_WithoutVectorStoreDataFullTextFlag()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        IKeywordHybridSearchable<FtsOnlyRecord> collection =
+            (ZVecVectorizableRecordCollection<FtsOnlyRecord, string>)_store.GetCollection<string, FtsOnlyRecord>("conformance_fts_only_col");
+
+        var recordCollection = (VectorStoreCollection<string, FtsOnlyRecord>)collection;
+        await recordCollection.EnsureCollectionExistsAsync(ct);
+
+        await recordCollection.UpsertAsync(
+            new FtsOnlyRecord { Id = "1", Body = "Vector database architecture", Embedding = new float[] { 1f, 0f, 0f, 0f } },
+            ct);
+
+        var results = new List<VectorSearchResult<FtsOnlyRecord>>();
+        await foreach (var result in collection.HybridSearchAsync(
+            new float[] { 1f, 0f, 0f, 0f },
+            new[] { "architecture" },
+            top: 1,
+            cancellationToken: ct))
+        {
+            results.Add(result);
+        }
+
+        Assert.NotEmpty(results);
+        Assert.Equal("1", results[0].Record.Id);
+    }
+}
+
+/// <summary>
+/// Record that enables FTS via <see cref="ZVecFullTextSearchAttribute"/> only.
+/// </summary>
+public sealed class FtsOnlyRecord
+{
+    [ZVecId]
+    [VectorStoreKey]
+    public string Id { get; set; } = string.Empty;
+
+    [ZVecField]
+    [VectorStoreData]
+    [ZVecFullTextSearch]
+    public string Body { get; set; } = string.Empty;
+
+    [ZVecVector(4)]
+    [VectorStoreVector(4)]
+    public ReadOnlyMemory<float> Embedding { get; set; }
 }

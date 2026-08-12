@@ -68,6 +68,15 @@ public sealed class ZVecConstantsTests
     }
 
     [Fact]
+    public void ZVecErrorMessages_ProvidesUnsupportedFilterMethodRemediationMessages()
+    {
+        Assert.Contains("Remediation", ZVecErrorMessages.UnsupportedStartsWithMethod());
+        Assert.Contains("Remediation", ZVecErrorMessages.UnsupportedEndsWithMethod());
+        Assert.Contains("Remediation", ZVecErrorMessages.UnsupportedRegexMethod());
+        Assert.Contains("ContainAny", ZVecErrorMessages.UnsupportedStringContainsMethod());
+    }
+
+    [Fact]
     public void ZVecVectorDataException_ConstructsWithParamsAndInnerException()
     {
         var inner = new InvalidOperationException("Inner error");

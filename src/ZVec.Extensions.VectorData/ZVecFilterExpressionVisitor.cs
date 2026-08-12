@@ -19,16 +19,32 @@ namespace ZVec.Extensions.VectorData;
 /// Maps C# expression trees into native ZVec boolean query AST format supporting all 12 primary operators:
 /// Equal (<c>==</c>), NotEqual (<c>!=</c>), LessThan (<c>&lt;</c>), LessThanOrEqual (<c>&lt;=</c>),
 /// GreaterThan (<c>&gt;</c>), GreaterThanOrEqual (<c>&gt;=</c>), AndAlso (<c>&amp;&amp;</c>), OrElse (<c>||</c>),
-/// Not (<c>!</c>), ContainsAny (<c>Enumerable.Contains</c>), IsNull, and IsNotNull.
+/// Not (<c>!</c>), ContainsAny (<c>x.Tags.Contains(value)</c> or <c>collection.Contains(x.Property)</c>),
+/// IsNull, and IsNotNull.
 /// </para>
 /// <code>
-/// ┌─────────────────────────────────────────────────────────────┐
-/// │         Expression&lt;Func&lt;TRecord, bool&gt;&gt; LINQ AST            │
-/// ├─────────────────────────────────────────────────────────────┤
-/// │               ZVecFilterExpressionVisitor                   │
-/// ├─────────────────────────────────────────────────────────────┤
-/// │      ZVecFilterBuilder ──► Native ZVec SQL Filter String    │
-/// └─────────────────────────────────────────────────────────────┘
+/// ┌──────────────────────────────────────────────────────────────────────────────┐
+/// │  Expression&lt;Func&lt;TRecord, bool&gt;&gt; LINQ AST                                    │
+/// │  Example: x =&gt; x.Category == "Books" &amp;&amp; x.Price &lt; 100                        │
+/// ├──────────────────────────────────────────────────────────────────────────────┤
+/// │                                                                              │
+/// │                    BinaryExpression (AndAlso)                                │
+/// │                   /                      \                                   │
+/// │    BinaryExpression (Equal)        BinaryExpression (LessThan)               │
+/// │    /               \               /                 \                       │
+/// │ MemberExpr      ConstantExpr    MemberExpr        ConstantExpr               │
+/// │ (x.Category)    ("Books")       (x.Price)         (100)                      │
+/// │                                                                              │
+/// ├──────────────────────────────────────────────────────────────────────────────┤
+/// │                     ZVecFilterExpressionVisitor                              │
+/// │  1. VisitExpression → dispatches by ExpressionType                           │
+/// │  2. VisitBinary    → AndAlso/OrElse/Relational ops                           │
+/// │  3. VisitNot       → Logical negation                                        │
+/// │  4. VisitMethodCall→ Contains patterns (IN / ContainAny)                     │
+/// ├──────────────────────────────────────────────────────────────────────────────┤
+/// │  ZVecFilterBuilder AST → Native ZVec SQL Filter String                       │
+/// │  Output: (Category = "Books") AND (Price &lt; 100)                              │
+/// └──────────────────────────────────────────────────────────────────────────────┘
 /// </code>
 /// </remarks>
 public static class ZVecFilterExpressionVisitor
@@ -187,18 +203,18 @@ public static class ZVecFilterExpressionVisitor
         Type declaringType = methodCall.Method.DeclaringType ?? typeof(object);
 
         // Reject StartsWith, EndsWith, Regex.IsMatch with diagnostic remediation
-        if (methodName is "StartsWith" or "EndsWith" or "IsMatch")
-        {
-            throw new ZVecFilterTranslationException(
-                $"Filter method '{methodName}' is not supported in LINQ filter expressions. Use ZVec FTS keyword queries instead.");
-        }
+        if (methodName == "StartsWith")
+            throw new ZVecFilterTranslationException(ZVecErrorMessages.UnsupportedStartsWithMethod());
+
+        if (methodName == "EndsWith")
+            throw new ZVecFilterTranslationException(ZVecErrorMessages.UnsupportedEndsWithMethod());
+
+        if (methodName == "IsMatch")
+            throw new ZVecFilterTranslationException(ZVecErrorMessages.UnsupportedRegexMethod());
 
         // Reject string.Contains
         if (methodName == "Contains" && declaringType == typeof(string))
-        {
-            throw new ZVecFilterTranslationException(
-                "string.Contains is not supported in LINQ filters. Use ZVec FTS keyword search or ContainAny on collection properties.");
-        }
+            throw new ZVecFilterTranslationException(ZVecErrorMessages.UnsupportedStringContainsMethod());
 
         // Handle Enumerable.Contains / Collection.Contains
         if (methodName == nameof(Enumerable.Contains) || methodName == "Contains")
@@ -221,11 +237,25 @@ public static class ZVecFilterExpressionVisitor
                 throw new ZVecFilterTranslationException(ZVecErrorMessages.UnsupportedFilterExpression(methodName));
             }
 
+            // Pattern: x.CollectionProperty.Contains(value) -> ContainAny
+            if (TryGetRecordCollectionProperty(model, containerExpr, out var collectionStorageName))
+            {
+                var containValue = Evaluate(itemExpr);
+                if (containValue == null)
+                {
+                    throw new ZVecFilterTranslationException(
+                        ZVecErrorMessages.UnsupportedFilterExpression("ContainAny requires a non-null search value."));
+                }
+
+                return BuildContainAny(collectionStorageName, containValue);
+            }
+
+            // Pattern: externalCollection.Contains(x.ScalarProperty) -> IN
             var propInfo = GetPropertyInfo(itemExpr) ?? throw new ZVecFilterTranslationException(ZVecErrorMessages.UnsupportedFilterExpression(itemExpr.ToString()));
             var property = model.GetRequiredByPropertyName(propInfo.Name);
             var rawValue = Evaluate(containerExpr);
 
-            if (rawValue is IEnumerable enumerable)
+            if (rawValue is IEnumerable enumerable and not string)
             {
                 var nonNullValues = new List<object>();
                 bool containsNull = false;
@@ -324,6 +354,56 @@ public static class ZVecFilterExpressionVisitor
         return null;
     }
 
+    private static bool TryGetRecordCollectionProperty(ZVecTypeModel model, Expression containerExpr, out string storageName)
+    {
+        storageName = null!;
+
+        if (!IsRecordParameterMember(containerExpr))
+            return false;
+
+        var propInfo = GetPropertyInfo(containerExpr);
+        if (propInfo == null || propInfo.PropertyType == typeof(string))
+            return false;
+
+        if (!typeof(IEnumerable).IsAssignableFrom(propInfo.PropertyType))
+            return false;
+
+        storageName = propInfo.Name;
+        return true;
+    }
+
+    private static bool IsRecordParameterMember(Expression expression)
+    {
+        expression = Unwrap(expression);
+
+        while (expression is MemberExpression member)
+        {
+            if (member.Expression is ParameterExpression)
+                return true;
+
+            if (member.Expression is null)
+                return false;
+
+            expression = member.Expression;
+        }
+
+        return false;
+    }
+
+    private static ZVecFilterBuilder BuildContainAny(string storageName, object value)
+    {
+        return value switch
+        {
+            int i => ZVecFilterBuilder.Create().ContainAny(storageName, i),
+            long l => ZVecFilterBuilder.Create().ContainAny(storageName, l),
+            float f => ZVecFilterBuilder.Create().ContainAny(storageName, f),
+            double d => ZVecFilterBuilder.Create().ContainAny(storageName, d),
+            bool b => ZVecFilterBuilder.Create().ContainAny(storageName, b),
+            string s => ZVecFilterBuilder.Create().ContainAny(storageName, s),
+            _ => ZVecFilterBuilder.Create().ContainAny(storageName, value)
+        };
+    }
+
     private static Expression Unwrap(Expression expression)
     {
         while (expression is UnaryExpression unary &&
@@ -331,6 +411,15 @@ public static class ZVecFilterExpressionVisitor
         {
             expression = unary.Operand;
         }
+
+        while (expression is MethodCallExpression methodCall &&
+               methodCall.Method.IsSpecialName &&
+               methodCall.Method.Name is "op_Implicit" or "op_Explicit")
+        {
+            expression = methodCall.Arguments[0];
+            expression = Unwrap(expression);
+        }
+
         return expression;
     }
 

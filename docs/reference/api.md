@@ -9,7 +9,7 @@ Complete API reference surface for `ZVec.Extensions.VectorData` and `ZVec.Rag`.
 - **`ZVecVectorizableRecordCollection<TRecord, TKey>`**: `IVectorizableRecordCollection` implementation.
 - **`IZVecRecordMapper<TRecord>`**: Interface for zero-reflection POCO record mapping (`ToDoc`, `FromDoc`).
 - **`ZVecRecordMapperRegistry`**: Process-wide registry for SG-emitted mappers populated via `[ModuleInitializer]`.
-- **`ZVecFilterExpressionVisitor`**: AST visitor translating `VectorDataFilter` to `ZVecFilterBuilder`.
+- **`ZVecFilterExpressionVisitor`**: AST visitor translating `Expression<Func<TRecord, bool>>` predicates to `ZVecFilterBuilder`. Supports 12 operators including relational, logical, `ContainAny` (`x.Tags.Contains(value)`), `In` (`values.Contains(x.Field)`), and null checks. Throws `ZVecFilterTranslationException` with remediation for unsupported string methods.
 
 ## `ZVec.Rag`
 

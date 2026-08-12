@@ -109,13 +109,45 @@ All NuGet package versions across the solution are managed centrally in `Directo
 
 ---
 
-## 5. Score Normalization, Index Optimization & Native AOT Safety
+## 5. Filter Expression Translation (`ZVecFilterExpressionVisitor`)
+
+`ZVecFilterExpressionVisitor` translates `Expression<Func<TRecord, bool>>` LINQ predicates into native `ZVecFilterBuilder` AST nodes and SQL-style filter strings.
+
+### Supported Operators (12)
+
+| LINQ Pattern | ZVec AST | Example |
+|---|---|---|
+| `==` | `Where(Eq)` | `x.Category == "Books"` |
+| `!=` | `Where(Ne)` | `x.Category != "Draft"` |
+| `<`, `<=`, `>`, `>=` | `Where(Lt/Le/Gt/Ge)` | `x.Price < 100` |
+| `&&` | `And` | `x.InStock && x.Price < 50` |
+| `\|\|` | `Or` | `x.Category == "A" \|\| x.Category == "B"` |
+| `!` | `Not` / bool negation | `!x.InStock` |
+| `x.Tags.Contains(value)` | `ContainAny` | `x.Tags.Contains("Sale")` |
+| `values.Contains(x.Field)` | `In` | `allowed.Contains(x.Category)` |
+| `== null` / `!= null` | `IsNull` / `IsNotNull` | `x.Category == null` |
+
+### Contains Pattern Disambiguation
+
+```text
+x.CollectionProperty.Contains(value)  -->  Tags CONTAIN_ANY ("Sale")
+externalList.Contains(x.ScalarField)  -->  Category IN ("A", "B")
+```
+
+Unsupported string methods (`StartsWith`, `EndsWith`, `Regex.IsMatch`, `string.Contains`) throw `ZVecFilterTranslationException` with explicit remediation guidance pointing to ZVec FTS keyword search.
+
+---
+
+## 6. Score Normalization, Index Optimization & Native AOT Safety
 
 - **Score Normalization Formula:** ZVec native scores are normalized transparently using a metric-switch formula:
   - **Cosine Metric:** \(\text{Score} = 1.0f - d_{\text{cosine}}\) (maps distance \([0, 2]\) to similarity \([-1, 1]\))
   - **L2 Metric:** \(\text{Score} = \frac{1.0f}{1.0f + d_{\text{L2}}}\) (monotonically maps distance \([0, \infty)\) to similarity \((0, 1]\))
   - **InnerProduct Metric:** \(\text{Score} = d_{\text{IP}}\) (passthrough value)
-- **Index Optimization & Reopen Lifecycle (`OptimizeAndReopenAsync`):** To prevent stale-querier C++ engine errors post-optimization, `ZVecVectorizableRecordCollection.OptimizeAndReopenAsync()` executes native optimization, disposes the old collection handle to release the native `LOCK` file, and opens a fresh handle for active search queries.
+- **Index Optimization & Reopen Lifecycle (`OptimizeAndReopenAsync`):** To prevent stale-querier C++ engine errors post-optimization, `OptimizeAndReopenAsync()` runs native optimization outside the synchronization lock, then performs a short critical section that disposes the previous handle, releases the native `LOCK` file, and reopens a fresh handle. Because ZVec enforces a single read-write handle per collection path, the reopen step must remain inside the lock; the primary concurrency win is that expensive `OptimizeAsync` no longer blocks concurrent readers.
+- **FTS Attribute Precedence:** Full-text search indexing is resolved per string property with explicit precedence:
+  1. `[ZVecFullTextSearch]` — ZVec-specific source of truth when present (`IsFullTextIndexed` controls enable/disable).
+  2. `[VectorStoreData(IsFullTextIndexed = true)]` — fallback for M.E.VectorData consumers when no ZVec FTS attribute is declared.
 - **Native AOT & Trim Safety:** All runtime record mapping uses Roslyn Source Generator emitted zero-reflection mappers (`IZVecRecordMapper<TRecord>`). The dynamic reflection fallback is annotated with `[RequiresUnreferencedCode]` and `[RequiresDynamicCode]` to ensure Native AOT trim warnings trigger cleanly if an ungenerated record type is used.
 
 
