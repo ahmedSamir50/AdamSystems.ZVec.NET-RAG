@@ -41,9 +41,8 @@ markdown_extensions:
   - pymdownx.snippets
   - pymdownx.tabbed:
       alternate_style: true
-  - pymdownx.math:
-      className: math
-      format: mathjax
+  - pymdownx.arithmatex:
+      generic: true
 
 nav:
   - Overview: index.md
