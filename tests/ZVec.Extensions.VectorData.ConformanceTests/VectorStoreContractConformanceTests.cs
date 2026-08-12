@@ -293,6 +293,137 @@ public sealed class VectorStoreContractConformanceTests : IDisposable
         Assert.NotEmpty(results);
         Assert.Equal("1", results[0].Record.Id);
     }
+
+    [Fact]
+    public async Task SearchAsync_ZeroVector_ReturnsResultsWithoutThrowing()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var collection = _store.GetCollection<string, ConformanceRecord>("conformance_zero_vector_col");
+        await collection.EnsureCollectionExistsAsync(ct);
+
+        var rec1 = new ConformanceRecord { Id = "1", Title = "Zero Vector Target", CategoryId = 1, Embedding = new float[] { 0f, 0f, 0f, 0f } };
+        var rec2 = new ConformanceRecord { Id = "2", Title = "Unit Vector Target", CategoryId = 2, Embedding = new float[] { 1f, 0f, 0f, 0f } };
+        await collection.UpsertAsync(new[] { rec1, rec2 }, ct);
+
+        var results = new List<VectorSearchResult<ConformanceRecord>>();
+        await foreach (var result in collection.SearchAsync(new float[] { 0f, 0f, 0f, 0f }, top: 2, cancellationToken: ct))
+        {
+            results.Add(result);
+        }
+
+        Assert.NotEmpty(results);
+        Assert.All(results, r => Assert.NotNull(r.Score));
+    }
+
+    [Fact]
+    public async Task SearchAsync_MaxDimensionVector_ReturnsResultsWithoutThrowing()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var collection = _store.GetCollection<string, HighDimensionRecord>("conformance_max_dim_col");
+        await collection.EnsureCollectionExistsAsync(ct);
+
+        var vector = new float[768];
+        vector[0] = 1f;
+        var query = new float[768];
+        query[0] = 1f;
+
+        await collection.UpsertAsync(
+            new HighDimensionRecord { Id = "1", Title = "High Dimension Doc", Embedding = vector },
+            ct);
+
+        var results = new List<VectorSearchResult<HighDimensionRecord>>();
+        await foreach (var result in collection.SearchAsync(query, top: 1, cancellationToken: ct))
+        {
+            results.Add(result);
+        }
+
+        Assert.Single(results);
+        Assert.Equal("1", results[0].Record.Id);
+        Assert.NotNull(results[0].Score);
+    }
+
+    [Fact]
+    public async Task ConcurrentReadWriteStress_NoDataCorruption()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var collection = _store.GetCollection<string, ConformanceRecord>("conformance_concurrent_col");
+        await collection.EnsureCollectionExistsAsync(ct);
+
+        const int writerCount = 4;
+        const int readerCount = 4;
+        const int writesPerWriter = 10;
+
+        var writeTasks = Enumerable.Range(0, writerCount).Select(async writerId =>
+        {
+            for (int i = 0; i < writesPerWriter; i++)
+            {
+                ct.ThrowIfCancellationRequested();
+                string id = $"w{writerId}_{i}";
+                await collection.UpsertAsync(
+                    new ConformanceRecord
+                    {
+                        Id = id,
+                        Title = $"Doc {id}",
+                        CategoryId = writerId,
+                        Embedding = new float[] { 1f, 0f, 0f, 0f }
+                    },
+                    ct);
+            }
+        });
+
+        var readTasks = Enumerable.Range(0, readerCount).Select(async readerId =>
+        {
+            for (int i = 0; i < writesPerWriter; i++)
+            {
+                ct.ThrowIfCancellationRequested();
+                string id = $"w{readerId}_{i}";
+                var fetched = await collection.GetAsync(id, cancellationToken: ct);
+                if (fetched != null)
+                {
+                    Assert.Equal($"Doc {id}", fetched.Title);
+                }
+
+                var searchResults = new List<VectorSearchResult<ConformanceRecord>>();
+                await foreach (var result in collection.SearchAsync(new float[] { 1f, 0f, 0f, 0f }, top: 3, cancellationToken: ct))
+                {
+                    searchResults.Add(result);
+                }
+
+                Assert.NotEmpty(searchResults);
+            }
+        });
+
+        await Task.WhenAll(writeTasks.Concat(readTasks));
+
+        var finalCount = 0;
+        await foreach (var _ in collection.GetAsync(
+            Enumerable.Range(0, writerCount)
+                .SelectMany(writerId => Enumerable.Range(0, writesPerWriter).Select(i => $"w{writerId}_{i}")),
+            cancellationToken: ct))
+        {
+            finalCount++;
+        }
+
+        Assert.Equal(writerCount * writesPerWriter, finalCount);
+    }
+}
+
+/// <summary>
+/// High-dimension record for max-dimension vector conformance coverage.
+/// </summary>
+public sealed class HighDimensionRecord
+{
+    [ZVecId]
+    [VectorStoreKey]
+    public string Id { get; set; } = string.Empty;
+
+    [ZVecField]
+    [VectorStoreData]
+    public string Title { get; set; } = string.Empty;
+
+    [ZVecVector(768)]
+    [VectorStoreVector(768)]
+    public ReadOnlyMemory<float> Embedding { get; set; }
 }
 
 /// <summary>

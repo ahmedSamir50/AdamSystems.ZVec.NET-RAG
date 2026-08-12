@@ -1,0 +1,58 @@
+name: Gap Detection Gate
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+jobs:
+  gap-detect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2  # need previous commit for diff
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install PyYAML
+        run: pip install --no-cache-dir pyyaml
+
+      - name: Generate Diff
+        shell: bash
+        run: |
+          # For push events, diff against the previous commit.
+          # For pull_request events, diff against the base.
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git diff origin/${{ github.base_ref }}...HEAD > /tmp/diff.txt
+          else
+            git diff HEAD~1 HEAD > /tmp/diff.txt
+          fi
+          echo "Diff size: $(wc -l < /tmp/diff.txt) lines"
+
+      - name: Detect Gaps
+        shell: bash
+        run: |
+          python3 .agents/gaps/scan_patterns.py /tmp/diff.txt
+          # Scanner exits 1 if P1 gaps found, 0 otherwise.
+          exit_code=$?
+          if [ -f .agents/gaps/reports/latest.md ]; then
+            echo "--- Gap Report ---"
+            cat .agents/gaps/reports/latest.md
+          fi
+          exit $exit_code
+
+      - name: Upload Gap Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gap-report
+          path: .agents/gaps/reports/
+          if-no-files-found: warn

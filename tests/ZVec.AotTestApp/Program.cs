@@ -28,6 +28,22 @@ public sealed class SampleAotDoc
     public string Title { get; set; } = string.Empty;
 }
 
+/// <summary>
+/// Non-source-generated record used to surface trim warnings for reflection fallback paths.
+/// </summary>
+[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)]
+public sealed class ReflectionFallbackRecord
+{
+    [VectorStoreKey]
+    public string Id { get; set; } = string.Empty;
+
+    [VectorStoreData]
+    public string Title { get; set; } = string.Empty;
+
+    [VectorStoreVector(4)]
+    public ReadOnlyMemory<float> Vector { get; set; }
+}
+
 public static class Program
 {
     public static int Main()
@@ -92,6 +108,16 @@ public static class Program
             }
             if (searchResults.Count == 0) throw new InvalidOperationException("Search returned no results under AOT.");
             Console.WriteLine($"[AOT Test 7] Vectorized search returned {searchResults.Count} result(s). Top score: {searchResults[0].Score}");
+
+            // Test 8: Reference non-SG record type to surface trim warnings during publish
+            var fallbackRecord = new ReflectionFallbackRecord
+            {
+                Id = "fallback",
+                Title = "Reflection Fallback",
+                Vector = new float[] { 0.1f, 0.2f, 0.3f, 0.4f }
+            };
+            _ = fallbackRecord.Title;
+            Console.WriteLine($"[AOT Test 8] ReflectionFallbackRecord referenced: {fallbackRecord.Id}");
 
             // Cleanup
             collection.EnsureCollectionDeletedAsync(CancellationToken.None).GetAwaiter().GetResult();

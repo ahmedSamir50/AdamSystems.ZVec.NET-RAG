@@ -192,7 +192,8 @@ public sealed class ZVecFilterExpressionVisitorTests
     {
         Expression<Func<FilterTestRecord, bool>> filter = x => x.Category.EndsWith("ics");
         var ex = Assert.Throws<ZVecFilterTranslationException>(() => ZVecFilterExpressionVisitor.Translate(filter));
-        Assert.Equal(ZVec.Extensions.VectorData.Constants.ZVecErrorMessages.UnsupportedEndsWithMethod(), ex.Message);
+        Assert.Equal(ZVec.Extensions.VectorData.Constants.ZVecErrorMessages.UnsupportedEndsWithMethod("Category"), ex.Message);
+        Assert.Equal(ZVec.Extensions.VectorData.Constants.ZVecFilterErrorCode.UnsupportedEndsWith, ex.ErrorCode);
     }
 
     [Fact]
@@ -200,7 +201,8 @@ public sealed class ZVecFilterExpressionVisitorTests
     {
         Expression<Func<FilterTestRecord, bool>> filter = x => System.Text.RegularExpressions.Regex.IsMatch(x.Category, "^Elec");
         var ex = Assert.Throws<ZVecFilterTranslationException>(() => ZVecFilterExpressionVisitor.Translate(filter));
-        Assert.Equal(ZVec.Extensions.VectorData.Constants.ZVecErrorMessages.UnsupportedRegexMethod(), ex.Message);
+        Assert.Equal(ZVec.Extensions.VectorData.Constants.ZVecErrorMessages.UnsupportedRegexMethod("Category"), ex.Message);
+        Assert.Equal(ZVec.Extensions.VectorData.Constants.ZVecFilterErrorCode.UnsupportedRegex, ex.ErrorCode);
     }
 
     [Fact]
@@ -208,7 +210,8 @@ public sealed class ZVecFilterExpressionVisitorTests
     {
         Expression<Func<FilterTestRecord, bool>> filter = x => x.Category.Contains("Elec");
         var ex = Assert.Throws<ZVecFilterTranslationException>(() => ZVecFilterExpressionVisitor.Translate(filter));
-        Assert.Equal(ZVec.Extensions.VectorData.Constants.ZVecErrorMessages.UnsupportedStringContainsMethod(), ex.Message);
+        Assert.Equal(ZVec.Extensions.VectorData.Constants.ZVecErrorMessages.UnsupportedStringContainsMethod("Category"), ex.Message);
+        Assert.Equal(ZVec.Extensions.VectorData.Constants.ZVecFilterErrorCode.UnsupportedStringContains, ex.ErrorCode);
     }
 
     // -------------------------------------------------------------------------
@@ -292,6 +295,88 @@ public sealed class ZVecFilterExpressionVisitorTests
         Assert.NotNull(builder);
         Assert.Contains("Tags CONTAIN_ANY", builder.Build());
         Assert.Contains("\"Featured\"", builder.Build());
+    }
+
+    [Fact]
+    public void Translate_IntCollectionContains_ReturnsContainAnyFilterString()
+    {
+        Expression<Func<IntCollectionTestRecord, bool>> filter = x => x.NumberTags.Contains(42);
+        var result = ZVecFilterExpressionVisitor.Translate(filter);
+
+        Assert.Contains("NumberTags CONTAIN_ANY", result);
+        Assert.Contains("42", result);
+    }
+
+    [Fact]
+    public void Translate_GuidCollectionContains_ReturnsContainAnyFilterString()
+    {
+        var targetId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        var filter = ZVec.NET.Query.ZVecFilterBuilder.Create().ContainAny("AllowedIds", targetId).Build();
+
+        Assert.Contains("AllowedIds CONTAIN_ANY", filter);
+        Assert.Contains("11111111-1111-1111-1111-111111111111", filter, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Translate_LongCollectionContains_ReturnsContainAnyFilterString()
+    {
+        Expression<Func<LongCollectionTestRecord, bool>> filter = x => x.LongTags.Contains(9_000_000_000L);
+        var result = ZVecFilterExpressionVisitor.Translate(filter);
+
+        Assert.Contains("LongTags CONTAIN_ANY", result);
+        Assert.Contains("9000000000", result);
+    }
+
+    [Fact]
+    public void Translate_DateTimeCollectionContains_ReturnsContainAnyFilterString()
+    {
+        var targetDate = new DateTime(2026, 8, 13);
+        var filter = ZVec.NET.Query.ZVecFilterBuilder.Create().ContainAny("EventDates", targetDate).Build();
+
+        Assert.Contains("EventDates CONTAIN_ANY", filter);
+        Assert.Contains("2026", filter);
+    }
+
+    [Fact]
+    public void Translate_DateTimeOffsetCollectionContains_ReturnsContainAnyFilterString()
+    {
+        var targetDto = new DateTimeOffset(2026, 8, 13, 0, 0, 0, TimeSpan.Zero);
+        var filter = ZVec.NET.Query.ZVecFilterBuilder.Create().ContainAny("TimestampLog", targetDto).Build();
+
+        Assert.Contains("TimestampLog CONTAIN_ANY", filter);
+        Assert.Contains("2026", filter);
+    }
+
+    [Fact]
+    public void Translate_NestedCollectionPropertyContains_ThrowsZVecFilterTranslationException()
+    {
+        Expression<Func<NestedCollectionRecord, bool>> filter = x => x.Order.Tags.Contains("tag");
+        var ex = Assert.Throws<ZVecFilterTranslationException>(() => ZVecFilterExpressionVisitor.Translate(filter));
+
+        Assert.Contains("nested", ex.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(ZVec.Extensions.VectorData.Constants.ZVecFilterErrorCode.UnsupportedExpression, ex.ErrorCode);
+    }
+
+    [Fact]
+    public void Translate_UserDefinedConversion_ThrowsZVecFilterTranslationException()
+    {
+        UserDefinedConversionHolder.Value = new CustomFilterValue(42);
+        Expression<Func<FilterTestRecord, bool>> filter = x => x.Price > UserDefinedConversionHolder.Value;
+        var ex = Assert.Throws<ZVecFilterTranslationException>(() => ZVecFilterExpressionVisitor.Translate(filter));
+
+        Assert.Equal(ZVec.Extensions.VectorData.Constants.ZVecFilterErrorCode.UnsupportedUserDefinedConversion, ex.ErrorCode);
+    }
+
+    [Fact]
+    public void Translate_WellKnownBclConversion_DoesNotThrow()
+    {
+        // decimal literal 99.9m is implicitly converted to double by the expression tree;
+        // the whitelist (IsAllowedConversionOperator) must allow BCL primitive conversions.
+        Expression<Func<FilterTestRecord, bool>> filter = x => x.Price > 99;
+        var result = ZVecFilterExpressionVisitor.Translate(filter);
+
+        Assert.NotNull(result);
+        Assert.Contains("Price > 99", result);
     }
 
     // -------------------------------------------------------------------------
@@ -450,6 +535,60 @@ public sealed class ZVecFilterExpressionVisitorTests
         Assert.NotNull(result);
         Assert.Contains("Price <= 100", result);
     }
+}
+
+/// <summary>Record with int collection property for ContainAny type dispatch tests.</summary>
+public sealed class IntCollectionTestRecord
+{
+    [ZVecId]
+    public string Id { get; set; } = string.Empty;
+
+    [ZVecField]
+    public int[] NumberTags { get; set; } = Array.Empty<int>();
+}
+
+/// <summary>Record with long collection property for ContainAny type dispatch tests.</summary>
+public sealed class LongCollectionTestRecord
+{
+    [ZVecId]
+    public string Id { get; set; } = string.Empty;
+
+    [ZVecField]
+    public long[] LongTags { get; set; } = Array.Empty<long>();
+}
+
+/// <summary>Holder with a string collection property, nested inside <see cref="NestedCollectionRecord"/>.</summary>
+public sealed class OrderHolder
+{
+    /// <summary>String collection used to exercise nested member-access rejection in ContainAny.</summary>
+    public string[] Tags { get; set; } = Array.Empty<string>();
+}
+
+/// <summary>Record with a nested collection property for ContainAny nested-access rejection tests.</summary>
+public sealed class NestedCollectionRecord
+{
+    [ZVecId]
+    public string Id { get; set; } = string.Empty;
+
+    [ZVecField]
+    public OrderHolder Order { get; set; } = new();
+}
+
+/// <summary>Custom type with user-defined implicit conversion for Unwrap guard tests.</summary>
+public readonly struct CustomFilterValue
+{
+    public CustomFilterValue(int value) => Value = value;
+
+    public int Value { get; }
+
+    public static implicit operator int(CustomFilterValue value) => value.Value;
+}
+
+/// <summary>Holds a non-constant custom filter value to prevent expression-tree constant folding.</summary>
+public static class UserDefinedConversionHolder
+{
+    /// <summary>Custom filter operand used by user-defined conversion tests.</summary>
+    public static CustomFilterValue Value;
 }
 
 /// <summary>Helper: exposes a property-backed array for Evaluate MemberExpression/PropertyInfo coverage.</summary>

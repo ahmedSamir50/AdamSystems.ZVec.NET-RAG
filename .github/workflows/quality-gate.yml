@@ -1,0 +1,105 @@
+name: Quality Gate
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-test-format:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore ZVec.NET-RAG.slnx
+
+      - name: Build
+        run: dotnet build ZVec.NET-RAG.slnx --configuration Release --no-restore
+
+      - name: Verify Formatting
+        run: dotnet format ZVec.NET-RAG.slnx --verify-no-changes --verbosity diagnostic
+
+      - name: Run Tests
+        shell: bash
+        run: |
+          ./tests/ZVec.Extensions.VectorData.Tests/bin/Release/net8.0/ZVec.Extensions.VectorData.Tests
+          ./tests/ZVec.Extensions.VectorData.ConformanceTests/bin/Release/net8.0/ZVec.Extensions.VectorData.ConformanceTests
+
+      - name: Check Class Line Count Limit
+        run: |
+          violations=0
+          while IFS= read -r file; do
+            lines=$(wc -l < "$file")
+            if [ "$lines" -gt 500 ]; then
+              echo "FAIL: $file has $lines lines (limit 500)"
+              violations=1
+            fi
+          done < <(find src -name '*.cs')
+          exit $violations
+
+      - name: Detect Dummy Tests
+        run: |
+          if rg 'Assert\.True\(true\)|Assert\.True\(false\)' tests/; then
+            echo "Dummy tests detected"
+            exit 1
+          fi
+
+  aot-smoke:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            rid: linux-x64
+          - os: windows-latest
+            rid: win-x64
+          - os: macos-latest
+            rid: osx-x64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Publish AOT Smoke App
+        run: dotnet publish tests/ZVec.AotTestApp/ZVec.AotTestApp.csproj -c Release -r ${{ matrix.rid }} /p:PublishAot=true
+
+      - name: Run AOT Smoke App
+        shell: bash
+        run: |
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            ./tests/ZVec.AotTestApp/bin/Release/net8.0/${{ matrix.rid }}/publish/ZVec.AotTestApp.exe
+          else
+            ./tests/ZVec.AotTestApp/bin/Release/net8.0/${{ matrix.rid }}/publish/ZVec.AotTestApp
+          fi
+
+  trim-warning-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Publish Trim Smoke App
+        run: dotnet publish tests/ZVec.AotTestApp/ZVec.AotTestApp.csproj -c Release -r linux-x64 /p:PublishAot=true /p:TrimmerSingleWarn=false 2>&1 | tee publish.log
+
+      - name: Verify Non-SG Trim Warning
+        run: rg "IL2026|IL3050|ReflectionFallbackRecord" publish.log

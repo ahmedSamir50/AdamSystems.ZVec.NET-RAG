@@ -20,7 +20,7 @@ This prevents managed heap array allocations (`float[]`) and ensures zero GC pre
 > [!NOTE]
 > **Implementation Status Banner — Story 1.10 & Story 1.11 Complete**:
 > - **Story 1.10**: `ZVecFilterExpressionVisitor` uses an AOT-safe recursive AST evaluator eliminating `Expression.Compile().DynamicInvoke()`.
-> - **Story 1.11**: Local dev-loop smoke testing (`win-x64`, `linux-x64`) and full GitHub Actions CI AOT matrix (`win-x64`, `linux-x64`, `linux-arm64`, `osx-arm64`, `ios-arm64`, `iossimulator-arm64`) run with `<TreatWarningsAsErrors>true</TreatWarningsAsErrors>`.
+> - **Story 1.11**: Local dev-loop smoke testing (`win-x64`, `linux-x64`) and GitHub Actions quality gate (`.github/workflows/quality-gate.yml`) run AOT publish smoke on `linux-x64`, `win-x64`, and `osx-x64` with trim-warning verification for non-source-generated record types.
 
 ---
 
@@ -43,6 +43,19 @@ Under Native AOT, dynamic IL generation via `Expression.Compile().DynamicInvoke(
 - **`ConstantExpression`**: Evaluates literal values directly.
 - **`MemberExpression`**: Extracts field/property values from closure objects or static classes.
 - **`NewArrayExpression`**: Constructs array instances statically.
-- **`op_Implicit` / `op_Explicit`**: Unwraps implicit/explicit conversion operator calls.
+- **`op_Implicit` / `op_Explicit`**: Unwraps **approved BCL** conversion operators (`decimal`, numeric primitives) and `ReadOnlySpan` array bridges only. User-defined conversion operators throw `ZVecFilterTranslationException` with `UnsupportedUserDefinedConversion`.
 - **`MethodCallExpression`**: Evaluates static method calls and helper functions safely under AOT.
+
+---
+
+## Roslyn AOT Analyzers (`ZVec.Extensions.VectorData.Analyzers`)
+
+Compile-time diagnostics supplement publish-time trim warnings:
+
+| ID | Severity (default) | Description |
+|---|---|---|
+| **`ZVEC001`** | Warning | `[VectorStoreRecord]` / mapping-decorated type lacks source-generated `IZVecRecordMapper<T>` registration |
+| **`ZVEC002`** | Warning | Reflection API (`Type.GetProperty`, `Activator.CreateInstance`, etc.) used outside `[RequiresUnreferencedCode]` fallback paths |
+
+Configure severity in [`.editorconfig`](https://github.com/ahmedsamir50/AdamSystems.ZVec.NET-RAG/blob/main/.editorconfig). CI enforces analyzers, formatting, tests, and AOT publish via [`.github/workflows/quality-gate.yml`](https://github.com/ahmedsamir50/AdamSystems.ZVec.NET-RAG/blob/main/.github/workflows/quality-gate.yml).
 

@@ -445,32 +445,49 @@ public sealed class ZVecVectorizableRecordCollection<TRecord, TKey> :
     }
 
     /// <summary>
-    /// Optimizes the underlying native collection index and atomically updates the internal collection handle.
+    /// Optimizes the underlying native collection index and refreshes the internal collection handle.
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     /// <remarks>
     /// Call this method after batch ingestion to merge vector flat buffers into HNSW index segments
-    /// and atomically refresh the native collection handle for concurrent queriers.
-    /// Expensive schema rebuild and native reopen occur outside the lock; only the handle swap is synchronized.
+    /// and refresh the native collection handle for concurrent queriers.
+    /// <para>
+    /// ZVec enforces a single read-write handle per collection path, so the old handle MUST be
+    /// disposed before the new one can be opened. The expensive native <c>OptimizeAsync</c> runs
+    /// OUTSIDE the lock; the lock is held only for the minimal dispose-then-reopen window that
+    /// ZVec's single-handle constraint requires. On reopen failure, <c>_nativeCollection</c> is
+    /// cleared and subsequent operations recover lazily via <see cref="GetOrOpenNativeCollection"/>.
+    /// </para>
     /// </remarks>
     public async Task OptimizeAndReopenAsync(CancellationToken cancellationToken = default)
     {
         var collection = GetOrOpenNativeCollection();
         await collection.OptimizeAsync(cancellationToken).ConfigureAwait(false);
 
-        IZvecCollection? toDispose;
         lock (_initLock)
         {
-            toDispose = _nativeCollection;
-            _nativeCollection = null;
+            var oldCollection = _nativeCollection;
 
-            if (toDispose != null)
+            // ZVec requires the old read-write handle to be released before a new one can be
+            // opened on the same collection path.
+            if (oldCollection != null)
             {
-                try { toDispose.Dispose(); } catch { }
+                try { oldCollection.Dispose(); } catch { }
             }
 
-            _nativeCollection = OpenNativeCollection();
+            try
+            {
+                _nativeCollection = OpenNativeCollection();
+            }
+            catch
+            {
+                // Clear the disposed handle reference; lazy reopen in GetOrOpenNativeCollection()
+                // recovers on the next access. The single-handle constraint prevents keeping the
+                // old handle alive here, so recovery is via lazy reopen rather than handle retention.
+                _nativeCollection = null;
+                throw;
+            }
         }
     }
 

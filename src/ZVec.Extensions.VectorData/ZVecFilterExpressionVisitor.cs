@@ -49,6 +49,34 @@ namespace ZVec.Extensions.VectorData;
 /// </remarks>
 public static class ZVecFilterExpressionVisitor
 {
+    private static readonly HashSet<Type> AllowedConversionDeclaringTypes = new()
+    {
+        typeof(decimal),
+        typeof(double),
+        typeof(float),
+        typeof(int),
+        typeof(long),
+        typeof(short),
+        typeof(byte),
+        typeof(uint),
+        typeof(ulong),
+        typeof(ushort),
+        typeof(sbyte)
+    };
+
+    private static bool IsAllowedConversionOperator(MethodInfo method)
+    {
+        if (!method.IsSpecialName || method.DeclaringType == null)
+            return false;
+
+        if (method.Name is not ("op_Implicit" or "op_Explicit"))
+            return false;
+
+        if (AllowedConversionDeclaringTypes.Contains(method.DeclaringType))
+            return true;
+
+        return method.DeclaringType.Name.StartsWith("ReadOnlySpan", StringComparison.Ordinal);
+    }
     /// <summary>
     /// Translates a typed predicate expression into a native ZVec SQL filter string.
     /// </summary>
@@ -153,7 +181,16 @@ public static class ZVecFilterExpressionVisitor
 
         var prop = GetPropertyInfo(memberExpr) ?? throw new ZVecFilterTranslationException(ZVecErrorMessages.UnsupportedFilterExpression(memberExpr.ToString()));
         var colName = model.GetRequiredByPropertyName(prop.Name).StorageName;
+        RejectUserDefinedConversionExpression(valueExpr);
         var value = Evaluate(valueExpr);
+
+        if (value != null && IsUserDefinedConversionType(value.GetType()))
+        {
+            throw new ZVecFilterTranslationException(
+                ZVecErrorMessages.UnsupportedFilterExpression(
+                    $"Value type '{value.GetType().Name}' is not supported in filter comparisons."),
+                ZVecFilterErrorCode.UnsupportedUserDefinedConversion);
+        }
 
         var op = binary.NodeType switch
         {
@@ -204,17 +241,25 @@ public static class ZVecFilterExpressionVisitor
 
         // Reject StartsWith, EndsWith, Regex.IsMatch with diagnostic remediation
         if (methodName == "StartsWith")
-            throw new ZVecFilterTranslationException(ZVecErrorMessages.UnsupportedStartsWithMethod());
+            throw new ZVecFilterTranslationException(
+                ZVecErrorMessages.UnsupportedStartsWithMethod(GetMemberFieldName(methodCall.Object)),
+                ZVecFilterErrorCode.UnsupportedStartsWith);
 
         if (methodName == "EndsWith")
-            throw new ZVecFilterTranslationException(ZVecErrorMessages.UnsupportedEndsWithMethod());
+            throw new ZVecFilterTranslationException(
+                ZVecErrorMessages.UnsupportedEndsWithMethod(GetMemberFieldName(methodCall.Object)),
+                ZVecFilterErrorCode.UnsupportedEndsWith);
 
         if (methodName == "IsMatch")
-            throw new ZVecFilterTranslationException(ZVecErrorMessages.UnsupportedRegexMethod());
+            throw new ZVecFilterTranslationException(
+                ZVecErrorMessages.UnsupportedRegexMethod(GetMemberFieldName(methodCall.Arguments[0])),
+                ZVecFilterErrorCode.UnsupportedRegex);
 
         // Reject string.Contains
         if (methodName == "Contains" && declaringType == typeof(string))
-            throw new ZVecFilterTranslationException(ZVecErrorMessages.UnsupportedStringContainsMethod());
+            throw new ZVecFilterTranslationException(
+                ZVecErrorMessages.UnsupportedStringContainsMethod(GetMemberFieldName(methodCall.Object)),
+                ZVecFilterErrorCode.UnsupportedStringContains);
 
         // Handle Enumerable.Contains / Collection.Contains
         if (methodName == nameof(Enumerable.Contains) || methodName == "Contains")
@@ -240,6 +285,7 @@ public static class ZVecFilterExpressionVisitor
             // Pattern: x.CollectionProperty.Contains(value) -> ContainAny
             if (TryGetRecordCollectionProperty(model, containerExpr, out var collectionStorageName))
             {
+                RejectUserDefinedConversionExpression(itemExpr);
                 var containValue = Evaluate(itemExpr);
                 if (containValue == null)
                 {
@@ -348,8 +394,16 @@ public static class ZVecFilterExpressionVisitor
     private static PropertyInfo? GetPropertyInfo(Expression expression)
     {
         expression = Unwrap(expression);
-        if (expression is MemberExpression member && member.Member is PropertyInfo prop)
-            return prop;
+
+        while (expression is MemberExpression member)
+        {
+            if (member.Member is PropertyInfo prop)
+                return prop;
+
+            expression = member.Expression ?? expression;
+            if (expression is null or ParameterExpression)
+                break;
+        }
 
         return null;
     }
@@ -357,6 +411,21 @@ public static class ZVecFilterExpressionVisitor
     private static bool TryGetRecordCollectionProperty(ZVecTypeModel model, Expression containerExpr, out string storageName)
     {
         storageName = null!;
+
+        // Reject nested member access rooted at the record parameter (e.g. x.Order.Tags.Contains).
+        // ContainAny only supports direct record properties. A chain like categoriesWrapper.Tags
+        // (rooted at a closure constant, not the parameter) is the inverse IN pattern and must
+        // fall through to the external-collection branch below — so only reject when the chain
+        // bottoms out at the record ParameterExpression with more than one member level.
+        var unwrapped = Unwrap(containerExpr);
+        if (unwrapped is MemberExpression nestedMember &&
+            nestedMember.Expression is MemberExpression &&
+            IsRecordParameterRooted(nestedMember))
+        {
+            throw new ZVecFilterTranslationException(
+                ZVecErrorMessages.UnsupportedNestedMemberAccess(containerExpr.ToString()),
+                ZVecFilterErrorCode.UnsupportedExpression);
+        }
 
         if (!IsRecordParameterMember(containerExpr))
             return false;
@@ -370,6 +439,29 @@ public static class ZVecFilterExpressionVisitor
 
         storageName = propInfo.Name;
         return true;
+    }
+
+    /// <summary>
+    /// Walks a MemberExpression chain to determine whether it is rooted at the record
+    /// parameter (e.g. x.Order.Tags) rather than a closure constant (e.g. wrapper.Tags).
+    /// </summary>
+    /// <param name="member">The outermost member expression to walk.</param>
+    /// <returns><c>true</c> if the chain bottoms out at a <see cref="ParameterExpression"/>.</returns>
+    private static bool IsRecordParameterRooted(MemberExpression member)
+    {
+        var current = member;
+        while (current is not null)
+        {
+            if (current.Expression is ParameterExpression)
+                return true;
+
+            if (current.Expression is null || current.Expression is ConstantExpression)
+                return false;
+
+            current = current.Expression as MemberExpression;
+        }
+
+        return false;
     }
 
     private static bool IsRecordParameterMember(Expression expression)
@@ -400,9 +492,61 @@ public static class ZVecFilterExpressionVisitor
             double d => ZVecFilterBuilder.Create().ContainAny(storageName, d),
             bool b => ZVecFilterBuilder.Create().ContainAny(storageName, b),
             string s => ZVecFilterBuilder.Create().ContainAny(storageName, s),
+            Guid g => ZVecFilterBuilder.Create().ContainAny(storageName, g),
+            DateTime dt => ZVecFilterBuilder.Create().ContainAny(storageName, dt),
+            DateTimeOffset dto => ZVecFilterBuilder.Create().ContainAny(storageName, dto),
             _ => ZVecFilterBuilder.Create().ContainAny(storageName, value)
         };
     }
+
+    private static string GetMemberFieldName(Expression? expression)
+    {
+        var propInfo = expression != null ? GetPropertyInfo(expression) : null;
+        return propInfo?.Name ?? "unknown";
+    }
+
+    private static void RejectUserDefinedConversionExpression(Expression expression)
+    {
+        if (expression is UnaryExpression { NodeType: ExpressionType.Convert or ExpressionType.ConvertChecked } unaryConvert &&
+            IsUserDefinedConversionType(unaryConvert.Operand.Type) &&
+            !IsUserDefinedConversionType(unaryConvert.Type))
+        {
+            throw new ZVecFilterTranslationException(
+                ZVecErrorMessages.UnsupportedFilterExpression(
+                    $"User-defined conversion from '{unaryConvert.Operand.Type.Name}' to '{unaryConvert.Type.Name}' is not supported in filter expressions."),
+                ZVecFilterErrorCode.UnsupportedUserDefinedConversion);
+        }
+
+        expression = Unwrap(expression);
+
+        if (expression is MethodCallExpression methodCall &&
+            methodCall.Method.IsSpecialName &&
+            methodCall.Method.Name is "op_Implicit" or "op_Explicit" &&
+            !IsAllowedConversionOperator(methodCall.Method))
+        {
+            throw new ZVecFilterTranslationException(
+                ZVecErrorMessages.UnsupportedFilterExpression(
+                    $"User-defined conversion operator '{methodCall.Method.DeclaringType?.Name}.{methodCall.Method.Name}' is not supported in filter expressions."),
+                ZVecFilterErrorCode.UnsupportedUserDefinedConversion);
+        }
+
+        if (expression is UnaryExpression { NodeType: ExpressionType.Convert or ExpressionType.ConvertChecked } unary &&
+            IsUserDefinedConversionType(unary.Operand.Type) &&
+            !IsUserDefinedConversionType(unary.Type))
+        {
+            throw new ZVecFilterTranslationException(
+                ZVecErrorMessages.UnsupportedFilterExpression(
+                    $"User-defined conversion from '{unary.Operand.Type.Name}' to '{unary.Type.Name}' is not supported in filter expressions."),
+                ZVecFilterErrorCode.UnsupportedUserDefinedConversion);
+        }
+    }
+
+    private static bool IsUserDefinedConversionType(Type type) =>
+        !type.IsPrimitive &&
+        type != typeof(string) &&
+        type != typeof(decimal) &&
+        type != typeof(object) &&
+        !type.IsEnum;
 
     private static Expression Unwrap(Expression expression)
     {
@@ -413,8 +557,7 @@ public static class ZVecFilterExpressionVisitor
         }
 
         while (expression is MethodCallExpression methodCall &&
-               methodCall.Method.IsSpecialName &&
-               methodCall.Method.Name is "op_Implicit" or "op_Explicit")
+               IsAllowedConversionOperator(methodCall.Method))
         {
             expression = methodCall.Arguments[0];
             expression = Unwrap(expression);
@@ -445,9 +588,18 @@ public static class ZVecFilterExpressionVisitor
                 break;
 
             case MethodCallExpression methodCallExpr:
-                if (methodCallExpr.Method.IsSpecialName && (methodCallExpr.Method.Name == "op_Implicit" || methodCallExpr.Method.Name == "op_Explicit"))
+                if (IsAllowedConversionOperator(methodCallExpr.Method))
                 {
                     return Evaluate(methodCallExpr.Arguments[0]);
+                }
+
+                if (methodCallExpr.Method.IsSpecialName &&
+                    methodCallExpr.Method.Name is "op_Implicit" or "op_Explicit")
+                {
+                    throw new ZVecFilterTranslationException(
+                        ZVecErrorMessages.UnsupportedFilterExpression(
+                            $"User-defined conversion operator '{methodCallExpr.Method.DeclaringType?.Name}.{methodCallExpr.Method.Name}' is not supported in filter expressions."),
+                        ZVecFilterErrorCode.UnsupportedUserDefinedConversion);
                 }
                 try
                 {

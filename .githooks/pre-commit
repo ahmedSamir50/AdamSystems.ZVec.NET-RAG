@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT"
+
+echo "[pre-commit] Building solution..."
+dotnet build ZVec.NET-RAG.slnx --configuration Release
+
+echo "[pre-commit] Running tests..."
+./tests/ZVec.Extensions.VectorData.Tests/bin/Release/net8.0/ZVec.Extensions.VectorData.Tests
+./tests/ZVec.Extensions.VectorData.ConformanceTests/bin/Release/net8.0/ZVec.Extensions.VectorData.ConformanceTests
+
+echo "[pre-commit] Verifying formatting..."
+dotnet format ZVec.NET-RAG.slnx --verify-no-changes
+
+echo "[pre-commit] Checking 500-line class limit..."
+violations=0
+while IFS= read -r file; do
+  lines=$(wc -l < "$file")
+  if [ "$lines" -gt 500 ]; then
+    echo "FAIL: $file has $lines lines"
+    violations=1
+  fi
+done < <(find src -name '*.cs')
+
+if [ "$violations" -ne 0 ]; then
+  exit 1
+fi
+
+echo "[pre-commit] Detecting dummy tests..."
+if rg 'Assert\.True\(true\)|Assert\.True\(false\)' tests/; then
+  echo "Dummy tests detected"
+  exit 1
+fi
+
+echo "[pre-commit] Running gap detection..."
+if command -v python3 >/dev/null 2>&1; then
+  DIFF_FILE="$(mktemp)"
+  if git diff HEAD~1 HEAD > "$DIFF_FILE" 2>/dev/null; then
+    :
+  else
+    git diff --staged > "$DIFF_FILE"
+  fi
+  if [ -s "$DIFF_FILE" ]; then
+    python3 .agents/gaps/scan_patterns.py "$DIFF_FILE"
+    scan_rc=$?
+    rm -f "$DIFF_FILE"
+    if [ "$scan_rc" -ne 0 ]; then
+      echo "P1 gaps detected. Review .agents/gaps/reports/latest.md"
+      exit 1
+    fi
+  else
+    rm -f "$DIFF_FILE"
+  fi
+else
+  echo "[pre-commit] python3 not found — skipping gap detection scan."
+fi
+
+echo "[pre-commit] Quality gate passed."

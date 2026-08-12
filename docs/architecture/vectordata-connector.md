@@ -29,6 +29,14 @@
 │ ZVecFilterExpressionVisitor  ││ ZVecRecordMetadataGenerator │
 │ Filter AST Translation Engine││ Roslyn SG Zero-Reflection   │
 └──────────────────────────────┘└─────────────────────────────┘
+               │                               │
+               └───────────────┬───────────────┘
+                               ▼
+               ┌───────────────────────────────┐
+               │ ZVec.Extensions.VectorData.   │
+               │ Analyzers (ZVEC001 / ZVEC002) │
+               │ Compile-time AOT diagnostics  │
+               └───────────────────────────────┘
 ```
 
 ---
@@ -86,6 +94,7 @@ All NuGet package versions across the solution are managed centrally in `Directo
 | **`SixLabors.ImageSharp`** | Cross-Platform Image Preprocessing | `3.1.7` |
 | **`Microsoft.CodeAnalysis.CSharp`** | Roslyn Source Generator SDK | `4.12.0` |
 | **`Microsoft.CodeAnalysis.Analyzers`** | Roslyn Analyzers SDK | `3.11.0` |
+| **`ZVec.Extensions.VectorData.Analyzers`** | Compile-time AOT diagnostics (`ZVEC001`, `ZVEC002`) | Project reference |
 | **`xunit.v3`** | Modern Executable Test Platform | `3.2.2` |
 | **`xunit.runner.visualstudio`** | Visual Studio & VSTest Test Adapter | `3.1.5` |
 | **`Microsoft.NET.Test.Sdk`** | .NET Test SDK Host | `18.8.1` |
@@ -103,8 +112,10 @@ All NuGet package versions across the solution are managed centrally in `Directo
 - **`ZVecRecordMapperRegistry`**: [`src/ZVec.Extensions.VectorData/ZVecRecordMapperRegistry.cs`](file:///d:/A_S/ZVec_NET_RAG_SLN/src/ZVec.Extensions.VectorData/ZVecRecordMapperRegistry.cs) (Process-wide registry for SG-emitted mappers populated via `[ModuleInitializer]`).
 - **`ZVecFilterExpressionVisitor`**: [`src/ZVec.Extensions.VectorData/ZVecFilterExpressionVisitor.cs`](file:///d:/A_S/ZVec_NET_RAG_SLN/src/ZVec.Extensions.VectorData/ZVecFilterExpressionVisitor.cs)
 - **`ZVecRecordMetadataGenerator`**: [`src/ZVec.Extensions.VectorData.SourceGenerator/ZVecRecordMetadataGenerator.cs`](file:///d:/A_S/ZVec_NET_RAG_SLN/src/ZVec.Extensions.VectorData.SourceGenerator/ZVecRecordMetadataGenerator.cs) (Emits zero-reflection `IZVecRecordMapper<TRecord>` mappers, `VectorStoreCollectionDefinition`, and `[ModuleInitializer]` registration).
+- **`ZVec.Extensions.VectorData.Analyzers`**: [`src/ZVec.Extensions.VectorData.Analyzers/ZVecAotAnalyzers.cs`](file:///d:/A_S/ZVec_NET_RAG_SLN/src/ZVec.Extensions.VectorData.Analyzers/ZVecAotAnalyzers.cs) (Roslyn analyzers `ZVEC001` / `ZVEC002` for mapper and reflection hot-path enforcement).
 - **`ZVecFilterOperators`**: Enum covering 12 comparison, logical, collection, and null filter operators (`Equals`, `NotEquals`, `LessThan`, `LessThanOrEqual`, `GreaterThan`, `GreaterThanOrEqual`, `And`, `Or`, `Not`, `ContainsAny`, `IsNull`, `IsNotNull`).
-- **`ZVecErrorMessages`**: Strongly-typed error formatting helpers eliminating magic strings.
+- **`ZVecFilterErrorCode`**: Structured error codes carried by `ZVecFilterTranslationException` for programmatic filter translation error handling.
+- **`ZVecErrorMessages`**: Strongly-typed error formatting helpers eliminating magic strings (field-aware remediation messages for unsupported string filter methods).
 - **`ZVecVectorDataException`**: Base exception type for connector operations.
 
 ---
@@ -123,7 +134,10 @@ All NuGet package versions across the solution are managed centrally in `Directo
 | `&&` | `And` | `x.InStock && x.Price < 50` |
 | `\|\|` | `Or` | `x.Category == "A" \|\| x.Category == "B"` |
 | `!` | `Not` / bool negation | `!x.InStock` |
-| `x.Tags.Contains(value)` | `ContainAny` | `x.Tags.Contains("Sale")` |
+| `x.Tags.Contains(value)` | `ContainAny` | `x.Tags.Contains("Sale")`, `x.NumberTags.Contains(42)` |
+
+**ContainAny typed value dispatch:** `int`, `long`, `float`, `double`, `bool`, `string`, `Guid`, `DateTime`, `DateTimeOffset` (unsupported collection field types such as `Guid[]` remain a schema limitation; scalar `Guid` values are supported in `ContainAny`).
+
 | `values.Contains(x.Field)` | `In` | `allowed.Contains(x.Category)` |
 | `== null` / `!= null` | `IsNull` / `IsNotNull` | `x.Category == null` |
 
@@ -134,7 +148,9 @@ x.CollectionProperty.Contains(value)  -->  Tags CONTAIN_ANY ("Sale")
 externalList.Contains(x.ScalarField)  -->  Category IN ("A", "B")
 ```
 
-Unsupported string methods (`StartsWith`, `EndsWith`, `Regex.IsMatch`, `string.Contains`) throw `ZVecFilterTranslationException` with explicit remediation guidance pointing to ZVec FTS keyword search.
+Unsupported string methods (`StartsWith`, `EndsWith`, `Regex.IsMatch`, `string.Contains`) throw `ZVecFilterTranslationException` with **`ZVecFilterErrorCode`** and field-aware remediation guidance pointing to ZVec FTS keyword search (for example: `Field 'Category': StartsWith is not supported...`).
+
+User-defined implicit/explicit conversion operators (outside approved BCL conversions and `ReadOnlySpan` array bridges) throw `ZVecFilterTranslationException` with `UnsupportedUserDefinedConversion`.
 
 ---
 
@@ -144,10 +160,10 @@ Unsupported string methods (`StartsWith`, `EndsWith`, `Regex.IsMatch`, `string.C
   - **Cosine Metric:** \(\text{Score} = 1.0f - d_{\text{cosine}}\) (maps distance \([0, 2]\) to similarity \([-1, 1]\))
   - **L2 Metric:** \(\text{Score} = \frac{1.0f}{1.0f + d_{\text{L2}}}\) (monotonically maps distance \([0, \infty)\) to similarity \((0, 1]\))
   - **InnerProduct Metric:** \(\text{Score} = d_{\text{IP}}\) (passthrough value)
-- **Index Optimization & Reopen Lifecycle (`OptimizeAndReopenAsync`):** To prevent stale-querier C++ engine errors post-optimization, `OptimizeAndReopenAsync()` runs native optimization outside the synchronization lock, then performs a short critical section that disposes the previous handle, releases the native `LOCK` file, and reopens a fresh handle. Because ZVec enforces a single read-write handle per collection path, the reopen step must remain inside the lock; the primary concurrency win is that expensive `OptimizeAsync` no longer blocks concurrent readers.
+- **Index Optimization & Reopen Lifecycle (`OptimizeAndReopenAsync`):** To prevent stale-querier C++ engine errors post-optimization, `OptimizeAndReopenAsync()` runs native optimization **outside** the synchronization lock, then performs a short critical section that disposes the previous handle, releases the native `LOCK` file, and reopens a fresh handle. Because ZVec enforces a single read-write handle per collection path, dispose-then-reopen must remain inside the lock (a pre-opened second handle would deadlock on the native `LOCK` file). If reopen fails after dispose, `_nativeCollection` is cleared and the exception propagates; subsequent operations recover via lazy reopen in `GetOrOpenNativeCollection()`.
 - **FTS Attribute Precedence:** Full-text search indexing is resolved per string property with explicit precedence:
   1. `[ZVecFullTextSearch]` — ZVec-specific source of truth when present (`IsFullTextIndexed` controls enable/disable).
   2. `[VectorStoreData(IsFullTextIndexed = true)]` — fallback for M.E.VectorData consumers when no ZVec FTS attribute is declared.
-- **Native AOT & Trim Safety:** All runtime record mapping uses Roslyn Source Generator emitted zero-reflection mappers (`IZVecRecordMapper<TRecord>`). The dynamic reflection fallback is annotated with `[RequiresUnreferencedCode]` and `[RequiresDynamicCode]` to ensure Native AOT trim warnings trigger cleanly if an ungenerated record type is used.
+- **Native AOT & Trim Safety:** All runtime record mapping uses Roslyn Source Generator emitted zero-reflection mappers (`IZVecRecordMapper<TRecord>`). The dynamic reflection fallback is annotated with `[RequiresUnreferencedCode]` and `[RequiresDynamicCode]` to ensure Native AOT trim warnings trigger cleanly if an ungenerated record type is used. Compile-time enforcement is provided by **`ZVec.Extensions.VectorData.Analyzers`** (`ZVEC001`, `ZVEC002`) and CI quality gates in `.github/workflows/quality-gate.yml`.
 
 

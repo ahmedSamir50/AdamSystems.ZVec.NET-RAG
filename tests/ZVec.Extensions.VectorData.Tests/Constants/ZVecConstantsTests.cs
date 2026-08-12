@@ -70,10 +70,22 @@ public sealed class ZVecConstantsTests
     [Fact]
     public void ZVecErrorMessages_ProvidesUnsupportedFilterMethodRemediationMessages()
     {
-        Assert.Contains("Remediation", ZVecErrorMessages.UnsupportedStartsWithMethod());
-        Assert.Contains("Remediation", ZVecErrorMessages.UnsupportedEndsWithMethod());
-        Assert.Contains("Remediation", ZVecErrorMessages.UnsupportedRegexMethod());
-        Assert.Contains("ContainAny", ZVecErrorMessages.UnsupportedStringContainsMethod());
+        Assert.Contains("Remediation", ZVecErrorMessages.UnsupportedStartsWithMethod("Category"));
+        Assert.Contains("Category", ZVecErrorMessages.UnsupportedStartsWithMethod("Category"));
+        Assert.Contains("Remediation", ZVecErrorMessages.UnsupportedEndsWithMethod("Category"));
+        Assert.Contains("Remediation", ZVecErrorMessages.UnsupportedRegexMethod("Category"));
+        Assert.Contains("ContainAny", ZVecErrorMessages.UnsupportedStringContainsMethod("Category"));
+    }
+
+    [Fact]
+    public void ZVecFilterTranslationException_ExposesStructuredErrorCode()
+    {
+        var ex = new ZVecFilterTranslationException(
+            ZVecErrorMessages.UnsupportedStartsWithMethod("Title"),
+            ZVecFilterErrorCode.UnsupportedStartsWith);
+
+        Assert.Equal(ZVecFilterErrorCode.UnsupportedStartsWith, ex.ErrorCode);
+        Assert.Contains("Title", ex.Message);
     }
 
     [Fact]

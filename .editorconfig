@@ -1,0 +1,8 @@
+root = true
+
+[*.cs]
+dotnet_diagnostic.ZVEC001.severity = warning
+dotnet_diagnostic.ZVEC002.severity = warning
+
+[src/ZVec.Extensions.VectorData/**.cs]
+dotnet_diagnostic.ZVEC002.severity = none

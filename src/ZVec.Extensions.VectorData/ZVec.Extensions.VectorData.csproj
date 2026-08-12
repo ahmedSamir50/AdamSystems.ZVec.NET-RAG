@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ZVec.Extensions.VectorData.SourceGenerator\ZVec.Extensions.VectorData.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\ZVec.Extensions.VectorData.Analyzers\ZVec.Extensions.VectorData.Analyzers.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
 </Project>

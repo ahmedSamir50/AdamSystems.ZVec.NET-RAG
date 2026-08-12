@@ -91,4 +91,20 @@ public static class ZVecMapper
 
 ## 3. Impact on `ZVec.Extensions.VectorData` (Phase 1)
 
-Even with `ZVec.NET` annotated, `ZVec.Extensions.VectorData` will ship `ZVecRecordMetadataGenerator` (Roslyn Source Generator) in Phase 1 to generate static `IVectorRecordMapper<TRecord>` classes at build time for `[VectorStoreRecord]` POCOs. This completely eliminates runtime reflection overhead and guarantees zero GC allocation on query hot paths.
+Even with `ZVec.NET` annotated, `ZVec.Extensions.VectorData` ships:
+
+1. **`ZVecRecordMetadataGenerator`** (Roslyn Source Generator) — emits static `IZVecRecordMapper<TRecord>` classes at build time for `[VectorStoreRecord]` POCOs, eliminating runtime reflection on query hot paths.
+2. **`ZVec.Extensions.VectorData.Analyzers`** — emits **`ZVEC001`** / **`ZVEC002`** IDE diagnostics when record types lack generated mappers or reflection is used outside approved fallback paths.
+3. **`ZVec.AotTestApp`** — Native AOT audit harness including a **`ReflectionFallbackRecord`** reference to surface trim warnings (`IL2026` / `IL3050`) for non-source-generated types during CI publish.
+
+### CI Quality Gate
+
+[`.github/workflows/quality-gate.yml`](https://github.com/ahmedsamir50/AdamSystems.ZVec.NET-RAG/blob/main/.github/workflows/quality-gate.yml) enforces:
+
+- `dotnet build` + `dotnet format --verify-no-changes`
+- Unit and conformance test executables (xUnit v3)
+- 500-line class limit and dummy-test detection
+- AOT publish + run smoke on `linux-x64`, `win-x64`, `osx-x64`
+- Trim-warning verification in publish logs for reflection fallback types
+
+Local pre-commit hook: configure with `git config core.hooksPath .githooks` (see `.githooks/pre-commit`).

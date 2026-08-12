@@ -44,3 +44,37 @@ finally
 2. **100% Branch Coverage**: All execution paths, edge cases, null checks, and error conditions must be covered.
 3. **Mock-Free CI Execution**: Core RAG pipeline tests use `DeterministicEmbedder` and `FakeChatClient` in `ZVec.Rag.Testing` to execute in <100ms without downloading multi-GB LLMs.
 4. **Snapshot Response Testing**: `Verify.Xunit` snapshot tests validate citation formats and prompt construction.
+
+---
+
+## 4. Test Suites & Conformance Coverage
+
+| Suite | Project | Coverage |
+|---|---|---|
+| **Unit tests** | `tests/ZVec.Extensions.VectorData.Tests` | Filter visitor operators, error codes, CRUD, hybrid search, score normalization, optimize/reopen recovery |
+| **Conformance tests** | `tests/ZVec.Extensions.VectorData.ConformanceTests` | M.E.VectorData contract: lifecycle, CRUD, search, hybrid FTS, zero-vector search, high-dimension vectors, concurrent read/write stress |
+| **AOT smoke** | `tests/ZVec.AotTestApp` | Native AOT publish verification and trim-warning harness |
+
+xUnit v3 test projects use executable test assemblies. Run locally:
+
+```bash
+dotnet build ZVec.NET-RAG.slnx -c Release
+./tests/ZVec.Extensions.VectorData.Tests/bin/Release/net8.0/ZVec.Extensions.VectorData.Tests
+./tests/ZVec.Extensions.VectorData.ConformanceTests/bin/Release/net8.0/ZVec.Extensions.VectorData.ConformanceTests
+```
+
+---
+
+## 5. CI Quality Gate & Pre-Commit Hook
+
+Automated enforcement lives in [`.github/workflows/quality-gate.yml`](https://github.com/ahmedsamir50/AdamSystems.ZVec.NET-RAG/blob/main/.github/workflows/quality-gate.yml):
+
+- Build, format verification, test executables, 500-line class cap, dummy-test scan
+- AOT publish smoke matrix (`linux-x64`, `win-x64`, `osx-x64`)
+- Trim-warning verification for non-source-generated record types
+
+Enable the matching local hook:
+
+```bash
+git config core.hooksPath .githooks
+```

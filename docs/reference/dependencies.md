@@ -18,7 +18,7 @@ This document tracks upstream Microsoft ecosystem packages, community signals, a
 | **`Microsoft.Extensions.VectorData.Abstractions`** | Official Vector Store Abstractions (`IVectorStore`, `IVectorizedSearch<T>`) | `10.9.0` |
 | **`Microsoft.Extensions.AI.Abstractions`** | Chat & Embedding Abstractions (`IChatClient`, `IEmbeddingGenerator`) | `10.9.0` |
 | **`Microsoft.CodeAnalysis.CSharp`** | Roslyn Source Generator SDK | `4.12.0` |
-| **`Microsoft.CodeAnalysis.Analyzers`** | Roslyn Analyzers SDK | `3.11.0` |
+| **`Microsoft.CodeAnalysis.Analyzers`** | Roslyn Analyzers SDK (`ZVec.Extensions.VectorData.Analyzers`) | `3.11.0` |
 | **`Microsoft.ML.Tokenizers`** | Default Tokenizer Engine (Tiktoken BPE, SentencePiece, WordPiece) | `1.0.0+` |
 | **`tryAGI/Tiktoken`** | Optional BPE Adapter for high-throughput OpenAI Tiktoken workloads | `1.0.0+` |
 
