@@ -18,8 +18,8 @@ unsafe
 This prevents managed heap array allocations (`float[]`) and ensures zero GC pressure during vector search operations.
 
 > [!NOTE]
-> **Implementation Status Banner — Story 2.3 & Story 1.11 Complete**:
-> - **Story 2.3**: `ZVecFilterExpressionVisitor` uses an AOT-safe recursive AST evaluator eliminating `Expression.Compile().DynamicInvoke()`.
+> **Implementation Status Banner — Story 1.10 & Story 1.11 Complete**:
+> - **Story 1.10**: `ZVecFilterExpressionVisitor` uses an AOT-safe recursive AST evaluator eliminating `Expression.Compile().DynamicInvoke()`.
 > - **Story 1.11**: Local dev-loop smoke testing (`win-x64`, `linux-x64`) and full GitHub Actions CI AOT matrix (`win-x64`, `linux-x64`, `linux-arm64`, `osx-arm64`, `ios-arm64`, `iossimulator-arm64`) run with `<TreatWarningsAsErrors>true</TreatWarningsAsErrors>`.
 
 ---
