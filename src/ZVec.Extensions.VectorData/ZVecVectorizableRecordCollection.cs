@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.VectorData;
@@ -422,6 +423,37 @@ public sealed class ZVecVectorizableRecordCollection<TRecord, TKey> :
         };
     }
 
+    /// <summary>
+    /// Optimizes the underlying native collection index and atomically updates the internal collection handle.
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+    /// <remarks>
+    /// Call this method after batch ingestion to merge vector flat buffers into HNSW index segments
+    /// and atomically refresh the native collection handle for concurrent queriers.
+    /// </remarks>
+    public async Task OptimizeAndReopenAsync(CancellationToken cancellationToken = default)
+    {
+        var collection = GetOrOpenNativeCollection();
+        await collection.OptimizeAsync(cancellationToken).ConfigureAwait(false);
+
+        lock (_initLock)
+        {
+            if (_nativeCollection != null)
+            {
+                try { _nativeCollection.Dispose(); } catch { }
+                _nativeCollection = null;
+            }
+
+            Directory.CreateDirectory(_options.EffectiveCollectionBasePath);
+            var schemaBuilder = ZVecCollectionSchemaBuilder.From<TRecord>();
+            var schema = schemaBuilder.Build();
+            _nativeCollection = _factory.OpenOrCreate(CollectionPath, schema);
+        }
+    }
+
+    [RequiresUnreferencedCode("Source generated mappers should be used for Native AOT. Reflection fallback may be trimmed.")]
+    [RequiresDynamicCode("Reflection fallback requires dynamic code generation.")]
     private ZVecDoc MapToDoc(TRecord record)
     {
         if (_mapper != null)
@@ -431,6 +463,8 @@ public sealed class ZVecVectorizableRecordCollection<TRecord, TKey> :
         return ZVecMapper.ToDoc(record, _typeModel!);
     }
 
+    [RequiresUnreferencedCode("Source generated mappers should be used for Native AOT. Reflection fallback may be trimmed.")]
+    [RequiresDynamicCode("Reflection fallback requires dynamic code generation.")]
     private TRecord MapFromDoc(ZVecDoc doc)
     {
         if (_typeModel == null) throw new InvalidOperationException("Type model is uninitialized.");

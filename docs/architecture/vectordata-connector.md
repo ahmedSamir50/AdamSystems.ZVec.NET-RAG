@@ -98,6 +98,7 @@ All NuGet package versions across the solution are managed centrally in `Directo
 - **`ZVecVectorStore`**: [`src/ZVec.Extensions.VectorData/ZVecVectorStore.cs`](file:///d:/A_S/ZVec_NET_RAG_SLN/src/ZVec.Extensions.VectorData/ZVecVectorStore.cs)
 - **`ZVecVectorStoreOptions`**: [`src/ZVec.Extensions.VectorData/ZVecVectorStoreOptions.cs`](file:///d:/A_S/ZVec_NET_RAG_SLN/src/ZVec.Extensions.VectorData/ZVecVectorStoreOptions.cs) (Storage path routing & factory options).
 - **`ZVecVectorizableRecordCollection<TRecord, TKey>`**: [`src/ZVec.Extensions.VectorData/ZVecVectorizableRecordCollection.cs`](file:///d:/A_S/ZVec_NET_RAG_SLN/src/ZVec.Extensions.VectorData/ZVecVectorizableRecordCollection.cs)
+- **`ZVecFullTextSearchAttribute`**: [`src/ZVec.Extensions.VectorData/Attributes/ZVecFullTextSearchAttribute.cs`](file:///d:/A_S/ZVec_NET_RAG_SLN/src/ZVec.Extensions.VectorData/Attributes/ZVecFullTextSearchAttribute.cs) (Decorates text properties for native FTS indexing).
 - **`IZVecRecordMapper<TRecord>`**: [`src/ZVec.Extensions.VectorData/IZVecRecordMapper.cs`](file:///d:/A_S/ZVec_NET_RAG_SLN/src/ZVec.Extensions.VectorData/IZVecRecordMapper.cs) (Zero-reflection POCO record mapper interface).
 - **`ZVecRecordMapperRegistry`**: [`src/ZVec.Extensions.VectorData/ZVecRecordMapperRegistry.cs`](file:///d:/A_S/ZVec_NET_RAG_SLN/src/ZVec.Extensions.VectorData/ZVecRecordMapperRegistry.cs) (Process-wide registry for SG-emitted mappers populated via `[ModuleInitializer]`).
 - **`ZVecFilterExpressionVisitor`**: [`src/ZVec.Extensions.VectorData/ZVecFilterExpressionVisitor.cs`](file:///d:/A_S/ZVec_NET_RAG_SLN/src/ZVec.Extensions.VectorData/ZVecFilterExpressionVisitor.cs)
@@ -108,12 +109,13 @@ All NuGet package versions across the solution are managed centrally in `Directo
 
 ---
 
-## 5. Score Normalization & Filter Translation Boundaries
+## 5. Score Normalization, Index Optimization & Native AOT Safety
 
-- **Score Normalization Formula:** ZVec native Cosine distance `d \in [0, 2]` is normalized transparently via `Score = 1.0f - Distance` so `VectorSearchResult<TRecord>.Score` returns similarity (higher = better).
-  - **Identical Vectors (\(d = 0.0\)):** \(\text{Score} = 1.0f - 0.0f = 1.0f\) (perfect match)
-  - **High Similarity (\(d = 0.2\)):** \(\text{Score} = 1.0f - 0.2f = 0.8f\) (strong match)
-  - **Orthogonal Vectors (\(d = 1.0\)):** \(\text{Score} = 1.0f - 1.0f = 0.0f\) (unrelated)
-  - **Opposite Vectors (\(d = 2.0\)):** \(\text{Score} = 1.0f - 2.0f = -1.0f\) (opposite)
-- **Filter Translation Boundaries:** `ZVecFilterExpressionVisitor` translates LINQ expressions into `ZVecFilterBuilder` AST nodes without dynamic compilation. String matching methods (`StartsWith`, `EndsWith`, `Regex.IsMatch`, `string.Contains`) throw `ZVecFilterTranslationException` with explicit diagnostic guidance to use Full-Text Search (FTS) keyword queries.
+- **Score Normalization Formula:** ZVec native scores are normalized transparently using a metric-switch formula:
+  - **Cosine Metric:** \(\text{Score} = 1.0f - d_{\text{cosine}}\) (maps distance \([0, 2]\) to similarity \([-1, 1]\))
+  - **L2 Metric:** \(\text{Score} = \frac{1.0f}{1.0f + d_{\text{L2}}}\) (monotonically maps distance \([0, \infty)\) to similarity \((0, 1]\))
+  - **InnerProduct Metric:** \(\text{Score} = d_{\text{IP}}\) (passthrough value)
+- **Index Optimization & Reopen Lifecycle (`OptimizeAndReopenAsync`):** To prevent stale-querier C++ engine errors post-optimization, `ZVecVectorizableRecordCollection.OptimizeAndReopenAsync()` executes native optimization, disposes the old collection handle to release the native `LOCK` file, and opens a fresh handle for active search queries.
+- **Native AOT & Trim Safety:** All runtime record mapping uses Roslyn Source Generator emitted zero-reflection mappers (`IZVecRecordMapper<TRecord>`). The dynamic reflection fallback is annotated with `[RequiresUnreferencedCode]` and `[RequiresDynamicCode]` to ensure Native AOT trim warnings trigger cleanly if an ungenerated record type is used.
+
 

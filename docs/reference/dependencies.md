@@ -14,7 +14,7 @@ This document tracks upstream Microsoft ecosystem packages, community signals, a
 
 | Package | Purpose | Target Version |
 |---|---|---|
-| **`ZVec.NET`** | Native Embedded Vector DB Engine | `1.0.0-beta.5` |
+| **`ZVec.NET`** | Native Embedded Vector DB Engine | `[1.0.0-beta.5, 2.0.0)` |
 | **`Microsoft.Extensions.VectorData.Abstractions`** | Official Vector Store Abstractions (`IVectorStore`, `IVectorizedSearch<T>`) | `10.9.0` |
 | **`Microsoft.Extensions.AI.Abstractions`** | Chat & Embedding Abstractions (`IChatClient`, `IEmbeddingGenerator`) | `10.9.0` |
 | **`Microsoft.CodeAnalysis.CSharp`** | Roslyn Source Generator SDK | `4.12.0` |
@@ -24,13 +24,13 @@ This document tracks upstream Microsoft ecosystem packages, community signals, a
 
 ---
 
-## 2. Community Signals & Kill Criteria Watchlist
+## 2. Community Signals & Pivot Strategy Watchlist
 
 | Signal / Issue | Community Need | Impact on ZVec.Rag | Status |
 |---|---|---|---|
 | **`microsoft/semantic-kernel#13224`** | Embedded LiteDB Vector Store proposal | Validates market demand for non-sqlite embedded vector store in .NET | 🟢 Open - No first-party embedded connector shipped |
 | **`microsoft/agent-framework#1395`** | Persistent agent memory across sessions | Agent Framework lacks native embedded vector persistence | 🟢 Open - Opportunity for ZVec connector |
-| **First-party Embedded Vector Store** | Microsoft shipping an official embedded `Microsoft.Extensions.VectorData` connector | **Kill Rule Trigger**: Would trigger strategic pivot to performance & MAUI differentiation | 🟢 None announced |
+| **First-party Embedded Vector Store** | Microsoft shipping an official embedded `Microsoft.Extensions.VectorData` connector | **Pivot Strategy Trigger**: Strategic pivot to HNSW/IVF performance, native hybrid RRF, 9-RID mobile/MAUI support, and Native AOT trim safety | 🟢 None announced |
 
 ---
 

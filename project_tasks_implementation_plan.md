@@ -153,7 +153,8 @@ ZVec.NET-RAG.slnx
   - [x] **Task 1.4.1 (TDD)**: Write unit tests in `ZVecVectorizableRecordCollectionTests.cs` covering `GetAsync`, `GetBatchAsync`, `UpsertAsync`, `UpsertBatchAsync`, `DeleteAsync`, `DeleteBatchAsync`, and `VectorizedSearchAsync`.
   - [x] **Task 1.4.2**: Implement `ZVecVectorizableRecordCollection<TRecord, TKey> : IVectorStoreRecordCollection<TKey, TRecord>`. Class size strictly capped <450 lines.
   - [x] **Task 1.4.3**: Ensure vector pass-through uses `ReadOnlyMemory<float>` pin path with `MemoryMarshal.TryGetArray` fast path and `ArrayPool<float>` fallback.
-  - **Acceptance Criteria**: 100% path coverage; zero heap allocations on vector query paths for managed array embedders.
+  - [x] **Task 1.4.4**: Implement `OptimizeAndReopenAsync()` to execute native index optimization, safely release native handle lock file, and reopen fresh collection handle. Verified in `ZVecOptimizeReopenTests.cs`.
+  - **Acceptance Criteria**: 100% path coverage; zero heap allocations on vector query paths for managed array embedders; atomic handle refresh post-optimization.
 
 - [ ] **Story 1.5: Filter Expression Visitor (`VectorDataFilter` -> `ZVecFilterBuilder`) — RE-OPENED** (Owner: `zvec-vectordata-expert`, Reviewer: `zvec-code-reviewer-expert`) 🔄
   - [ ] **Task 1.5.1 (TDD)**: Write unit tests in `ZVecFilterExpressionVisitorTests.cs` covering all filter operators (`==`, `!=`, `<`, `<=`, `>`, `>=`, `&&`, `||`, `!`, `ContainsAny`, `IsNull`, `IsNotNull`), plus `Enumerable.Contains` / `List<T>.Contains` pattern matching.
@@ -203,6 +204,11 @@ ZVec.NET-RAG.slnx
   - **Task 1.11.1 (TDD)**: Write unit tests verifying creation and validation of `zvec_index_manifest.json` (`ModelId`, `Dimensions`, `CreatedUtc`).
   - **Task 1.11.2**: Implement `ZVecIndexManifestManager` to write manifest file on initial collection creation and throw `ZVecEmbedderMismatchException` on startup dimension or model ID mismatch.
   - **Acceptance Criteria**: Prevents silent index corruption when changing embedding models.
+
+- [x] **Story 1.12: VectorStore Contract Conformance Test Suite** (Owner: `zvec-vectordata-expert`, Reviewer: `zvec-code-reviewer-expert`) ✅
+  - [x] **Task 1.12.1 (TDD)**: Create `VectorStoreContractConformanceTests.cs` in `tests/ZVec.Extensions.VectorData.ConformanceTests`.
+  - [x] **Task 1.12.2**: Implement contract conformance tests for `IVectorStore` (lifecycle & collection management), `VectorStoreCollection` (CRUD operations), `IVectorizedSearch<TRecord>` (normalized similarity score range), and `IKeywordHybridSearchable<TRecord>` (hybrid query execution).
+  - **Acceptance Criteria**: 100% pass across all 5 contract conformance tests.
 
 ---
 

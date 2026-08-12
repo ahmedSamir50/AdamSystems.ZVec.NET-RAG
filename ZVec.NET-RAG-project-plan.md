@@ -12,7 +12,7 @@
 
 ## 0. TL;DR
 
-**Build a `Microsoft.Extensions.VectorData` connector for ZVec.NET as the v1 centerpiece, plus a thin `ZVec.Rag` integration library that factors the RAG patterns already proven in sample code into a reusable, AOT-audited NuGet.** Ship a `dotnet new rag` template. Target the MAUI Blazor Hybrid flagship demo (already proven in the demos repo). Ride the local-first AI wave. 16–21 weeks to v1.0 (includes Phase 1.5 Risk Hardening Sprint and Phase 2 Contract Sprint).
+**Build a `Microsoft.Extensions.VectorData` connector for ZVec.NET as the v1 centerpiece, plus a batteries-included `ZVec.Rag` RAG orchestration layer that factors the RAG patterns already proven in sample code into a reusable, AOT-audited NuGet.** Ship a `dotnet new rag` template. Target the MAUI Blazor Hybrid flagship demo (already proven in the demos repo). Ride the local-first AI wave. 16–21 weeks to v1.0 (includes Phase 1.5 Risk Hardening Sprint and Phase 2 Contract Sprint).
 
 **Why this project, in one sentence:**
 
@@ -30,7 +30,7 @@ A first-party-style `Microsoft.Extensions.VectorData` connector that backs `IVec
 
 ### 1.2 `ZVec.Rag` — the batteries-included starter
 
-A thin integration library that wires together:
+A batteries-included RAG orchestration layer that wires together:
 - **M.E.VectorData** (vector store abstraction, GA May 2025)
 - **M.E.AI** (`IChatClient`, `IEmbeddingGenerator`, GA May 2025)
 - **M.E.DataIngestion** (chunking pipeline, Preview Dec 2025)
@@ -704,14 +704,14 @@ If fewer than 3 are true at 12-month mark, **keep pure OSS** — the branding/CV
 | **Author burnout** | Medium | Severe | Scope v1 tightly; defer multimodal/sync to v2; leverage existing samples (don't reinvent) |
 | **LM-Kit.NET open-sources** | Low | High | Differentiate on MAUI + local-first + Microsoft ecosystem integration |
 
-### 11.2 Kill criteria (re-evaluate at 3, 6, 12 months)
+### 11.2 Pivot & Decision Criteria (re-evaluate at 3, 6, 12 months)
 
-Kill the project (or pivot to maintenance-only) **if any**:
+Execute strategic pivot (or pivot to maintenance-only) **if any**:
 
-- Microsoft announces a first-party embedded VectorData connector → kill immediately
-- After 6 months: <200 stars, <50 NuGet downloads/day, no conference talk accepted → pivot to maintenance
-- After 12 months: <1k stars, no production users → declare "learning project", stop active development
-- Author loses interest / capacity → archive cleanly, write post-mortem blog (still good CV content)
+- Microsoft announces a first-party embedded VectorData connector $\rightarrow$ **Pivot Strategy**: Differentiate on HNSW/IVF performance, native hybrid RRF, 9-RID mobile/MAUI support, and Native AOT trim safety.
+- After 6 months: <200 stars, <50 NuGet downloads/day, no conference talk accepted $\rightarrow$ pivot to maintenance.
+- After 12 months: <1k stars, no production users $\rightarrow$ declare "learning project", stop active development.
+- Author loses capacity $\rightarrow$ archive cleanly, write post-mortem blog.
 
 ---
 
