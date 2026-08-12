@@ -52,9 +52,9 @@ public sealed class ZVecScoreNormalizationTests
             var collection = new ZVecVectorizableRecordCollection<ScoreTestRecord, string>(factory, options, colName);
             await collection.EnsureCollectionExistsAsync(TestContext.Current.CancellationToken);
 
-            // Seed two records with very different vectors
+            // Seed two records with orthogonal vectors
             var nearVector = new float[768]; nearVector[0] = 1.0f;
-            var farVector = new float[768]; farVector[0] = 0.1f;
+            var farVector = new float[768]; farVector[1] = 1.0f;
 
             await collection.UpsertAsync(new[]
             {

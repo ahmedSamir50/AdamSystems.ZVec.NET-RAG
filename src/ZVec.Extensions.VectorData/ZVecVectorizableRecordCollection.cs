@@ -95,7 +95,44 @@ public sealed class ZVecVectorizableRecordCollection<TRecord, TKey> :
             Directory.CreateDirectory(_options.EffectiveCollectionBasePath);
             var schemaBuilder = ZVecCollectionSchemaBuilder.From<TRecord>();
             var schema = schemaBuilder.Build();
-            _nativeCollection = _factory.OpenOrCreate(CollectionPath, schema);
+
+            var ftsFieldNames = new HashSet<string>(StringComparer.Ordinal);
+            var ftsVectors = new List<ZVecVectorSchema>(schema.Vectors);
+
+            foreach (var field in schema.Fields)
+            {
+                if (field.DataType == ZVecDataType.String)
+                {
+                    var prop = typeof(TRecord).GetProperty(field.Name);
+                    if (prop != null)
+                    {
+                        var attr = (VectorStoreDataAttribute?)Attribute.GetCustomAttribute(prop, typeof(VectorStoreDataAttribute));
+                        if (attr?.IsFullTextIndexed == true && !ftsVectors.Any(v => v.Name == field.Name))
+                        {
+                            ftsFieldNames.Add(field.Name);
+                            ftsVectors.Add(new ZVecVectorSchema
+                            {
+                                Name = field.Name,
+                                DataType = ZVecDataType.String,
+                                Dimension = 0,
+                                IndexParam = new ZVecFtsIndexParam()
+                            });
+                        }
+                    }
+                }
+            }
+
+            var updatedFields = schema.Fields.Where(f => !ftsFieldNames.Contains(f.Name)).ToArray();
+
+            var finalSchema = new ZVecCollectionSchema
+            {
+                Name = schema.Name,
+                MaxDocCountPerSegment = schema.MaxDocCountPerSegment,
+                Fields = updatedFields,
+                Vectors = ftsVectors.ToArray()
+            };
+
+            _nativeCollection = _factory.OpenOrCreate(CollectionPath, finalSchema);
             return _nativeCollection;
         }
     }
@@ -261,45 +298,49 @@ public sealed class ZVecVectorizableRecordCollection<TRecord, TKey> :
     {
         if (searchValue == null) throw new ArgumentNullException(nameof(searchValue));
 
-        if (searchValue is ReadOnlyMemory<float> floatMemory)
+        ReadOnlyMemory<float> floatMemory;
+        if (searchValue is ReadOnlyMemory<float> rom)
+            floatMemory = rom;
+        else if (searchValue is Memory<float> mem)
+            floatMemory = mem;
+        else if (searchValue is float[] arr)
+            floatMemory = arr;
+        else
+            throw new NotSupportedException(ZVecErrorMessages.UnsupportedVectorType(typeof(TInput).Name));
+
+        using var handle = floatMemory.Pin();
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var collection = GetOrOpenNativeCollection();
+        int effectiveTop = top > 0 ? top : ZVecConstants.DefaultQueryLimit;
+        double scoreThreshold = options?.ScoreThreshold ?? ZVecConstants.DefaultMinScoreThreshold;
+
+        string vectorFieldName = _typeModel?.Vectors.FirstOrDefault()?.StorageName ?? "Vector";
+        var query = new ZVecQuery { FieldName = vectorFieldName, Vector = floatMemory };
+        IReadOnlyList<ZVecDoc> docs;
+
+        if (options?.Filter != null)
         {
-            using var handle = floatMemory.Pin();
-            cancellationToken.ThrowIfCancellationRequested();
-
-            var collection = GetOrOpenNativeCollection();
-            int effectiveTop = top > 0 ? top : ZVecConstants.DefaultQueryLimit;
-            double scoreThreshold = options?.ScoreThreshold ?? ZVecConstants.DefaultMinScoreThreshold;
-
-            string vectorFieldName = _typeModel?.Vectors.FirstOrDefault()?.StorageName ?? "Vector";
-            var query = new ZVecQuery { FieldName = vectorFieldName, Vector = floatMemory };
-            IReadOnlyList<ZVecDoc> docs;
-
-            if (options?.Filter != null)
-            {
-                var filterBuilder = ZVecFilterExpressionVisitor.TranslateToBuilder(options.Filter);
-                docs = await collection.QueryAsync(query, effectiveTop, filterBuilder, includeVector: options?.IncludeVectors ?? true, ct: cancellationToken);
-            }
-            else
-            {
-                docs = await collection.QueryAsync(query, effectiveTop, filter: (string?)null, includeVector: options?.IncludeVectors ?? true, ct: cancellationToken);
-            }
-
-            if (_typeModel != null)
-            {
-                foreach (var doc in docs)
-                {
-                    float similarityScore = NormalizeScore(doc.Score);
-                    if (similarityScore >= scoreThreshold)
-                    {
-                        var record = MapFromDoc(doc);
-                        yield return new VectorSearchResult<TRecord>(record, similarityScore);
-                    }
-                }
-            }
-            yield break;
+            var filterBuilder = ZVecFilterExpressionVisitor.TranslateToBuilder(options.Filter);
+            docs = await collection.QueryAsync(query, effectiveTop, filterBuilder, includeVector: options?.IncludeVectors ?? true, ct: cancellationToken);
+        }
+        else
+        {
+            docs = await collection.QueryAsync(query, effectiveTop, filter: (string?)null, includeVector: options?.IncludeVectors ?? true, ct: cancellationToken);
         }
 
-        throw new NotSupportedException(ZVecErrorMessages.UnsupportedVectorType(typeof(TInput).Name));
+        if (_typeModel != null)
+        {
+            foreach (var doc in docs)
+            {
+                float similarityScore = NormalizeScore(doc.Score);
+                if (similarityScore >= scoreThreshold)
+                {
+                    var record = MapFromDoc(doc);
+                    yield return new VectorSearchResult<TRecord>(record, similarityScore);
+                }
+            }
+        }
     }
 
     /// <inheritdoc />
@@ -313,52 +354,54 @@ public sealed class ZVecVectorizableRecordCollection<TRecord, TKey> :
         if (searchValue == null) throw new ArgumentNullException(nameof(searchValue));
         if (keywords == null) throw new ArgumentNullException(nameof(keywords));
 
-        if (searchValue is ReadOnlyMemory<float> floatMemory)
+        ReadOnlyMemory<float> floatMemory;
+        if (searchValue is ReadOnlyMemory<float> rom)
+            floatMemory = rom;
+        else if (searchValue is Memory<float> mem)
+            floatMemory = mem;
+        else if (searchValue is float[] arr)
+            floatMemory = arr;
+        else
+            throw new NotSupportedException(ZVecErrorMessages.UnsupportedVectorType(typeof(TInput).Name));
+
+        using var handle = floatMemory.Pin();
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var collection = GetOrOpenNativeCollection();
+        int effectiveTop = top > 0 ? top : ZVecConstants.DefaultQueryLimit;
+        double scoreThreshold = options?.ScoreThreshold ?? ZVecConstants.DefaultMinScoreThreshold;
+
+        string vectorFieldName = _typeModel?.Vectors.FirstOrDefault()?.StorageName ?? "Vector";
+        string ftsFieldName = _typeModel?.Fields.FirstOrDefault()?.StorageName ?? "Content";
+        string ftsQueryString = string.Join(" ", keywords);
+
+        var denseQuery = new ZVecQuery { FieldName = vectorFieldName, Vector = floatMemory };
+        var ftsQuery = new ZVecQuery { FieldName = ftsFieldName, Fts = new ZVecFtsQuery { QueryString = ftsQueryString } };
+        var reranker = new ZVecRrfReranker();
+
+        IReadOnlyList<ZVecDoc> docs;
+        if (options?.Filter != null)
         {
-            using var handle = floatMemory.Pin();
-            cancellationToken.ThrowIfCancellationRequested();
-
-            var collection = GetOrOpenNativeCollection();
-            int effectiveTop = top > 0 ? top : ZVecConstants.DefaultQueryLimit;
-            double scoreThreshold = options?.ScoreThreshold ?? ZVecConstants.DefaultMinScoreThreshold;
-
-            string vectorFieldName = _typeModel?.Vectors.FirstOrDefault()?.StorageName ?? "Vector";
-            string ftsQuery = string.Join(" ", keywords);
-
-            var query = new ZVecQuery
-            {
-                FieldName = vectorFieldName,
-                Vector = floatMemory,
-                Fts = new ZVecFtsQuery { QueryString = ftsQuery }
-            };
-
-            IReadOnlyList<ZVecDoc> docs;
-            if (options?.Filter != null)
-            {
-                var filterBuilder = ZVecFilterExpressionVisitor.TranslateToBuilder(options.Filter);
-                docs = await collection.QueryAsync(query, effectiveTop, filterBuilder, includeVector: options?.IncludeVectors ?? true, ct: cancellationToken);
-            }
-            else
-            {
-                docs = await collection.QueryAsync(query, effectiveTop, filter: (string?)null, includeVector: options?.IncludeVectors ?? true, ct: cancellationToken);
-            }
-
-            if (_typeModel != null)
-            {
-                foreach (var doc in docs)
-                {
-                    float similarityScore = NormalizeScore(doc.Score);
-                    if (similarityScore >= scoreThreshold)
-                    {
-                        var record = MapFromDoc(doc);
-                        yield return new VectorSearchResult<TRecord>(record, similarityScore);
-                    }
-                }
-            }
-            yield break;
+            var filterBuilder = ZVecFilterExpressionVisitor.TranslateToBuilder(options.Filter);
+            docs = await collection.QueryAsync(new[] { denseQuery, ftsQuery }, effectiveTop, reranker, filterBuilder, includeVector: options?.IncludeVectors ?? true, ct: cancellationToken);
+        }
+        else
+        {
+            docs = await collection.QueryAsync(new[] { denseQuery, ftsQuery }, effectiveTop, reranker, filter: (string?)null, includeVector: options?.IncludeVectors ?? true, ct: cancellationToken);
         }
 
-        throw new NotSupportedException(ZVecErrorMessages.UnsupportedVectorType(typeof(TInput).Name));
+        if (_typeModel != null)
+        {
+            foreach (var doc in docs)
+            {
+                float similarityScore = NormalizeScore(doc.Score);
+                if (similarityScore >= scoreThreshold)
+                {
+                    var record = MapFromDoc(doc);
+                    yield return new VectorSearchResult<TRecord>(record, similarityScore);
+                }
+            }
+        }
     }
 
     /// <summary>
@@ -367,13 +410,14 @@ public sealed class ZVecVectorizableRecordCollection<TRecord, TKey> :
     /// </summary>
     private float NormalizeScore(float nativeScore)
     {
-        ZVecMetricType metric = _typeModel?.Vectors.FirstOrDefault()?.IndexParam?.MetricType ?? ZVecMetricType.Cosine;
+        var indexParam = _typeModel?.Vectors.FirstOrDefault()?.IndexParam;
+        ZVecMetricType metric = (indexParam as ZVecHnswIndexParam)?.MetricType ?? ZVecMetricType.Cosine;
 
         return metric switch
         {
             ZVecMetricType.Cosine => 1.0f - nativeScore,
             ZVecMetricType.L2 => 1.0f / (1.0f + nativeScore),
-            ZVecMetricType.InnerProduct => nativeScore,
+            ZVecMetricType.Ip => nativeScore,
             _ => 1.0f - nativeScore
         };
     }

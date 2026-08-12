@@ -132,13 +132,13 @@ public sealed class ZVecRecordMetadataGenerator : IIncrementalGenerator
         sb.AppendLine($"        Properties = new VectorStoreRecordProperty[]");
         sb.AppendLine($"        {{");
 
-        if (model.KeyProp != null)
+        if (model.KeyProp.HasValue)
         {
-            sb.AppendLine($"            new VectorStoreRecordKeyProperty(\"{model.KeyProp.Name}\", typeof({model.KeyProp.FullyQualifiedType})),");
+            sb.AppendLine($"            new VectorStoreRecordKeyProperty(\"{model.KeyProp.Value.Name}\", typeof({model.KeyProp.Value.FullyQualifiedType})),");
         }
-        if (model.VectorProp != null)
+        if (model.VectorProp.HasValue)
         {
-            sb.AppendLine($"            new VectorStoreRecordVectorProperty(\"{model.VectorProp.Name}\", typeof({model.VectorProp.FullyQualifiedType}), {model.VectorDimensions}),");
+            sb.AppendLine($"            new VectorStoreRecordVectorProperty(\"{model.VectorProp.Value.Name}\", typeof({model.VectorProp.Value.FullyQualifiedType}), {model.VectorDimensions}),");
         }
         foreach (var dataProp in model.DataProps)
         {
@@ -159,18 +159,18 @@ public sealed class ZVecRecordMetadataGenerator : IIncrementalGenerator
         sb.AppendLine($"            if (record == null) throw new ArgumentNullException(nameof(record));");
         sb.AppendLine($"            if (model == null) throw new ArgumentNullException(nameof(model));");
         sb.AppendLine($"            var doc = new ZVecDoc();");
-        if (model.KeyProp != null)
+        if (model.KeyProp.HasValue)
         {
-            sb.AppendLine($"            doc.Id = record.{model.KeyProp.Name}?.ToString() ?? string.Empty;");
+            sb.AppendLine($"            doc.Id = record.{model.KeyProp.Value.Name}?.ToString() ?? string.Empty;");
         }
         foreach (var dataProp in model.DataProps)
         {
             sb.AppendLine($"            doc.Fields[model.Fields.Find(f => f.PropertyName == \"{dataProp.Name}\")!.StorageName] = (object?)record.{dataProp.Name};");
         }
-        if (model.VectorProp != null)
+        if (model.VectorProp.HasValue)
         {
-            sb.AppendLine($"            var vecStorage = model.Vectors.Find(v => v.PropertyName == \"{model.VectorProp.Name}\")!.StorageName;");
-            sb.AppendLine($"            doc.DenseVectors[vecStorage] = record.{model.VectorProp.Name};");
+            sb.AppendLine($"            var vecStorage = model.Vectors.Find(v => v.PropertyName == \"{model.VectorProp.Value.Name}\")!.StorageName;");
+            sb.AppendLine($"            doc.DenseVectors[vecStorage] = record.{model.VectorProp.Value.Name};");
         }
         sb.AppendLine($"            return doc;");
         sb.AppendLine($"        }}");
@@ -181,9 +181,9 @@ public sealed class ZVecRecordMetadataGenerator : IIncrementalGenerator
         sb.AppendLine($"            if (doc == null) throw new ArgumentNullException(nameof(doc));");
         sb.AppendLine($"            if (model == null) throw new ArgumentNullException(nameof(model));");
         sb.AppendLine($"            var record = new {model.ClassName}();");
-        if (model.KeyProp != null)
+        if (model.KeyProp.HasValue)
         {
-            sb.AppendLine($"            record.{model.KeyProp.Name} = doc.Id;");
+            sb.AppendLine($"            record.{model.KeyProp.Value.Name} = doc.Id;");
         }
         foreach (var dataProp in model.DataProps)
         {
@@ -191,11 +191,11 @@ public sealed class ZVecRecordMetadataGenerator : IIncrementalGenerator
             sb.AppendLine($"            if (doc.Fields.TryGetValue({dataProp.Name}Storage, out var {dataProp.Name}Val) && {dataProp.Name}Val != null)");
             sb.AppendLine($"                record.{dataProp.Name} = ({dataProp.FullyQualifiedType}){dataProp.Name}Val;");
         }
-        if (model.VectorProp != null)
+        if (model.VectorProp.HasValue)
         {
-            sb.AppendLine($"            var {model.VectorProp.Name}Storage = model.Vectors.Find(v => v.PropertyName == \"{model.VectorProp.Name}\")!.StorageName;");
-            sb.AppendLine($"            if (doc.DenseVectors.TryGetValue({model.VectorProp.Name}Storage, out var {model.VectorProp.Name}Dense))");
-            sb.AppendLine($"                record.{model.VectorProp.Name} = {model.VectorProp.Name}Dense;");
+            sb.AppendLine($"            var {model.VectorProp.Value.Name}Storage = model.Vectors.Find(v => v.PropertyName == \"{model.VectorProp.Value.Name}\")!.StorageName;");
+            sb.AppendLine($"            if (doc.DenseVectors.TryGetValue({model.VectorProp.Value.Name}Storage, out var {model.VectorProp.Value.Name}Dense))");
+            sb.AppendLine($"                record.{model.VectorProp.Value.Name} = {model.VectorProp.Value.Name}Dense;");
         }
         sb.AppendLine($"            return record;");
         sb.AppendLine($"        }}");

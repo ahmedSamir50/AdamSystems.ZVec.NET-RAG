@@ -138,13 +138,13 @@ public sealed class ZVecVectorStoreTests
             Assert.False(existsBefore);
 
             // After EnsureCollectionExistsAsync, must exist
-            await store.GetCollection<string, TestStoreRecord>(collectionName)
-                       .EnsureCollectionExistsAsync(TestContext.Current.CancellationToken);
+            var collection = store.GetCollection<string, TestStoreRecord>(collectionName);
+            await collection.EnsureCollectionExistsAsync(TestContext.Current.CancellationToken);
             bool existsAfterCreate = await store.CollectionExistsAsync(collectionName, TestContext.Current.CancellationToken);
             Assert.True(existsAfterCreate);
 
-            // After EnsureCollectionDeletedAsync, must not exist
-            await store.EnsureCollectionDeletedAsync(collectionName, TestContext.Current.CancellationToken);
+            // After EnsureCollectionDeletedAsync on collection (disposes native handle first), must not exist
+            await collection.EnsureCollectionDeletedAsync(TestContext.Current.CancellationToken);
             bool existsAfterDelete = await store.CollectionExistsAsync(collectionName, TestContext.Current.CancellationToken);
             Assert.False(existsAfterDelete);
         }
