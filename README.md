@@ -11,9 +11,12 @@
 - **No Cloud Required**: Runs 100% in-process on Windows, Linux, macOS, Android, and iOS. Zero monthly Azure/Qdrant vector DB bill.
 - **`Microsoft.Extensions.VectorData` Connector**: First-class `IVectorStore` and `IVectorizedSearch<TRecord>` implementation backing ZVec.NET. Works seamlessly with Semantic Kernel, Microsoft Agent Framework, and community RAG tools.
 - **`Microsoft.Extensions.AI` Ecosystem Integration**: Plug-and-play with any `IChatClient` or `IEmbeddingGenerator` (Ollama, Azure OpenAI, ONNX Runtime, LLamaSharp).
+> **Status:** Planned for Phase 2 (Story 2.3 — Citation Tracking & SSE)
 - **Streaming Citations (`IAsyncEnumerable<RagChunk>`)**: Real-time token streaming with precise document & page citation tracking (`SourceDoc`, `Page`, `Offset`, `Score`).
 - **Universal Tokenization**: Universal `Microsoft.ML.Tokenizers` engine (Tiktoken BPE, SentencePiece for LLaMA 3 / Nomic, WordPiece for BERT) with pluggable support for `tryAGI/Tiktoken`.
+> **Status:** Planned for Phase 2 (Story 2.2 — Document Ingestion)
 - **Transparent Document Ingestion**: Structured ingestion pipeline aligned with `Microsoft.Extensions.DataIngestion` preview (`IDocumentReader` + customizable `ITextChunker` strategies).
+> **Status:** Planned for Phase 2 (Story 2.3 — Hybrid Search Bridge)
 - **Embedded Hybrid Search**: In-database dense + FTS (full-text search) retrieval with native Reciprocal Rank Fusion (`ZVecRrfReranker`).
 - **Native AOT & Trimmer Friendly**: Designed from day zero for zero-reflection Roslyn source-generated schemas and zero-copy `ReadOnlyMemory<float>` memory pinning.
 - **Instant Scaffolding**: Get started in 60 seconds with `dotnet new rag`.
@@ -37,6 +40,7 @@
 
 The quickstart demonstrates the **full RAG lifecycle**: Document Ingestion (`IngestTextAsync`) and Real-time SSE Streaming (`MapRagSseEndpoint`).
 
+> **Status:** Planned for Phase 2 (Stories 2.1, 2.2, 2.3 — RAG Pipeline, Ingestion, SSE)
 ```csharp
 using Microsoft.Extensions.AI;
 using ZVec.Rag;
@@ -72,6 +76,7 @@ app.Run();
 
 Ingestion in `ZVec.Rag` is divided into pluggable pipeline stages aligned with `Microsoft.Extensions.DataIngestion`:
 
+> **Status:** Planned for Phase 2 (Story 2.2 — Document Ingestion)
 ```
 ┌─────────────────────────┐    ┌─────────────────────────┐    ┌─────────────────────────┐    ┌─────────────────────────┐
 │   1. Document Reader    │ -> │    2. Text Chunker      │ -> │  3. Vector Embedder     │ -> │  4. Persistent Store    │
@@ -88,6 +93,7 @@ Ingestion in `ZVec.Rag` is divided into pluggable pipeline stages aligned with `
 
 ## 🔤 Tokenizer Strategy: `Microsoft.ML.Tokenizers` & `tryAGI/Tiktoken`
 
+> **Status:** Planned for Phase 2 (Story 2.2 — Document Ingestion, Task 2.2.4)
 - **Primary Tokenizer (`Microsoft.ML.Tokenizers`)**: Uses Microsoft's official high-performance, zero-allocation tokenizer engine. Supports **Tiktoken BPE** (OpenAI `cl100k`/`o200k`), **SentencePiece** (LLaMA 3, Nomic Embed), and **WordPiece** (BERT, MiniLM).
 - **Pluggable Adapter (`tryAGI/Tiktoken`)**: Provides an optional high-throughput BPE adapter interface for developers targeting OpenAI models exclusively.
 
@@ -95,6 +101,7 @@ Ingestion in `ZVec.Rag` is divided into pluggable pipeline stages aligned with `
 
 ## 🌐 Ecosystem Architecture
 
+> **Status:** Planned for Phase 2 (Stories 2.1, 2.2, 2.3, 2.6)
 ```
   ┌─────────────────────────────────────────────────────────────┐
   │                 Your .NET Application / API                 │

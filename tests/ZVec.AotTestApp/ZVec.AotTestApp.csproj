@@ -2,16 +2,20 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFrameworks></TargetFrameworks>
     <TargetFramework>net8.0</TargetFramework>
     <PublishAot>true</PublishAot>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <WarningsNotAsErrors>IL2007;IL2008</WarningsNotAsErrors>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="ZVec.NET" />
     <PackageReference Include="Microsoft.Extensions.VectorData.Abstractions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\ZVec.Extensions.VectorData\ZVec.Extensions.VectorData.csproj" />
   </ItemGroup>
 
 </Project>

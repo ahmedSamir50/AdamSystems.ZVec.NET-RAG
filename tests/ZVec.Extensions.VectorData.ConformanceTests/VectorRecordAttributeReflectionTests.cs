@@ -4,7 +4,7 @@ using Xunit;
 namespace ZVec.Extensions.VectorData.ConformanceTests;
 
 /// <summary>
-/// Sample POCO model for M.E.VectorData conformance contract tests.
+/// Sample POCO model for M.E.VectorData attribute reflection tests.
 /// </summary>
 public sealed class SampleVectorRecord
 {
@@ -22,15 +22,16 @@ public sealed class SampleVectorRecord
 }
 
 /// <summary>
-/// Conformance test fixture validating Microsoft.Extensions.VectorData interface contracts.
+/// Tests that the sample POCO is correctly annotated with [VectorStoreKey], [VectorStoreData],
+/// [VectorStoreVector] attributes — used for attribute reflection validation, NOT for VectorData contract conformance.
 /// </summary>
-public sealed class VectorStoreConformanceFixture
+public sealed class VectorRecordAttributeReflectionTests
 {
     /// <summary>
     /// Verifies that property metadata reader correctly extracts attributes for key, data, and vector properties.
     /// </summary>
     [Fact]
-    public void VectorRecordDefinition_BuildsValidPropertyMetadata()
+    public void VectorRecordClass_DeclaresAllRequiredVectorStoreAttributes()
     {
         var recordType = typeof(SampleVectorRecord);
 

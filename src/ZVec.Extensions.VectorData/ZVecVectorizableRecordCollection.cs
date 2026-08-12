@@ -4,6 +4,7 @@ using Microsoft.Extensions.VectorData;
 using ZVec.Extensions.VectorData.Constants;
 using ZVec.NET;
 using ZVec.NET.Mapping;
+using ZVec.NET.Query;
 
 namespace ZVec.Extensions.VectorData;
 
@@ -33,7 +34,9 @@ public sealed class ZVecVectorizableRecordCollection<TRecord, TKey> :
     where TKey : notnull
 {
     private readonly IZvecFactory _factory;
+    private readonly ZVecVectorStoreOptions _options;
     private readonly ZVecTypeModel? _typeModel;
+    private readonly IZVecRecordMapper<TRecord>? _mapper;
     private IZvecCollection? _nativeCollection;
     private readonly object _initLock = new();
 
@@ -41,23 +44,29 @@ public sealed class ZVecVectorizableRecordCollection<TRecord, TKey> :
     /// Initializes a new instance of <see cref="ZVecVectorizableRecordCollection{TRecord, TKey}"/>.
     /// </summary>
     /// <param name="factory">Process-wide ZVec factory.</param>
+    /// <param name="options">Vector store options providing <see cref="ZVecVectorStoreOptions.StoragePath"/>.</param>
     /// <param name="name">Name of the collection.</param>
     /// <param name="definition">Optional Microsoft VectorStoreCollectionDefinition override.</param>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="factory"/> is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="factory"/> or <paramref name="options"/> is null.</exception>
     /// <exception cref="ArgumentException">Thrown when <paramref name="name"/> is null, empty, or whitespace.</exception>
     public ZVecVectorizableRecordCollection(
         IZvecFactory factory,
+        ZVecVectorStoreOptions options,
         string name,
         VectorStoreCollectionDefinition? definition = null)
     {
         _factory = factory ?? throw new ArgumentNullException(nameof(factory));
+        _options = options ?? throw new ArgumentNullException(nameof(options));
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException(ZVecErrorMessages.NullOrEmptyCollectionName, nameof(name));
 
         Name = name;
         Definition = definition;
         if (typeof(TRecord) != typeof(Dictionary<string, object?>))
+        {
             _typeModel = ZVecTypeModel.Get<TRecord>();
+            _mapper = ZVecRecordMapperRegistry.Get<TRecord>();
+        }
     }
 
     /// <inheritdoc />
@@ -68,7 +77,7 @@ public sealed class ZVecVectorizableRecordCollection<TRecord, TKey> :
     /// </summary>
     public VectorStoreCollectionDefinition? Definition { get; }
 
-    private string CollectionPath => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, Name);
+    private string CollectionPath => Path.Combine(_options.EffectiveCollectionBasePath, Name);
 
     private IZvecCollection GetOrOpenNativeCollection()
     {
@@ -83,6 +92,7 @@ public sealed class ZVecVectorizableRecordCollection<TRecord, TKey> :
                 _factory.Initialize();
             }
 
+            Directory.CreateDirectory(_options.EffectiveCollectionBasePath);
             var schemaBuilder = ZVecCollectionSchemaBuilder.From<TRecord>();
             var schema = schemaBuilder.Build();
             _nativeCollection = _factory.OpenOrCreate(CollectionPath, schema);
@@ -223,7 +233,7 @@ public sealed class ZVecVectorizableRecordCollection<TRecord, TKey> :
 
         if (_typeModel == null) return;
         var collection = GetOrOpenNativeCollection();
-        var doc = ZVecMapper.ToDoc(record, _typeModel);
+        var doc = MapToDoc(record);
         await collection.UpsertAsync(doc, cancellationToken);
     }
 
@@ -235,7 +245,7 @@ public sealed class ZVecVectorizableRecordCollection<TRecord, TKey> :
 
         if (_typeModel == null) return;
         var collection = GetOrOpenNativeCollection();
-        var docs = records.Select(r => ZVecMapper.ToDoc(r, _typeModel)).ToList();
+        var docs = records.Select(MapToDoc).ToList();
         if (docs.Count > 0)
         {
             await collection.UpsertAsync(docs, cancellationToken);
@@ -278,7 +288,7 @@ public sealed class ZVecVectorizableRecordCollection<TRecord, TKey> :
             {
                 foreach (var doc in docs)
                 {
-                    float similarityScore = doc.Score > 0 ? doc.Score : (1.0f - doc.Score);
+                    float similarityScore = NormalizeScore(doc.Score);
                     if (similarityScore >= scoreThreshold)
                     {
                         var record = MapFromDoc(doc);
@@ -310,11 +320,19 @@ public sealed class ZVecVectorizableRecordCollection<TRecord, TKey> :
 
             var collection = GetOrOpenNativeCollection();
             int effectiveTop = top > 0 ? top : ZVecConstants.DefaultQueryLimit;
+            double scoreThreshold = options?.ScoreThreshold ?? ZVecConstants.DefaultMinScoreThreshold;
 
             string vectorFieldName = _typeModel?.Vectors.FirstOrDefault()?.StorageName ?? "Vector";
-            var query = new ZVecQuery { FieldName = vectorFieldName, Vector = floatMemory };
-            IReadOnlyList<ZVecDoc> docs;
+            string ftsQuery = string.Join(" ", keywords);
 
+            var query = new ZVecQuery
+            {
+                FieldName = vectorFieldName,
+                Vector = floatMemory,
+                Fts = new ZVecFtsQuery { QueryString = ftsQuery }
+            };
+
+            IReadOnlyList<ZVecDoc> docs;
             if (options?.Filter != null)
             {
                 var filterBuilder = ZVecFilterExpressionVisitor.TranslateToBuilder(options.Filter);
@@ -329,9 +347,12 @@ public sealed class ZVecVectorizableRecordCollection<TRecord, TKey> :
             {
                 foreach (var doc in docs)
                 {
-                    float similarityScore = doc.Score > 0 ? doc.Score : (1.0f - doc.Score);
-                    var record = MapFromDoc(doc);
-                    yield return new VectorSearchResult<TRecord>(record, similarityScore);
+                    float similarityScore = NormalizeScore(doc.Score);
+                    if (similarityScore >= scoreThreshold)
+                    {
+                        var record = MapFromDoc(doc);
+                        yield return new VectorSearchResult<TRecord>(record, similarityScore);
+                    }
                 }
             }
             yield break;
@@ -340,9 +361,43 @@ public sealed class ZVecVectorizableRecordCollection<TRecord, TKey> :
         throw new NotSupportedException(ZVecErrorMessages.UnsupportedVectorType(typeof(TInput).Name));
     }
 
+    /// <summary>
+    /// Normalizes a native ZVec score into a similarity score where higher = better match.
+    /// Switches on the configured <see cref="ZVecMetricType"/> for the collection.
+    /// </summary>
+    private float NormalizeScore(float nativeScore)
+    {
+        ZVecMetricType metric = _typeModel?.Vectors.FirstOrDefault()?.IndexParam?.MetricType ?? ZVecMetricType.Cosine;
+
+        return metric switch
+        {
+            ZVecMetricType.Cosine => 1.0f - nativeScore,
+            ZVecMetricType.L2 => 1.0f / (1.0f + nativeScore),
+            ZVecMetricType.InnerProduct => nativeScore,
+            _ => 1.0f - nativeScore
+        };
+    }
+
+    private ZVecDoc MapToDoc(TRecord record)
+    {
+        if (_mapper != null)
+        {
+            return _mapper.ToDoc(record, _typeModel!);
+        }
+        return ZVecMapper.ToDoc(record, _typeModel!);
+    }
+
     private TRecord MapFromDoc(ZVecDoc doc)
     {
         if (_typeModel == null) throw new InvalidOperationException("Type model is uninitialized.");
+
+        if (_mapper != null)
+        {
+            return _mapper.FromDoc(doc, _typeModel);
+        }
+
+        // Reflection fallback — only used for Dictionary<string, object?> dynamic collections
+        // or when SG mapper is not generated (e.g. during early development).
         var record = (TRecord)Activator.CreateInstance(typeof(TRecord))!;
         _typeModel.Id.Property.SetValue(record, doc.Id);
         foreach (var field in _typeModel.Fields)

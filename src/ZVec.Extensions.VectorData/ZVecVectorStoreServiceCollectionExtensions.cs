@@ -18,6 +18,12 @@ public static class ZVecVectorStoreServiceCollectionExtensions
     /// <param name="lifetime">The service lifetime for vector store registrations (defaults to <see cref="ServiceLifetime.Singleton"/>).</param>
     /// <returns>The modified <see cref="IServiceCollection"/> for chaining.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="services"/> is null.</exception>
+    /// <remarks>
+    /// <b>Singleton lifetime is mandatory for <see cref="IZvecFactory"/>.</b> The native factory owns
+    /// process-wide resources (file handles, mmap regions, P/Invoke SafeHandles) that must NOT be
+    /// shared across multiple factory instances pointing at the same storage path.
+    /// <see cref="ZVecVectorStore"/> is registered with the same lifetime as <paramref name="lifetime"/>.
+    /// </remarks>
     public static IServiceCollection AddZVecVectorStore(
         this IServiceCollection services,
         Action<ZVecVectorStoreOptions>? configure = null,
@@ -47,9 +53,15 @@ public static class ZVecVectorStoreServiceCollectionExtensions
             return factory;
         });
 
+        // ZVecVectorStoreOptions registered as singleton so EffectiveCollectionBasePath
+        // is computed once and shared by all ZVecVectorStore instances and collections.
+        services.TryAddSingleton(options);
+
         var descriptor = ServiceDescriptor.Describe(
             typeof(ZVecVectorStore),
-            sp => new ZVecVectorStore(sp.GetRequiredService<IZvecFactory>()),
+            sp => new ZVecVectorStore(
+                sp.GetRequiredService<IZvecFactory>(),
+                sp.GetRequiredService<ZVecVectorStoreOptions>()),
             lifetime);
 
         var abstractDescriptor = ServiceDescriptor.Describe(

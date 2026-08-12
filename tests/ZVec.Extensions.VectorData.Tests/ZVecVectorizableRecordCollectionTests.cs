@@ -34,11 +34,22 @@ public sealed class ZVecVectorizableRecordCollectionTests
 {
     private static readonly string TestCollectionName = "docs_collection";
 
+    private static ZVecVectorStoreOptions CreateOptions(string? storagePath = null)
+        => new() { StoragePath = storagePath ?? Path.Combine(Path.GetTempPath(), "ZVecTests", Guid.NewGuid().ToString("N")) };
+
     [Fact]
     public void Constructor_ThrowsArgumentNullException_WhenFactoryIsNull()
     {
         Assert.Throws<ArgumentNullException>(() =>
-            new ZVecVectorizableRecordCollection<SampleCollectionRecord, string>(null!, TestCollectionName));
+            new ZVecVectorizableRecordCollection<SampleCollectionRecord, string>(null!, CreateOptions(), TestCollectionName));
+    }
+
+    [Fact]
+    public void Constructor_ThrowsArgumentNullException_WhenOptionsIsNull()
+    {
+        IZvecFactory factory = new ZVecFactory();
+        Assert.Throws<ArgumentNullException>(() =>
+            new ZVecVectorizableRecordCollection<SampleCollectionRecord, string>(factory, null!, TestCollectionName));
     }
 
     [Theory]
@@ -49,7 +60,7 @@ public sealed class ZVecVectorizableRecordCollectionTests
     {
         IZvecFactory factory = new ZVecFactory();
         Assert.Throws<ArgumentException>(() =>
-            new ZVecVectorizableRecordCollection<SampleCollectionRecord, string>(factory, invalidName!));
+            new ZVecVectorizableRecordCollection<SampleCollectionRecord, string>(factory, CreateOptions(), invalidName!));
     }
 
     [Fact]
@@ -58,7 +69,7 @@ public sealed class ZVecVectorizableRecordCollectionTests
         IZvecFactory factory = new ZVecFactory();
         var customDefinition = new VectorStoreCollectionDefinition();
         var collection = new ZVecVectorizableRecordCollection<SampleCollectionRecord, string>(
-            factory, TestCollectionName, customDefinition);
+            factory, CreateOptions(), TestCollectionName, customDefinition);
 
         Assert.Equal(TestCollectionName, collection.Name);
         Assert.Same(customDefinition, collection.Definition);
@@ -68,7 +79,7 @@ public sealed class ZVecVectorizableRecordCollectionTests
     public async Task GetAsync_ThrowsArgumentNullException_WhenKeyIsNull()
     {
         IZvecFactory factory = new ZVecFactory();
-        var collection = new ZVecVectorizableRecordCollection<SampleCollectionRecord, string>(factory, TestCollectionName);
+        var collection = new ZVecVectorizableRecordCollection<SampleCollectionRecord, string>(factory, CreateOptions(), TestCollectionName);
 
         await Assert.ThrowsAsync<ArgumentNullException>(() => collection.GetAsync((string)null!, cancellationToken: TestContext.Current.CancellationToken));
     }
@@ -77,7 +88,7 @@ public sealed class ZVecVectorizableRecordCollectionTests
     public async Task GetBatchAsync_ThrowsArgumentNullException_WhenKeysEnumerableIsNull()
     {
         IZvecFactory factory = new ZVecFactory();
-        var collection = new ZVecVectorizableRecordCollection<SampleCollectionRecord, string>(factory, TestCollectionName);
+        var collection = new ZVecVectorizableRecordCollection<SampleCollectionRecord, string>(factory, CreateOptions(), TestCollectionName);
 
         await Assert.ThrowsAsync<ArgumentNullException>(async () =>
         {
@@ -92,7 +103,7 @@ public sealed class ZVecVectorizableRecordCollectionTests
     public async Task GetAsync_Filter_ThrowsArgumentNullException_WhenFilterIsNull()
     {
         IZvecFactory factory = new ZVecFactory();
-        var collection = new ZVecVectorizableRecordCollection<SampleCollectionRecord, string>(factory, TestCollectionName);
+        var collection = new ZVecVectorizableRecordCollection<SampleCollectionRecord, string>(factory, CreateOptions(), TestCollectionName);
 
         await Assert.ThrowsAsync<ArgumentNullException>(async () =>
         {
@@ -107,7 +118,7 @@ public sealed class ZVecVectorizableRecordCollectionTests
     public async Task UpsertAsync_ThrowsArgumentNullException_WhenRecordIsNull()
     {
         IZvecFactory factory = new ZVecFactory();
-        var collection = new ZVecVectorizableRecordCollection<SampleCollectionRecord, string>(factory, TestCollectionName);
+        var collection = new ZVecVectorizableRecordCollection<SampleCollectionRecord, string>(factory, CreateOptions(), TestCollectionName);
 
         await Assert.ThrowsAsync<ArgumentNullException>(() => collection.UpsertAsync((SampleCollectionRecord)null!, cancellationToken: TestContext.Current.CancellationToken));
     }
@@ -116,7 +127,7 @@ public sealed class ZVecVectorizableRecordCollectionTests
     public async Task UpsertBatchAsync_ThrowsArgumentNullException_WhenRecordsEnumerableIsNull()
     {
         IZvecFactory factory = new ZVecFactory();
-        var collection = new ZVecVectorizableRecordCollection<SampleCollectionRecord, string>(factory, TestCollectionName);
+        var collection = new ZVecVectorizableRecordCollection<SampleCollectionRecord, string>(factory, CreateOptions(), TestCollectionName);
 
         await Assert.ThrowsAsync<ArgumentNullException>(() => collection.UpsertAsync((IEnumerable<SampleCollectionRecord>)null!, cancellationToken: TestContext.Current.CancellationToken));
     }
@@ -125,7 +136,7 @@ public sealed class ZVecVectorizableRecordCollectionTests
     public async Task DeleteAsync_ThrowsArgumentNullException_WhenKeyIsNull()
     {
         IZvecFactory factory = new ZVecFactory();
-        var collection = new ZVecVectorizableRecordCollection<SampleCollectionRecord, string>(factory, TestCollectionName);
+        var collection = new ZVecVectorizableRecordCollection<SampleCollectionRecord, string>(factory, CreateOptions(), TestCollectionName);
 
         await Assert.ThrowsAsync<ArgumentNullException>(() => collection.DeleteAsync((string)null!, cancellationToken: TestContext.Current.CancellationToken));
     }
@@ -134,7 +145,7 @@ public sealed class ZVecVectorizableRecordCollectionTests
     public async Task DeleteBatchAsync_ThrowsArgumentNullException_WhenKeysEnumerableIsNull()
     {
         IZvecFactory factory = new ZVecFactory();
-        var collection = new ZVecVectorizableRecordCollection<SampleCollectionRecord, string>(factory, TestCollectionName);
+        var collection = new ZVecVectorizableRecordCollection<SampleCollectionRecord, string>(factory, CreateOptions(), TestCollectionName);
 
         await Assert.ThrowsAsync<ArgumentNullException>(() => collection.DeleteAsync((IEnumerable<string>)null!, cancellationToken: TestContext.Current.CancellationToken));
     }
@@ -143,7 +154,7 @@ public sealed class ZVecVectorizableRecordCollectionTests
     public async Task SearchAsync_ThrowsArgumentNullException_WhenSearchValueIsNull()
     {
         IZvecFactory factory = new ZVecFactory();
-        var collection = new ZVecVectorizableRecordCollection<SampleCollectionRecord, string>(factory, TestCollectionName);
+        var collection = new ZVecVectorizableRecordCollection<SampleCollectionRecord, string>(factory, CreateOptions(), TestCollectionName);
 
         await Assert.ThrowsAsync<ArgumentNullException>(async () =>
         {
@@ -158,7 +169,7 @@ public sealed class ZVecVectorizableRecordCollectionTests
     public async Task SearchAsync_ThrowsNotSupportedException_WhenVectorTypeIsNotReadOnlyMemoryOfFloat()
     {
         IZvecFactory factory = new ZVecFactory();
-        var collection = new ZVecVectorizableRecordCollection<SampleCollectionRecord, string>(factory, TestCollectionName);
+        var collection = new ZVecVectorizableRecordCollection<SampleCollectionRecord, string>(factory, CreateOptions(), TestCollectionName);
 
         double[] unsupportedVector = new double[768];
         await Assert.ThrowsAsync<NotSupportedException>(async () =>
@@ -178,15 +189,21 @@ public sealed class ZVecVectorizableRecordCollectionTests
 
         try
         {
+            var options = new ZVecVectorStoreOptions { StoragePath = tempDir };
             IZvecFactory factory = new ZVecFactory();
             factory.Initialize();
 
             string colName = "test_roundtrip_" + Guid.NewGuid().ToString("N")[..8];
-            var collection = new ZVecVectorizableRecordCollection<SampleCollectionRecord, string>(factory, colName);
+            var collection = new ZVecVectorizableRecordCollection<SampleCollectionRecord, string>(factory, options, colName);
 
             await collection.EnsureCollectionExistsAsync(TestContext.Current.CancellationToken);
             bool exists = await collection.CollectionExistsAsync(TestContext.Current.CancellationToken);
             Assert.True(exists);
+
+            // Verify collection files actually live in tempDir, not in bin/
+            string expectedCollectionPath = Path.Combine(tempDir, colName);
+            Assert.True(Directory.Exists(expectedCollectionPath),
+                $"Collection directory should exist at {expectedCollectionPath}, not in bin/.");
 
             var floatArray = new float[768];
             floatArray[0] = 1.0f;
@@ -230,17 +247,38 @@ public sealed class ZVecVectorizableRecordCollectionTests
         }
     }
 
+    [Fact]
+    public void GetService_ReturnsFactory_WhenRequestedTypeIsIZvecFactory()
+    {
+        IZvecFactory factory = new ZVecFactory();
+        var collection = new ZVecVectorizableRecordCollection<SampleCollectionRecord, string>(factory, CreateOptions(), TestCollectionName);
+
+        object? service = collection.GetService(typeof(IZvecFactory));
+
+        Assert.Same(factory, service);
+    }
+
+    [Fact]
+    public void GetService_ReturnsNull_WhenRequestedTypeIsUnknown()
+    {
+        IZvecFactory factory = new ZVecFactory();
+        var collection = new ZVecVectorizableRecordCollection<SampleCollectionRecord, string>(factory, CreateOptions(), TestCollectionName);
+
+        object? service = collection.GetService(typeof(int));
+
+        Assert.Null(service);
+    }
+
     // -------------------------------------------------------------------------
     // Cancellation-path tests: every method with ThrowIfCancellationRequested
-    // MUST honour a pre-cancelled token. Missing these means the guard clause
-    // line is never executed — genuine branch gap.
+    // MUST honour a pre-cancelled token.
     // -------------------------------------------------------------------------
 
     [Fact]
     public async Task CollectionExistsAsync_ThrowsOperationCanceledException_WhenCancellationTokenCanceled()
     {
         IZvecFactory factory = new ZVecFactory();
-        var collection = new ZVecVectorizableRecordCollection<SampleCollectionRecord, string>(factory, TestCollectionName);
+        var collection = new ZVecVectorizableRecordCollection<SampleCollectionRecord, string>(factory, CreateOptions(), TestCollectionName);
         using var cts = new CancellationTokenSource();
         cts.Cancel();
 
@@ -252,7 +290,7 @@ public sealed class ZVecVectorizableRecordCollectionTests
     public async Task EnsureCollectionExistsAsync_ThrowsOperationCanceledException_WhenCancellationTokenCanceled()
     {
         IZvecFactory factory = new ZVecFactory();
-        var collection = new ZVecVectorizableRecordCollection<SampleCollectionRecord, string>(factory, TestCollectionName);
+        var collection = new ZVecVectorizableRecordCollection<SampleCollectionRecord, string>(factory, CreateOptions(), TestCollectionName);
         using var cts = new CancellationTokenSource();
         cts.Cancel();
 
@@ -264,7 +302,7 @@ public sealed class ZVecVectorizableRecordCollectionTests
     public async Task EnsureCollectionDeletedAsync_ThrowsOperationCanceledException_WhenCancellationTokenCanceled()
     {
         IZvecFactory factory = new ZVecFactory();
-        var collection = new ZVecVectorizableRecordCollection<SampleCollectionRecord, string>(factory, TestCollectionName);
+        var collection = new ZVecVectorizableRecordCollection<SampleCollectionRecord, string>(factory, CreateOptions(), TestCollectionName);
         using var cts = new CancellationTokenSource();
         cts.Cancel();
 
@@ -276,7 +314,7 @@ public sealed class ZVecVectorizableRecordCollectionTests
     public async Task DeleteAsync_SingleKey_ThrowsOperationCanceledException_WhenCancellationTokenCanceled()
     {
         IZvecFactory factory = new ZVecFactory();
-        var collection = new ZVecVectorizableRecordCollection<SampleCollectionRecord, string>(factory, TestCollectionName);
+        var collection = new ZVecVectorizableRecordCollection<SampleCollectionRecord, string>(factory, CreateOptions(), TestCollectionName);
         using var cts = new CancellationTokenSource();
         cts.Cancel();
 
@@ -288,7 +326,7 @@ public sealed class ZVecVectorizableRecordCollectionTests
     public async Task DeleteAsync_BatchKeys_ThrowsOperationCanceledException_WhenCancellationTokenCanceled()
     {
         IZvecFactory factory = new ZVecFactory();
-        var collection = new ZVecVectorizableRecordCollection<SampleCollectionRecord, string>(factory, TestCollectionName);
+        var collection = new ZVecVectorizableRecordCollection<SampleCollectionRecord, string>(factory, CreateOptions(), TestCollectionName);
         using var cts = new CancellationTokenSource();
         cts.Cancel();
 
@@ -300,7 +338,7 @@ public sealed class ZVecVectorizableRecordCollectionTests
     public async Task GetAsync_SingleKey_ThrowsOperationCanceledException_WhenCancellationTokenCanceled()
     {
         IZvecFactory factory = new ZVecFactory();
-        var collection = new ZVecVectorizableRecordCollection<SampleCollectionRecord, string>(factory, TestCollectionName);
+        var collection = new ZVecVectorizableRecordCollection<SampleCollectionRecord, string>(factory, CreateOptions(), TestCollectionName);
         using var cts = new CancellationTokenSource();
         cts.Cancel();
 
@@ -312,7 +350,7 @@ public sealed class ZVecVectorizableRecordCollectionTests
     public async Task GetAsync_BatchKeys_ThrowsOperationCanceledException_WhenCancellationTokenCanceled()
     {
         IZvecFactory factory = new ZVecFactory();
-        var collection = new ZVecVectorizableRecordCollection<SampleCollectionRecord, string>(factory, TestCollectionName);
+        var collection = new ZVecVectorizableRecordCollection<SampleCollectionRecord, string>(factory, CreateOptions(), TestCollectionName);
         using var cts = new CancellationTokenSource();
         cts.Cancel();
 
@@ -329,7 +367,7 @@ public sealed class ZVecVectorizableRecordCollectionTests
     public async Task GetAsync_Filter_ThrowsOperationCanceledException_WhenCancellationTokenCanceled()
     {
         IZvecFactory factory = new ZVecFactory();
-        var collection = new ZVecVectorizableRecordCollection<SampleCollectionRecord, string>(factory, TestCollectionName);
+        var collection = new ZVecVectorizableRecordCollection<SampleCollectionRecord, string>(factory, CreateOptions(), TestCollectionName);
         using var cts = new CancellationTokenSource();
         cts.Cancel();
 
@@ -347,7 +385,7 @@ public sealed class ZVecVectorizableRecordCollectionTests
     public async Task UpsertAsync_SingleRecord_ThrowsOperationCanceledException_WhenCancellationTokenCanceled()
     {
         IZvecFactory factory = new ZVecFactory();
-        var collection = new ZVecVectorizableRecordCollection<SampleCollectionRecord, string>(factory, TestCollectionName);
+        var collection = new ZVecVectorizableRecordCollection<SampleCollectionRecord, string>(factory, CreateOptions(), TestCollectionName);
         using var cts = new CancellationTokenSource();
         cts.Cancel();
 
@@ -360,7 +398,7 @@ public sealed class ZVecVectorizableRecordCollectionTests
     public async Task UpsertAsync_BatchRecords_ThrowsOperationCanceledException_WhenCancellationTokenCanceled()
     {
         IZvecFactory factory = new ZVecFactory();
-        var collection = new ZVecVectorizableRecordCollection<SampleCollectionRecord, string>(factory, TestCollectionName);
+        var collection = new ZVecVectorizableRecordCollection<SampleCollectionRecord, string>(factory, CreateOptions(), TestCollectionName);
         using var cts = new CancellationTokenSource();
         cts.Cancel();
 
@@ -373,7 +411,7 @@ public sealed class ZVecVectorizableRecordCollectionTests
     public async Task SearchAsync_FloatMemoryPath_ThrowsOperationCanceledException_WhenCancellationTokenCanceled()
     {
         IZvecFactory factory = new ZVecFactory();
-        var collection = new ZVecVectorizableRecordCollection<SampleCollectionRecord, string>(factory, TestCollectionName);
+        var collection = new ZVecVectorizableRecordCollection<SampleCollectionRecord, string>(factory, CreateOptions(), TestCollectionName);
         using var cts = new CancellationTokenSource();
         cts.Cancel();
 
@@ -388,9 +426,7 @@ public sealed class ZVecVectorizableRecordCollectionTests
     }
 
     // -------------------------------------------------------------------------
-    // Dictionary<string, object?> TRecord branch: when TRecord == Dictionary,
-    // the constructor must NOT call ZVecTypeModel.Get<TRecord>() and must set
-    // _typeModel = null. This is the path exercised by GetDynamicCollection.
+    // Dictionary<string, object?> TRecord branch
     // -------------------------------------------------------------------------
 
     [Fact]
@@ -399,11 +435,8 @@ public sealed class ZVecVectorizableRecordCollectionTests
         IZvecFactory factory = new ZVecFactory();
         var definition = new VectorStoreCollectionDefinition();
 
-        // Creating with Dictionary TRecord must NOT call ZVecTypeModel.Get<Dictionary<string,object?>>(),
-        // which would throw since Dictionary has no ZVec mapping attributes.
-        // If _typeModel is still set (bug), this constructor would throw from ZVecTypeModel.Get.
         var collection = new ZVecVectorizableRecordCollection<Dictionary<string, object?>, object>(
-            factory, "dynamic_docs", definition);
+            factory, CreateOptions(), "dynamic_docs", definition);
 
         Assert.Equal("dynamic_docs", collection.Name);
         Assert.Same(definition, collection.Definition);

@@ -1,5 +1,9 @@
 # RAG Security Threat Model & Prompt Injection Sanitizer
 
+> **Status:** Planned for Phase 2 (Story 2.6 — Threat Model & Security Prompt Injection Filter).
+> The `IRagSecuritySanitizer` interface and `DefaultRagSecuritySanitizer` implementation
+> described in this document are not yet implemented. This document specifies the design.
+
 ## Overview
 
 Local-first RAG systems deployed in enterprise and regulated environments (healthcare, legal, finance, defense) face specific security attack vectors. The primary threat vector is **Indirect Prompt Injection** delivered via ingested untrusted documents.

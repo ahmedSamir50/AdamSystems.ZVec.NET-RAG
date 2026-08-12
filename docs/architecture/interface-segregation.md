@@ -1,5 +1,8 @@
 # RAG Pipeline Interface Segregation (ISP)
 
+> **Status:** Planned for Phase 2 (Story 2.1 — IRagIngestor, IRagRetriever, IRagGenerator Split Interfaces & RagPipeline Facade).
+> The interface segregation design described here is the target architecture for Phase 2.
+
 The `ZVec.Rag` framework enforces strict **Interface Segregation Principle (ISP)** compliance to eliminate God interfaces and allow application components to depend strictly on the capabilities they require.
 
 ---

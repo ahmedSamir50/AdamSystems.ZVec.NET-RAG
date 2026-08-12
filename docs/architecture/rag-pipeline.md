@@ -2,6 +2,7 @@
 
 `ZVec.Rag` provides the `IRagPipeline` and `IRagIngestor` orchestrators built on top of Microsoft AI ecosystem primitives:
 
+> **Status:** Planned for Phase 2 (Stories 2.1, 2.2, 2.3 — RAG Pipeline, Ingestion, SSE)
 ```
 ┌─────────────────────────┐    ┌─────────────────────────┐    ┌─────────────────────────┐    ┌─────────────────────────┐
 │   1. Document Reader    │ -> │    2. Text Chunker      │ -> │  3. Vector Embedder     │ -> │  4. Persistent Store    │
@@ -44,14 +45,19 @@ Tokenization is critical for token-aware chunking and LLM prompt context budgeti
 
 ## 3. Anti-Corruption Layer (ACL), Index Lifecycle & Security
 
+> **Status:** Planned for Phase 2 (Story 2.2 — Document Ingestion)
 1. **`M.E.DataIngestion` Anti-Corruption Layer (`IZVecTextChunker`)**:
    - Preview APIs in `Microsoft.Extensions.DataIngestion` are wrapped behind `IZVecTextChunker` and `IZVecDocumentReader` interfaces to prevent downstream breaking changes when Microsoft renames preview types.
+> **Status:** Planned for Phase 2 (Story 1.11 — Embedder Stamp Manifest)
 2. **Embedder Stamp Manifest (`zvec_index_manifest.json`)**:
    - On index creation, `ZVecIndexManifestManager` writes a manifest recording `ModelId`, `Dimensions`, and timestamp. Startup validation throws `ZVecEmbedderMismatchException` if configured embedders change, preventing index corruption.
+> **Status:** Planned for Phase 2 (Story 2.3 — Optimize Lifecycle)
 3. **`Optimize()` Lifecycle & Read-Write Lock**:
    - Batch ingestion automatically executes `collection.Optimize()`. Index handles are safely closed and reopened using a managed `ReaderWriterLockSlim` to ensure in-flight queries complete safely and post-optimize queries hit the merged HNSW graph.
+> **Status:** Planned for Phase 2 (Story 2.6 — Threat Model & Security)
 4. **Security Threat Model & Prompt Injection Sanitizer (`IRagSecuritySanitizer`)**:
    - Ingested/retrieved chunks pass through `IRagSecuritySanitizer` before prompt composition to escape system directive overrides. See [Security Threat Model](security-threat-model.md).
+> **Status:** Planned for Phase 2 (Story 2.1 — IRagPipeline, Task 2.1.3)
 5. **Context Window Token Budgeting (`MaxContextTokens`) & Multi-Turn History**:
    - Chunks are packed up to `MaxContextTokens` (default: 4096) using `Microsoft.ML.Tokenizers` before being submitted to `IChatClient`. Supports multi-turn chat history (`IList<ChatMessage>`).
 
@@ -59,8 +65,11 @@ Tokenization is critical for token-aware chunking and LLM prompt context budgeti
 
 ## 4. Retrieval, Hybrid Search & Citation Generation
 
+> **Status:** Planned for Phase 2 (Story 2.3 — Hybrid Search Bridge)
 - **Hybrid Search**: Native ZVec dense vector search + FTS keyword matching fused via Reciprocal Rank Fusion (`ZVecRrfReranker`, default $k=60$).
+> **Status:** Planned for Phase 2 (Story 2.3 — Citation Tracking)
 - **Citation Tracking**: Round-trip metadata (`SourceDoc`, `SourceUri`, `SourceHash`, `Page`, `Offset`, `ChunkIndex`, `ChunkId`) into streaming `RagChunk` records, with distinct `RankScore` (RRF rank score for sorting), `DenseScore` (cosine similarity for thresholding), and `FtsScore` (BM25 keyword score).
+> **Status:** Planned for Phase 2 (Story 2.3 — SSE Streaming)
 - **SSE Response Helpers**: Real-time unbuffered Server-Sent Events endpoint helpers (`app.MapRagSseEndpoint(...)`) calling `Response.BodyWriter.FlushAsync()` after every chunk.
 
 

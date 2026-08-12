@@ -241,6 +241,104 @@ public sealed class ZVecFilterExpressionVisitorTests
         Assert.Contains("\"Outdoor\"", result);
         Assert.Contains("\"Fitness\"", result);
     }
+
+    // -------------------------------------------------------------------------
+    // v4 Review Remediation: 5 missing filter visitor tests
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Verifies string values containing double quotes are properly escaped in the
+    /// generated filter string. Prevents SQL-injection-style filter breakage.
+    /// </summary>
+    [Fact]
+    public void Translate_EqualOperator_EscapesDoubleQuotesInStringValue()
+    {
+        Expression<Func<FilterTestRecord, bool>> filter = x => x.Category == "Evil\"OR";
+        var result = ZVecFilterExpressionVisitor.Translate(filter);
+
+        Assert.NotNull(result);
+        Assert.Contains("Evil\\\"OR", result);
+    }
+
+    /// <summary>
+    /// Verifies that integer arrays in IN clauses emit unquoted numeric literals
+    /// (not quoted string literals like "1", "2").
+    /// </summary>
+    [Fact]
+    public void Translate_ContainsAny_NumericArray_EmitsUnquotedNumericLiterals()
+    {
+        int[] prices = new[] { 10, 20, 30 };
+        Expression<Func<FilterTestRecord, bool>> filter = x => prices.Contains(x.Price);
+        var result = ZVecFilterExpressionVisitor.Translate(filter);
+
+        Assert.NotNull(result);
+        Assert.Contains("Price IN", result);
+        Assert.Contains("10", result);
+        Assert.Contains("20", result);
+        Assert.Contains("30", result);
+        Assert.DoesNotContain("\"10\"", result);
+        Assert.DoesNotContain("\"20\"", result);
+        Assert.DoesNotContain("\"30\"", result);
+    }
+
+    /// <summary>
+    /// Verifies that an IN clause containing both null and non-null elements
+    /// generates "(Property IN (...) OR Property IS NULL)".
+    /// </summary>
+    [Fact]
+    public void Translate_ContainsAny_MixedNullAndNonNullElements_GeneratesInClauseWithIsNullAlternative()
+    {
+        string[] categories = new string?[] { "Electronics", null, "Books" }!;
+        Expression<Func<FilterTestRecord, bool>> filter = x => categories.Contains(x.Category);
+        var result = ZVecFilterExpressionVisitor.Translate(filter);
+
+        Assert.NotNull(result);
+        Assert.Contains("Category IN", result);
+        Assert.Contains("\"Electronics\"", result);
+        Assert.Contains("\"Books\"", result);
+        Assert.Contains("IS NULL", result.ToUpperInvariant());
+    }
+
+    /// <summary>
+    /// Verifies that comparing a property to null translates to an IS NULL check.
+    /// </summary>
+    [Fact]
+    public void Translate_IsNullComparison_ReturnsIsNotNullFilterString()
+    {
+        Expression<Func<FilterTestRecord, bool>> filter = x => x.Category == null;
+        var result = ZVecFilterExpressionVisitor.Translate(filter);
+
+        Assert.NotNull(result);
+        Assert.Contains("Category IS NULL", result.ToUpperInvariant());
+    }
+
+    /// <summary>
+    /// Verifies that comparing a property to not-null translates to an IS NOT NULL check.
+    /// </summary>
+    [Fact]
+    public void Translate_IsNotNullComparison_ReturnsIsNotNullFilterString()
+    {
+        Expression<Func<FilterTestRecord, bool>> filter = x => x.Category != null;
+        var result = ZVecFilterExpressionVisitor.Translate(filter);
+
+        Assert.NotNull(result);
+        Assert.Contains("Category IS NOT NULL", result.ToUpperInvariant());
+    }
+
+    /// <summary>
+    /// Verifies that compound Not negation on a binary expression (e.g. !(x.Price > 100))
+    /// translates to NOT(Price > 100) — exercises the VisitNot → VisitExpression → VisitBinary path.
+    /// </summary>
+    [Fact]
+    public void Translate_CompoundNot_OnBinaryExpression_ReturnsNotWrappedFilterString()
+    {
+        Expression<Func<FilterTestRecord, bool>> filter = x => !(x.Price > 100);
+        var result = ZVecFilterExpressionVisitor.Translate(filter);
+
+        Assert.NotNull(result);
+        Assert.Contains("Price > 100", result);
+        Assert.Contains("NOT", result.ToUpperInvariant());
+    }
 }
 
 /// <summary>Helper: exposes a property-backed array for Evaluate MemberExpression/PropertyInfo coverage.</summary>

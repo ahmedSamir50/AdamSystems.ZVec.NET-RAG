@@ -1,5 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.VectorData;
+using ZVec.Extensions.VectorData;
+using ZVec.NET;
 using ZVec.NET.Mapping;
 
 namespace ZVec.AotTestApp;
@@ -7,7 +9,7 @@ namespace ZVec.AotTestApp;
 /// <summary>
 /// Sample document model for Native AOT trim verification.
 /// </summary>
-[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)]
+[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
 public sealed class SampleAotDoc
 {
     /// <summary>Unique Identifier.</summary>
@@ -56,12 +58,51 @@ public static class Program
             var restored = ZVecMapper.FromDoc<SampleAotDoc>(doc, model);
             Console.WriteLine($"[AOT Test 3] Document restored: Id={restored.Id}, Title={restored.Title}, VectorDim={restored.Vector.Length}");
 
+            // Test 4: ZVecVectorStore instantiation + collection retrieval under AOT
+            var options = new ZVecVectorStoreOptions
+            {
+                StoragePath = Path.Combine(Path.GetTempPath(), "ZVecAotTests", Guid.NewGuid().ToString("N"))
+            };
+            Directory.CreateDirectory(options.StoragePath);
+
+            var store = new ZVecVectorStore(new ZVecFactory(), options);
+            var collection = store.GetCollection<string, SampleAotDoc>("aot_test_collection");
+            Console.WriteLine($"[AOT Test 4] ZVecVectorStore + collection resolved: {collection.Name}");
+
+            // Test 5: Filter Expression Translation under AOT (no Expression.Compile)
+            System.Linq.Expressions.Expression<Func<SampleAotDoc, bool>> filter = x => x.Title == "AOT Document Test";
+            string filterStr = ZVecFilterExpressionVisitor.Translate(filter);
+            Console.WriteLine($"[AOT Test 5] Filter translated: {filterStr}");
+
+            // Test 6: Upsert + Search round-trip under AOT (verifies zero-reflection mapper)
+            collection.EnsureCollectionExistsAsync(CancellationToken.None).GetAwaiter().GetResult();
+            collection.UpsertAsync(record, CancellationToken.None).GetAwaiter().GetResult();
+
+            var fetched = collection.GetAsync("doc_aot_001", cancellationToken: CancellationToken.None).GetAwaiter().GetResult();
+            if (fetched == null) throw new InvalidOperationException("Fetched document was null after upsert.");
+            Console.WriteLine($"[AOT Test 6] Upsert + Get round-trip OK. Fetched Title={fetched.Title}");
+
+            // Test 7: Vectorized Search under AOT
+            var searchResults = new List<VectorSearchResult<SampleAotDoc>>();
+            var searchAsync = collection.SearchAsync(record.Vector, 5, cancellationToken: CancellationToken.None);
+            var enumerator = searchAsync.GetAsyncEnumerator(CancellationToken.None);
+            while (enumerator.MoveNextAsync().AsTask().GetAwaiter().GetResult())
+            {
+                searchResults.Add(enumerator.Current);
+            }
+            if (searchResults.Count == 0) throw new InvalidOperationException("Search returned no results under AOT.");
+            Console.WriteLine($"[AOT Test 7] Vectorized search returned {searchResults.Count} result(s). Top score: {searchResults[0].Score}");
+
+            // Cleanup
+            collection.EnsureCollectionDeletedAsync(CancellationToken.None).GetAwaiter().GetResult();
+            try { Directory.Delete(options.StoragePath, recursive: true); } catch { }
+
             Console.WriteLine("=== All Native AOT Verification Tests Passed Successfully ===");
             return 0;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"❌ AOT Verification Failure: {ex.GetType().Name} - {ex.Message}");
+            Console.WriteLine($"[FAIL] AOT Verification Failure: {ex.GetType().Name} - {ex.Message}");
             Console.WriteLine(ex.StackTrace);
             return 1;
         }

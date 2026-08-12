@@ -28,52 +28,64 @@ public sealed class TestStoreRecord
 
 /// <summary>
 /// Unit test suite for ZVecVectorStore (VectorStore implementation).
+/// All tests use isolated temp directories — no fake `Assert.False` coincidences.
 /// </summary>
 public sealed class ZVecVectorStoreTests
 {
-    private static readonly string TestCollectionName = "test_store_records";
+    private static string CreateTempStoragePath()
+        => Path.Combine(Path.GetTempPath(), "ZVecTests", Guid.NewGuid().ToString("N"));
+
+    private static ZVecVectorStoreOptions CreateOptions(string? storagePath = null)
+        => new() { StoragePath = storagePath ?? CreateTempStoragePath() };
 
     [Fact]
     public void Constructor_ThrowsArgumentNullException_WhenZVecFactoryIsNull()
     {
-        Assert.Throws<ArgumentNullException>(() => new ZVecVectorStore(null!));
+        Assert.Throws<ArgumentNullException>(() => new ZVecVectorStore(null!, CreateOptions()));
+    }
+
+    [Fact]
+    public void Constructor_ThrowsArgumentNullException_WhenOptionsIsNull()
+    {
+        IZvecFactory factory = new ZVecFactory();
+        Assert.Throws<ArgumentNullException>(() => new ZVecVectorStore(factory, null!));
     }
 
     [Fact]
     public void GetCollection_ReturnsValidCollectionInstance_WhenParametersAreValid()
     {
         IZvecFactory factory = new ZVecFactory();
-        var store = new ZVecVectorStore(factory);
+        var store = new ZVecVectorStore(factory, CreateOptions());
 
-        var collection = store.GetCollection<string, TestStoreRecord>(TestCollectionName);
+        var collection = store.GetCollection<string, TestStoreRecord>("test_store_records");
 
         Assert.NotNull(collection);
-        Assert.Equal(TestCollectionName, collection.Name);
+        Assert.Equal("test_store_records", collection.Name);
     }
 
-    [Fact]
-    public void GetCollection_ThrowsArgumentException_WhenCollectionNameIsNullOrEmpty()
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void GetCollection_ThrowsArgumentException_WhenCollectionNameIsNullOrEmpty(string? invalidName)
     {
         IZvecFactory factory = new ZVecFactory();
-        var store = new ZVecVectorStore(factory);
+        var store = new ZVecVectorStore(factory, CreateOptions());
 
-        Assert.Throws<ArgumentException>(() => store.GetCollection<string, TestStoreRecord>(null!));
-        Assert.Throws<ArgumentException>(() => store.GetCollection<string, TestStoreRecord>(string.Empty));
-        Assert.Throws<ArgumentException>(() => store.GetCollection<string, TestStoreRecord>("   "));
+        Assert.Throws<ArgumentException>(() => store.GetCollection<string, TestStoreRecord>(invalidName!));
     }
 
     [Fact]
     public void GetCollection_PropagatesDefinition_WhenCustomDefinitionProvided()
     {
         IZvecFactory factory = new ZVecFactory();
-        var store = new ZVecVectorStore(factory);
+        var store = new ZVecVectorStore(factory, CreateOptions());
         var customDefinition = new VectorStoreCollectionDefinition();
 
-        var collection = store.GetCollection<string, TestStoreRecord>(TestCollectionName, customDefinition);
+        var collection = store.GetCollection<string, TestStoreRecord>("test_store_records", customDefinition);
 
         Assert.NotNull(collection);
-        Assert.Equal(TestCollectionName, collection.Name);
-        // Verify the definition is propagated through to the underlying collection.
+        Assert.Equal("test_store_records", collection.Name);
         var typedCollection = Assert.IsType<ZVecVectorizableRecordCollection<TestStoreRecord, string>>(collection);
         Assert.Same(customDefinition, typedCollection.Definition);
     }
@@ -82,13 +94,13 @@ public sealed class ZVecVectorStoreTests
     public void GetDynamicCollection_ReturnsCollection_WhenParametersAreValid()
     {
         IZvecFactory factory = new ZVecFactory();
-        var store = new ZVecVectorStore(factory);
+        var store = new ZVecVectorStore(factory, CreateOptions());
         var definition = new VectorStoreCollectionDefinition();
 
-        var collection = store.GetDynamicCollection(TestCollectionName, definition);
+        var collection = store.GetDynamicCollection("test_store_records", definition);
 
         Assert.NotNull(collection);
-        Assert.Equal(TestCollectionName, collection.Name);
+        Assert.Equal("test_store_records", collection.Name);
     }
 
     [Theory]
@@ -98,37 +110,100 @@ public sealed class ZVecVectorStoreTests
     public void GetDynamicCollection_ThrowsArgumentException_WhenNameInvalid(string? invalidName)
     {
         IZvecFactory factory = new ZVecFactory();
-        var store = new ZVecVectorStore(factory);
+        var store = new ZVecVectorStore(factory, CreateOptions());
         var definition = new VectorStoreCollectionDefinition();
 
         Assert.Throws<ArgumentException>(() => store.GetDynamicCollection(invalidName!, definition));
     }
 
+    /// <summary>
+    /// HONEST ROUND-TRIP: EnsureCollectionExistsAsync → CollectionExistsAsync == true →
+    /// EnsureCollectionDeletedAsync → CollectionExistsAsync == false.
+    /// Replaces the previous "Assert.False(exists)" stub assertion that only passed
+    /// because no collection was ever created.
+    /// </summary>
     [Fact]
-    public async Task CollectionExistsAsync_ReturnsFalse_WhenInvoked()
+    public async Task CollectionExistsAsync_ReturnsTrue_AfterEnsureCollectionExistsAsync_AndFalse_AfterEnsureCollectionDeletedAsync()
     {
-        IZvecFactory factory = new ZVecFactory();
-        var store = new ZVecVectorStore(factory);
+        string storagePath = CreateTempStoragePath();
+        Directory.CreateDirectory(storagePath);
+        try
+        {
+            IZvecFactory factory = new ZVecFactory();
+            var store = new ZVecVectorStore(factory, CreateOptions(storagePath));
+            string collectionName = "lifecycle_" + Guid.NewGuid().ToString("N")[..8];
 
-        bool exists = await store.CollectionExistsAsync(TestCollectionName, TestContext.Current.CancellationToken);
+            // Initially does not exist
+            bool existsBefore = await store.CollectionExistsAsync(collectionName, TestContext.Current.CancellationToken);
+            Assert.False(existsBefore);
 
-        Assert.False(exists);
+            // After EnsureCollectionExistsAsync, must exist
+            await store.GetCollection<string, TestStoreRecord>(collectionName)
+                       .EnsureCollectionExistsAsync(TestContext.Current.CancellationToken);
+            bool existsAfterCreate = await store.CollectionExistsAsync(collectionName, TestContext.Current.CancellationToken);
+            Assert.True(existsAfterCreate);
+
+            // After EnsureCollectionDeletedAsync, must not exist
+            await store.EnsureCollectionDeletedAsync(collectionName, TestContext.Current.CancellationToken);
+            bool existsAfterDelete = await store.CollectionExistsAsync(collectionName, TestContext.Current.CancellationToken);
+            Assert.False(existsAfterDelete);
+        }
+        finally
+        {
+            if (Directory.Exists(storagePath))
+            {
+                try { Directory.Delete(storagePath, recursive: true); } catch { }
+            }
+        }
     }
 
+    /// <summary>
+    /// HONEST ROUND-TRIP: ListCollectionNamesAsync returns names of actually-created collections.
+    /// Verifies that a created collection appears in enumeration, and that excluded
+    /// infrastructure directories (bin/obj/etc.) do NOT appear.
+    /// </summary>
     [Fact]
-    public async Task EnsureCollectionDeletedAsync_CompletesSuccessfully_WhenInvoked()
+    public async Task ListCollectionNamesAsync_ReturnsCreatedCollection_AndExcludesInfrastructureDirectories()
     {
-        IZvecFactory factory = new ZVecFactory();
-        var store = new ZVecVectorStore(factory);
+        string storagePath = CreateTempStoragePath();
+        Directory.CreateDirectory(storagePath);
+        try
+        {
+            // Create a "bin" directory to verify exclusion
+            Directory.CreateDirectory(Path.Combine(storagePath, "bin"));
+            Directory.CreateDirectory(Path.Combine(storagePath, "obj"));
 
-        await store.EnsureCollectionDeletedAsync(TestCollectionName, TestContext.Current.CancellationToken);
+            IZvecFactory factory = new ZVecFactory();
+            var store = new ZVecVectorStore(factory, CreateOptions(storagePath));
+            string collectionName = "listed_" + Guid.NewGuid().ToString("N")[..8];
+
+            await store.GetCollection<string, TestStoreRecord>(collectionName)
+                       .EnsureCollectionExistsAsync(TestContext.Current.CancellationToken);
+
+            var names = new List<string>();
+            await foreach (var name in store.ListCollectionNamesAsync(TestContext.Current.CancellationToken))
+            {
+                names.Add(name);
+            }
+
+            Assert.Contains(collectionName, names);
+            Assert.DoesNotContain("bin", names);
+            Assert.DoesNotContain("obj", names);
+        }
+        finally
+        {
+            if (Directory.Exists(storagePath))
+            {
+                try { Directory.Delete(storagePath, recursive: true); } catch { }
+            }
+        }
     }
 
     [Fact]
     public void GetService_ReturnsFactory_WhenRequestedTypeIsIZvecFactory()
     {
         IZvecFactory factory = new ZVecFactory();
-        var store = new ZVecVectorStore(factory);
+        var store = new ZVecVectorStore(factory, CreateOptions());
 
         object? service = store.GetService(typeof(IZvecFactory));
 
@@ -139,7 +214,7 @@ public sealed class ZVecVectorStoreTests
     public void GetService_ReturnsNull_WhenRequestedTypeIsUnknown()
     {
         IZvecFactory factory = new ZVecFactory();
-        var store = new ZVecVectorStore(factory);
+        var store = new ZVecVectorStore(factory, CreateOptions());
 
         object? service = store.GetService(typeof(string));
 
@@ -147,49 +222,34 @@ public sealed class ZVecVectorStoreTests
     }
 
     [Fact]
-    public async Task ListCollectionNamesAsync_EnumeratesCreatedCollections()
-    {
-        IZvecFactory factory = new ZVecFactory();
-        var store = new ZVecVectorStore(factory);
-
-        var names = new List<string>();
-        await foreach (var name in store.ListCollectionNamesAsync(TestContext.Current.CancellationToken))
-        {
-            names.Add(name);
-        }
-
-        Assert.NotNull(names);
-    }
-
-    [Fact]
     public async Task CollectionExistsAsync_ThrowsOperationCanceledException_WhenCancellationTokenCanceled()
     {
         IZvecFactory factory = new ZVecFactory();
-        var store = new ZVecVectorStore(factory);
+        var store = new ZVecVectorStore(factory, CreateOptions());
         using var cts = new CancellationTokenSource();
         cts.Cancel();
 
         await Assert.ThrowsAsync<OperationCanceledException>(
-            () => store.CollectionExistsAsync(TestCollectionName, cts.Token));
+            () => store.CollectionExistsAsync("test_store_records", cts.Token));
     }
 
     [Fact]
     public async Task EnsureCollectionDeletedAsync_ThrowsOperationCanceledException_WhenCancellationTokenCanceled()
     {
         IZvecFactory factory = new ZVecFactory();
-        var store = new ZVecVectorStore(factory);
+        var store = new ZVecVectorStore(factory, CreateOptions());
         using var cts = new CancellationTokenSource();
         cts.Cancel();
 
         await Assert.ThrowsAsync<OperationCanceledException>(
-            () => store.EnsureCollectionDeletedAsync(TestCollectionName, cts.Token));
+            () => store.EnsureCollectionDeletedAsync("test_store_records", cts.Token));
     }
 
     [Fact]
     public async Task ListCollectionNamesAsync_ThrowsOperationCanceledException_WhenCancellationTokenCanceled()
     {
         IZvecFactory factory = new ZVecFactory();
-        var store = new ZVecVectorStore(factory);
+        var store = new ZVecVectorStore(factory, CreateOptions());
         using var cts = new CancellationTokenSource();
         cts.Cancel();
 

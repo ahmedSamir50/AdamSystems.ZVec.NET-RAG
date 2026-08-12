@@ -1,5 +1,9 @@
 # Hybrid Search & RRF Math
 
+> **Status:** Planned for Phase 2 (Story 2.3 — Hybrid Search Bridge & RRF).
+> The `ZVecRrfReranker` recipe and `HybridSearchOptions.RrfK` configuration
+> described in this document are not yet wired through the RAG pipeline.
+
 ZVec.NET supports native in-database dense vector and Full-Text Search (FTS) hybrid queries re-ranked via **Reciprocal Rank Fusion (RRF)**.
 
 ## RRF Formula
