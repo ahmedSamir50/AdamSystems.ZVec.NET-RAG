@@ -96,9 +96,12 @@ All NuGet package versions across the solution are managed centrally in `Directo
 ## 4. Core Types & Implementation Files
 
 - **`ZVecVectorStore`**: [`src/ZVec.Extensions.VectorData/ZVecVectorStore.cs`](file:///d:/A_S/ZVec_NET_RAG_SLN/src/ZVec.Extensions.VectorData/ZVecVectorStore.cs)
+- **`ZVecVectorStoreOptions`**: [`src/ZVec.Extensions.VectorData/ZVecVectorStoreOptions.cs`](file:///d:/A_S/ZVec_NET_RAG_SLN/src/ZVec.Extensions.VectorData/ZVecVectorStoreOptions.cs) (Storage path routing & factory options).
 - **`ZVecVectorizableRecordCollection<TRecord, TKey>`**: [`src/ZVec.Extensions.VectorData/ZVecVectorizableRecordCollection.cs`](file:///d:/A_S/ZVec_NET_RAG_SLN/src/ZVec.Extensions.VectorData/ZVecVectorizableRecordCollection.cs)
+- **`IZVecRecordMapper<TRecord>`**: [`src/ZVec.Extensions.VectorData/IZVecRecordMapper.cs`](file:///d:/A_S/ZVec_NET_RAG_SLN/src/ZVec.Extensions.VectorData/IZVecRecordMapper.cs) (Zero-reflection POCO record mapper interface).
+- **`ZVecRecordMapperRegistry`**: [`src/ZVec.Extensions.VectorData/ZVecRecordMapperRegistry.cs`](file:///d:/A_S/ZVec_NET_RAG_SLN/src/ZVec.Extensions.VectorData/ZVecRecordMapperRegistry.cs) (Process-wide registry for SG-emitted mappers populated via `[ModuleInitializer]`).
 - **`ZVecFilterExpressionVisitor`**: [`src/ZVec.Extensions.VectorData/ZVecFilterExpressionVisitor.cs`](file:///d:/A_S/ZVec_NET_RAG_SLN/src/ZVec.Extensions.VectorData/ZVecFilterExpressionVisitor.cs)
-- **`ZVecRecordMetadataGenerator`**: [`src/ZVec.Extensions.VectorData.SourceGenerator/ZVecRecordMetadataGenerator.cs`](file:///d:/A_S/ZVec_NET_RAG_SLN/src/ZVec.Extensions.VectorData.SourceGenerator/ZVecRecordMetadataGenerator.cs) (Emits zero-reflection record mappers and static schema builders calling `AddField()` / `AddVector()` directly).
+- **`ZVecRecordMetadataGenerator`**: [`src/ZVec.Extensions.VectorData.SourceGenerator/ZVecRecordMetadataGenerator.cs`](file:///d:/A_S/ZVec_NET_RAG_SLN/src/ZVec.Extensions.VectorData.SourceGenerator/ZVecRecordMetadataGenerator.cs) (Emits zero-reflection `IZVecRecordMapper<TRecord>` mappers, `VectorStoreCollectionDefinition`, and `[ModuleInitializer]` registration).
 - **`ZVecFilterOperators`**: Enum covering 12 comparison, logical, collection, and null filter operators (`Equals`, `NotEquals`, `LessThan`, `LessThanOrEqual`, `GreaterThan`, `GreaterThanOrEqual`, `And`, `Or`, `Not`, `ContainsAny`, `IsNull`, `IsNotNull`).
 - **`ZVecErrorMessages`**: Strongly-typed error formatting helpers eliminating magic strings.
 - **`ZVecVectorDataException`**: Base exception type for connector operations.
