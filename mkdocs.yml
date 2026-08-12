@@ -1,0 +1,73 @@
+site_name: ZVec.NET-RAG Documentation
+site_description: Local-first RAG for .NET. No cloud. No Python. No kidding.
+site_author: Ahmed Samir (Adam Systems)
+site_url: https://ahmedsamir50.github.io/ZVec.NET-RAG/
+
+repo_name: ahmedsamir50/ZVec.NET-RAG
+repo_url: https://github.com/ahmedsamir50/ZVec.NET-RAG
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: blue
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: blue
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - navigation.instant
+    - content.code.copy
+    - content.action.edit
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.math:
+      className: math
+      format: mathjax
+
+nav:
+  - Overview: index.md
+  - Architecture & Theory:
+      - System Overview: architecture/overview.md
+      - Interface Segregation (ISP): architecture/interface-segregation.md
+      - DI & Lifecycle Composition: architecture/di-composition.md
+      - VectorData Connector Design: architecture/vectordata-connector.md
+      - RAG Pipeline Architecture: architecture/rag-pipeline.md
+      - Metric Score Semantics & Normalization: architecture/score-semantics.md
+      - Security Threat Model & Prompt Injection: architecture/security-threat-model.md
+      - Hybrid Search & RRF Math: architecture/hybrid-search-rrf.md
+      - Native AOT & Zero-Copy Memory: architecture/native-aot-memory.md
+  - Developer Guides:
+      - Quickstart (60 Seconds): guides/quickstart.md
+      - Multimodal RAG (Text + Image): guides/multimodal-rag.md
+      - Mobile Memory Budget & Quantization: guides/mobile-memory-budget.md
+      - TDD & Testing Strategy: guides/testing-strategy.md
+      - Code Standards & Conventions: guides/code-standards.md
+      - MkDocs & Wiki Maintenance: guides/wiki-maintenance.md
+  - Reference:
+      - API Reference: reference/api.md
+      - Citation Schema & DDL Immutability: reference/citation-schema.md
+      - Index Selection & Parameter Tuning: reference/index-selection.md
+      - Dependency Matrix: reference/dependencies.md
+      - ZVec.NET Native AOT Spec: reference/zvec-net-aot-recommendations.md
+      - Performance Benchmarks: reference/benchmarks.md

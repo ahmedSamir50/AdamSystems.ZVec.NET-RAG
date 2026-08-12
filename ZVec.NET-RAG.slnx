@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/ZVec.Extensions.VectorData.SourceGenerator/ZVec.Extensions.VectorData.SourceGenerator.csproj" />
+    <Project Path="src/ZVec.Extensions.VectorData/ZVec.Extensions.VectorData.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/ZVec.AotTestApp/ZVec.AotTestApp.csproj" />
+    <Project Path="tests/ZVec.Extensions.VectorData.ConformanceTests/ZVec.Extensions.VectorData.ConformanceTests.csproj" />
+    <Project Path="tests/ZVec.Extensions.VectorData.Tests/ZVec.Extensions.VectorData.Tests.csproj" />
+  </Folder>
+</Solution>

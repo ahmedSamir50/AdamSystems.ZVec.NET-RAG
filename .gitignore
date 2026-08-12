@@ -1,0 +1,18 @@
+# Project specific internal reference doc
+#project_tasks_implementation_plan.md
+
+# Build & Tooling outputs
+[Bb]in/
+[Oo]bj/
+.vs/
+.agents/
+.codegraph/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# System & OS
+.DS_Store
+Thumbs.db
