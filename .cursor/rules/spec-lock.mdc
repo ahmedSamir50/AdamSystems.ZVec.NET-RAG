@@ -1,0 +1,17 @@
+---
+description: Before implementing an unchecked story, run spec_lock on the three plan files plus wiki. Do not start WRITE until the checklist is green.
+globs: "{project_tasks_implementation_plan.md,ZVec.NET-RAG-project-plan.md,README.md,docs/**,src/**,tests/**,.agents/**}"
+alwaysApply: true
+---
+
+# Spec lock before WRITE
+
+Do not implement an unchecked epic/story until spec_lock has run.
+
+1. Read `.agents/gaps/spec-lock.md` and execute every section.
+2. Cross-check `project_tasks_implementation_plan.md`, `ZVec.NET-RAG-project-plan.md`, `README.md`, and `docs/**`.
+3. Invoke `zvec-gap-detection-expert` with trigger `spec_lock` (plus architect, rag-pipeline, docs, vectordata, native-aot as the checklist assigns).
+4. If any P1 spec contradiction, or an open `D-*` for the epic being started is not tasked: **amend docs/plans first**. Do not start WRITE.
+5. Record new spec findings as `S-*` in `.agents/gaps/registry.md`.
+
+Gap detection after a commit is not a substitute. Consultants compare plan vs plan vs engine vs wiki; agents must do the same before code.

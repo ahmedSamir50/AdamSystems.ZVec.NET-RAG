@@ -44,7 +44,9 @@
 | DS-2 | P2 | 2026-08-26 | 2026-08-26 | working-tree | mobile-memory-budget.md corrected: mmap+ReadOnly for shipped indexes; real ZVecQuantizeType API |
 | DS-3 | P2 | 2026-08-26 | 2026-08-26 | working-tree | Second evaluation: LITM vs CitationOrder decoupled; Sample 03 Flat default; stamp QuantizeType; Tiktoken AOT gate; Channels not Task.Run |
 
-## Phase 2 Design Gaps (Tracked — Do Not Block)
+## Phase 2 Design Gaps (Block WRITE of that epic)
+
+These are **not** "do not block forever." They block **WRITE of the epic they belong to** until tasked in `project_tasks_implementation_plan.md` (or explicitly deferred with owner + story id). They do not block merge of unrelated connector work.
 
 | ID | Severity | Category | Doc Status |
 |----|----------|----------|------------|
@@ -52,8 +54,24 @@
 | D-2 | P2 | cross_encoder_reranking_deferred | ICrossEncoderReranker + LlmReranker specified |
 | D-3 | P2 | no_embedding_migration_strategy | IRagMigrationManager specified |
 | D-4 | P2 | citation_chunk_id_undefined | Specified: SHA256(doc_uri \| strategy_id \| chunk_index) |
-| D-5 | P2 | security_sanitizer_interface_only | Still interface-only |
-| D-6 | P2 | batch_ingestion_topology_undefined | Bounded-channel dataflow graph specified |
+| D-5 | P2 | security_sanitizer_interface_only | Still interface-only — blocks Story 2.6 WRITE until implementation starts under that story |
+| D-6 | P2 | batch_ingestion_topology_undefined | Bounded-channel dataflow graph specified; Task 2.2.3 forbids Task.Run |
+
+## Spec Gaps (S-*)
+
+Locked findings from spec_lock / consultant restudies. Process gaps live here too.
+
+| ID | Severity | Category | Status | Since | Notes |
+|----|----------|----------|--------|-------|-------|
+| S-LOOP | P1 | no_spec_lock_before_write | Fixed | 2026-08-26 | Gap detector was post-commit only. Closed: `spec_lock` trigger, `.agents/gaps/spec-lock.md`, `.cursor/rules/spec-lock.mdc` |
+| S-LITM | P2 | litm_vs_citation_order | Fixed | 2026-08-26 | Tasks 2.1.3/2.3.2 + citation-schema.md (prompt order ≠ CitationOrder) |
+| S-MOBILE-INT8 | P2 | sample03_int8_unmeasured | Fixed | 2026-08-26 | Task 3.2.3 Flat default; INT8 optional ≥0.95 Recall@K vs FP32 Flat |
+| S-STAMP-DX | P2 | embedder_stamp_dx | Fixed | 2026-08-26 | Story 1.11 QuantizeType + Task 2.1.4 wrap; 1.11 numbering labeled |
+| S-AOT-TOKEN | P2 | tokenizer_aot_path | Fixed | 2026-08-26 | 2.2.4 Tiktoken in-box; 2.7.1 must tokenize with Tiktoken |
+| S-CHUNKER-SYNC | P2 | chunker_channels_not_taskrun | Fixed | 2026-08-26 | 2.2.1/2.2.3 Channels; no PDF in core tests |
+| S-QUANT-REBUILD | P3 | quantize_requires_rebuild | Fixed | 2026-08-26 | Stamp QuantizeType; docs/guides/quantization.md |
+
+DS-1…DS-3 (mmap/quantize plumbing, mobile wiki, second-evaluation docs) remain in Fixed Gaps (Historical).
 
 ## Status Legend
 
