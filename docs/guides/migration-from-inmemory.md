@@ -59,10 +59,7 @@ using ZVec.Extensions.VectorData;
 builder.Services.AddZVecVectorStore(opts =>
 {
     opts.StoragePath = "./data";          // directory holding *.zvec collection files
-    opts.FactoryOptions = new ZVecFactoryOptions
-    {
-        MaxConcurrentNativeCalls = Environment.ProcessorCount
-    };
+    opts.MaxConcurrentNativeCalls = Environment.ProcessorCount;
 });
 ```
 

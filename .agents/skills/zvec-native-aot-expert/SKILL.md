@@ -39,7 +39,8 @@ You are the **Native Interop & Native AOT Expert** for `ZVec.NET` and `ZVec.Exte
    - **Unannotated Reflection**: Immediately veto any reliance on `Type.GetProperties()`, `FormatterServices`, or unannotated reflection.
    - **Array Duplication**: Reject any code copying `float[]` arrays before handing vectors to native P/Invoke calls.
    - **Unsafe Native Handle Passing**: Reject naked `IntPtr` passing where `SafeHandle` or guarded pin contexts should be used.
-   - **AOT claim must match harness**: Veto README/wiki AOT sentences that the corresponding `*AotTestApp` does not execute. Connector AOT = `ZVec.AotTestApp`. Pipeline AOT = `ZVec.Rag.AotTestApp` (Story 2.7) with Tiktoken, not embedded SentencePiece `.model`, not PdfPig/LLamaSharp.
+   - **AOT claim must match harness**: Veto README/wiki AOT sentences that the corresponding `*AotTestApp` does not execute. Connector AOT = `ZVec.AotTestApp`. Pipeline AOT = `ZVec.Rag.AotTestApp` (Story 2.7) with Tiktoken + plain-text `IngestTextAsync` (Channels + DI chunker), not tokenizer-only, not embedded SentencePiece `.model`, not PdfPig/LLamaSharp.
+   - **G5 — DI chunker factory:** Veto `Activator.CreateInstance` or reflection-based chunker resolution in `ZVec.Rag` ACL; require `AddTokenChunker` / similar DI registration.
 
 ## Roslyn Diagnostic Analyzer (REQUIRED — Gap N-3)
 
@@ -62,4 +63,4 @@ Required: Maintain `ZVec.Extensions.VectorData.Analyzers` with:
 1. `dotnet publish tests/ZVec.AotTestApp -r linux-x64 /p:PublishAot=true` succeeds
 2. `dotnet build -warnaserror` succeeds with analyzer diagnostics addressed
 3. No unannotated reflection remains in non-fallback hot paths
-4. On spec_lock: AOT-claim section of `.agents/gaps/spec-lock.md` is green
+4. On spec_lock: AOT-claim **and G5 ingest ACL** sections of `.agents/gaps/spec-lock.md` are green

@@ -54,7 +54,7 @@ finally
 | **Unit tests** | `tests/ZVec.Extensions.VectorData.Tests` | Filter visitor operators, error codes, CRUD, hybrid search, score normalization, optimize/reopen recovery |
 | **Conformance tests** | `tests/ZVec.Extensions.VectorData.ConformanceTests` | M.E.VectorData contract: lifecycle, CRUD, search, hybrid FTS, zero-vector search, high-dimension vectors, concurrent read/write stress |
 | **AOT smoke (connector)** | `tests/ZVec.AotTestApp` | Native AOT publish verification for `ZVec.Extensions.VectorData` (Phase 0 complete) |
-| **AOT smoke (pipeline)** | `tests/ZVec.Rag.AotTestApp` | Story 2.7 — full `ZVec.Rag` pipeline AOT gate (M.E.AI + Tiktoken tokenization + text ingest) |
+| **AOT smoke (pipeline)** | `tests/ZVec.Rag.AotTestApp` *(planned, Story 2.7)* | Full `ZVec.Rag` pipeline AOT gate (M.E.AI + Tiktoken + plain-text `IngestTextAsync` via DI chunker + Channels) |
 
 xUnit v3 test projects use executable test assemblies. Run locally:
 

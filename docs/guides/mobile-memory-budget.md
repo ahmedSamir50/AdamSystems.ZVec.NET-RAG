@@ -40,6 +40,8 @@ Indexes built **on-device** must use `ReadOnly = false` during ingest, then reop
 
 **Default:** Flat index (exact search, zero recall loss) for ≤20k chunks. Do **not** mandate HNSW+INT8.
 
+> **Never open a ZVec collection on the UI/main thread in MAUI.** Initialize the collection on a background thread during app startup and show a loading spinner in the Blazor WebView until `IZvecCollection<T>` is ready. This is an exception to the ingest `Task.Run` ban — collection open only.
+
 ```csharp
 // Recommended MAUI Mobile Initialization (shipped read-only Flat index)
 builder.Services.AddZVecVectorStore(options =>

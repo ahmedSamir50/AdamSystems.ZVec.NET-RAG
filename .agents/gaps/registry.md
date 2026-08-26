@@ -51,7 +51,7 @@ These are **not** "do not block forever." They block **WRITE of the epic they be
 | ID | Severity | Category | Doc Status |
 |----|----------|----------|------------|
 | D-1 | P2 | no_rag_evaluation_framework | Story 2.8 tasked in implementation plan; IRagEvaluator in rag-pipeline.md |
-| D-2 | P2 | cross_encoder_reranking_deferred | ICrossEncoderReranker + LlmReranker specified |
+| D-2 | P2 | cross_encoder_reranking_deferred | Explicitly deferred in Task 2.3.2 (post-v1.1); default `ZVecRrfReranker` |
 | D-3 | P2 | no_embedding_migration_strategy | IRagMigrationManager specified |
 | D-4 | P2 | citation_chunk_id_undefined | Specified: SHA256(doc_uri \| strategy_id \| chunk_index) |
 | D-5 | P2 | security_sanitizer_interface_only | Still interface-only — blocks Story 2.6 WRITE until implementation starts under that story |
@@ -70,6 +70,16 @@ Locked findings from spec_lock / consultant restudies. Process gaps live here to
 | S-AOT-TOKEN | P2 | tokenizer_aot_path | Fixed | 2026-08-26 | 2.2.4 Tiktoken in-box; 2.7.1 must tokenize with Tiktoken |
 | S-CHUNKER-SYNC | P2 | chunker_channels_not_taskrun | Fixed | 2026-08-26 | 2.2.1/2.2.3 Channels; no PDF in core tests |
 | S-QUANT-REBUILD | P3 | quantize_requires_rebuild | Fixed | 2026-08-26 | Stamp QuantizeType; docs/guides/quantization.md |
+| S-FACTORYOPTIONS | P1 | wiki_snippet_invented_member | Fixed | 2026-08-26 | migration-from-inmemory.md uses `MaxConcurrentNativeCalls` |
+| S-111-WIKI-AOT | P2 | story_id_collision_aot_banner | Fixed | 2026-08-26 | native-aot-memory.md relabeled Connector AOT CI vs Story 1.11 stamp |
+| S-D2-UNTASKED | P2 | cross_encoder_untasked | Fixed | 2026-08-26 | Task 2.3.2 explicitly defers D-2 ICrossEncoderReranker |
+| S-RWLS-DRIFT | P2 | rwls_spec_vs_shipped_lock | Fixed | 2026-08-26 | Task 2.3.1 delegates to OptimizeAndReopenAsync; wiki aligned |
+| S-SSE-CANCEL | P2 | sse_no_request_aborted | Fixed | 2026-08-26 | Task 2.3.3 + rag-pipeline.md + README |
+| S-MANIFEST-ATOMIC | P2 | manifest_non_atomic | Fixed | 2026-08-26 | Task 1.11.2 tmp+replace; Missing/Corrupt vs mismatch |
+| S-MAUI-UI-THREAD | P2 | maui_ui_thread_open | Fixed | 2026-08-26 | Task 3.2.3 + mobile-memory-budget.md background open |
+| S-AOT-INGEST-ACL | P2 | aot_tokenizer_only | Fixed | 2026-08-26 | Task 2.2.3 DI factory; 2.7.1 full IngestTextAsync |
+| S-SAMPLE03-EPIC5 | P2 | epic53_generic | Fixed | 2026-08-26 | project-plan Epic 5.3 detailed Sample 03 policy |
+| S-CATEGORY-G | P1 | runtime_interop_harness_gap | Fixed | 2026-08-26 | spec-lock.md §7 + skill pushbacks G1–G5 |
 
 DS-1…DS-3 (mmap/quantize plumbing, mobile wiki, second-evaluation docs) remain in Fixed Gaps (Historical).
 

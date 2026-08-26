@@ -64,6 +64,7 @@ app.MapPost("/ingest", async (string text, string docId, IRagIngestor ingestor) 
 });
 
 // 2. Real-time Unbuffered SSE Streaming Chat Endpoint
+// MapRagSseEndpoint links HttpContext.RequestAborted to AskAsync so client disconnect cancels generation.
 app.MapRagSseEndpoint("/chat", async (string question, IRagGenerator generator, CancellationToken ct) =>
     generator.AskAsync(question, streamCitations: true, ct));
 

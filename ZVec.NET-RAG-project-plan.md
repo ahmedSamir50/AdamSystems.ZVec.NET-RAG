@@ -235,7 +235,7 @@ ZVec.Rag                           (v1 integration layer — the starter)
 ├─ IRagPipeline composite facade (delegates to ingestor, retriever, generator — **no decorator middleware**)
 ├─ Ingestion (text/md in core; `IRagDocumentReader` + `IZVecTextChunker` ACL for M.E.DataIngestion; PDF via optional `ZVec.Rag.Pdf`)
 ├─ Embedder Stamp Manifest (zvec_index_manifest.json — ModelId, Dimensions, QuantizeType, storage dtype)
-├─ Storage (via ZVec.Extensions.VectorData with ReaderWriterLockSlim handle management for Optimize reopen)
+├─ Storage (via ZVec.Extensions.VectorData; RAG `OptimizeAsync` delegates to `OptimizeAndReopenAsync` / `lock (_initLock)` — no `ReaderWriterLockSlim`)
 ├─ Retrieval (hybrid: dense + FTS + ZVecRrfReranker, backed by ZVec)
 ├─ Security Sanitizer (IRagSecuritySanitizer — prompt injection mitigation)
 ├─ ContextPacker (MaxContextTokens + GenerationReserveTokens; optional LITM reorder — prompt order ≠ CitationOrder)
@@ -376,7 +376,7 @@ That's it. No Azure. No Python. No Qdrant. Connector Native AOT verified (Phase 
 
 - [ ] 5.1 **01-rag-your-docs** — Console, ingest a folder, ask questions (60-second demo)
 - [ ] 5.2 **02-local-first-pdf-chat** — ASP.NET Core + SSE (lift from `samples/AspNet` `/rag/ask/stream` pattern, EN+AR + Egyptian FAQ fixtures)
-- [ ] 5.3 **03-offline-phone-rag** — MAUI Blazor Hybrid (lift from `demos/02-movie-recs` MudBlazor pattern)
+- [ ] 5.3 **03-offline-phone-rag** — MAUI Blazor Hybrid retrieve+cite (lift MudBlazor pattern from `demos/02-movie-recs`): ship read-only mmap Flat index ≤20k chunks built on desktop; optional INT8 HNSW only if Recall@K ≥0.95 vs FP32 Flat; background collection open (never on UI thread); no on-device LLamaSharp
 - [ ] 5.4 **04-airgapped-enterprise-rag** — AspNet + LLamaSharp + ZVec (zero network calls)
 - [ ] 5.5 **05-multimodal-rag** — CLIP ONNX + ZVec (lift from `demos/01-clip-onnx` Flickr8k pattern)
 - [ ] 5.6 **06-aspire-dashboard** — Aspire + Docker (lift from `demos/Advanced/PDDM` Jira RAG navigator pattern)
@@ -594,16 +594,16 @@ It's also **the only candidate we've evaluated that leverages an existing asset*
 - **Weeks 12–15**:
   - `IRagIngestor`, `IRagRetriever`, `IRagGenerator` implementation & `RagPipeline` composite facade
   - Ingestion (`M.E.DataIngestion` preview via `IZVecTextChunker` Anti-Corruption Layer) & deduplication (`OnDuplicate = Replace | Append | Skip`)
-  - Storage & Reopen (`Optimize()` lifecycle managed via `ReaderWriterLockSlim`)
+  - Storage & Reopen (`OptimizeAsync` delegates to shipped `OptimizeAndReopenAsync`; short `lock (_initLock)`, no `ReaderWriterLockSlim` across `await`)
   - Retrieval (hybrid via ZVec connector, default `ZVecRrfReranker`, rich `HybridSearchOptions`)
   - Security Sanitizer (`IRagSecuritySanitizer` prompt injection filter)
   - ContextPacker (`MaxContextTokens`, `GenerationReserveTokens`, optional `LostInTheMiddle` reorder — **prompt order independent of `CitationOrder`**)
-  - Ingestion dataflow: bounded `Channels` (no `Task.Run` chunker wrapper); core text/md only
-  - Story 2.7: `ZVec.Rag.AotTestApp` pipeline AOT gate (M.E.AI + Tiktoken tokenization + text ingest)
+  - Ingestion dataflow: bounded `Channels` (no `Task.Run` chunker wrapper); DI-registered `IZVecTextChunker` (no `Activator`); core text/md only
+  - Story 2.7: `ZVec.Rag.AotTestApp` pipeline AOT gate (M.E.AI + plain-text `IngestTextAsync` via Channels + DI chunker + Tiktoken)
   - Story 2.8: `IRagEvaluator` in `ZVec.Rag.Testing` (Recall@K/MRR/nDCG)
   - Multi-turn conversation history (`IList<ChatMessage>`)
   - Citation tracking (chunk IDs → source doc + page + offset + `RankScore` / `DenseScore` distinction)
-  - Streaming IAsyncEnumerable<RagChunk> with `app.MapRagSseEndpoint` unbuffered SSE helper
+  - Streaming IAsyncEnumerable<RagChunk> with `app.MapRagSseEndpoint` unbuffered SSE helper (`HttpContext.RequestAborted` linked to `AskAsync`)
   - Standalone `ZVec.Rag.Testing` NuGet package (`DeterministicEmbedder`, `SemanticTestEmbedder`, `FakeChatClient`)
   - DI extensions: `services.AddZVecRag(...)`
 

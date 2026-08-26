@@ -4,6 +4,8 @@ description: Expert on zero-allocation hot paths, BenchmarkDotNet profiling, mem
 version: 1.1.0
 triggers:
   - performance_review
+  - spec_lock
+  - pre_implementation
   - code_change
 required_by:
   - zvec-vectordata-expert
@@ -33,12 +35,15 @@ You are the **Performance & Memory Allocation Specialist** for `ZVec.NET-RAG`. Y
    - Reject boxing of value types or unnecessary `float[]` array instantiations.
    - Reject async state machine overhead on fast synchronous paths (prefer returning `ValueTask<T>` or cached tasks).
    - Reject unbuffered large I/O streaming operations.
+   - **G1 — no RWLS across await:** Veto `ReaderWriterLockSlim` in optimize/reopen specs when shipped code uses short `lock (_initLock)` with native optimize outside the lock.
+   - **G4 — no MAUI UI-thread open:** Veto mobile sample/docs that open native collections synchronously on the UI thread.
 
 ## Required Actions when Triggered
 
 - Audit vector query and data ingestion paths for heap allocations.
 - Propose SIMD or memory pool optimizations.
 - Review BenchmarkDotNet results against baseline performance thresholds.
+- On `spec_lock`: verify section 7 (G1, G4) of `.agents/gaps/spec-lock.md`.
 
 ## Verification Step (MANDATORY)
 

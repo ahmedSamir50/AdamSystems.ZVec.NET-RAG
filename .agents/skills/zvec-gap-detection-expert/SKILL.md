@@ -104,7 +104,16 @@ Run on **every** spec_lock and on **every** docs/plan change — not only when C
 - No in-place HNSW requantize claimed vs `EnsureSchema` limits.
 - Two tasks in the same epic must not contradict (e.g. 2.2.1 PDF tests vs 2.2.3 core=text/md).
 
-Full checklist: [`.agents/gaps/spec-lock.md`](../../gaps/spec-lock.md).
+### G. Runtime / interop (plan vs shipped connector vs harness)
+Run on every spec_lock — catches concurrency, cancellation, atomicity, UI-thread, and AOT-DI classes category F does not list.
+
+- **G1:** Named lock in spec/wiki must match shipped primitive (`lock (_initLock)` + `OptimizeAndReopenAsync`); no `ReaderWriterLockSlim` across `await`.
+- **G2:** SSE/streaming endpoints link `HttpContext.RequestAborted` to generation `CancellationToken`.
+- **G3:** Manifest sidecar uses `*.tmp` + `File.Replace`; missing/corrupt ≠ model mismatch.
+- **G4:** MAUI/mobile docs forbid native collection open on UI thread.
+- **G5:** Pipeline AOT harness exercises `IngestTextAsync` + DI chunker ACL, not tokenizer-only; no `Activator` chunker resolution.
+
+Full checklist: [`.agents/gaps/spec-lock.md`](../../gaps/spec-lock.md) sections 1–7.
 
 ## Output Format (MANDATORY — no prose, no narrative)
 

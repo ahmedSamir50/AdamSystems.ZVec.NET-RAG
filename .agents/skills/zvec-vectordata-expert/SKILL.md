@@ -41,6 +41,7 @@ You are the **VectorData Abstraction & Connector Expert** for `ZVec.Extensions.V
    - **Inefficient Vector Copying**: Ensure vector data (`ReadOnlyMemory<float>`) is passed directly without cloning or array allocations.
    - **Wiki options must exist and be plumbed**: Veto any wiki/plan option that is not on `ZVecVectorStoreOptions` or is not passed into native `OpenOrCreate` / schema builder (`EnableMmap`, `ReadOnly`, `MemoryLimitMb`, `DefaultQuantizeType`). Do not invent `VectorDataType.INT8` or `ZVecQuantizationMode`.
    - **No in-place requantize**: Changing `DefaultQuantizeType` / `EmbeddingType` is rebuild + stamp mismatch, not `EnsureSchema`.
+   - **G3 — manifest atomicity:** Veto manifest specs without `*.tmp` + `File.Replace`; missing/corrupt manifest must not throw model-mismatch errors.
 
 ## Required Actions when Triggered
 
@@ -54,4 +55,4 @@ You are the **VectorData Abstraction & Connector Expert** for `ZVec.Extensions.V
 1. Conformance tests pass for changed connector behavior
 2. Filter visitor tests cover new operators/branches
 3. `zvec-code-reviewer-expert` approval obtained before merge
-4. On spec_lock: engine-plumbing section of `.agents/gaps/spec-lock.md` is green
+4. On spec_lock: engine-plumbing **and G3 manifest** sections of `.agents/gaps/spec-lock.md` are green

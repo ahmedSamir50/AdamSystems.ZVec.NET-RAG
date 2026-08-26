@@ -41,6 +41,9 @@ You are the **RAG Pipeline & Ingestion Expert** for `ZVec.Rag`. Your focus is or
    - **Core tests must not require PDF**: Core `ZVec.Rag` tests = text/md. PDF/HTML tests live in `ZVec.Rag.Pdf`.
    - **Sample quantize needs a Recall@K gate**: Do not mandate HNSW+INT8 for Sample 03. Default Flat; optional INT8 only if desktop Recall@K ≥ 0.95 vs FP32 Flat (`IRagEvaluator`).
    - **Two tasks must not fight**: If 2.2.1 lists PDF and 2.2.3 says core=text/md, amend the spec before WRITE.
+   - **SSE must cancel on disconnect (G2):** `MapRagSseEndpoint` must link `HttpContext.RequestAborted` to `AskAsync`. Veto specs that only mention `FlushAsync`.
+   - **AOT ingest ACL (G5):** Story 2.7 harness must run `IngestTextAsync` with DI chunker factory — veto tokenizer-only AOT gates or `Activator` chunker resolution.
+   - **No RWLS drift (G1):** Veto `ReaderWriterLockSlim` in RAG optimize specs when connector ships `OptimizeAndReopenAsync` + `lock (_initLock)`.
 
 ## RAG Evaluation (Phase 2 — must be designed before implementation)
 
@@ -68,4 +71,4 @@ On `spec_lock`, also verify RAG intra-spec items in [`.agents/gaps/spec-lock.md`
 1. Pipeline design includes evaluation metrics and test fakes
 2. `dotnet test` passes for any implemented RAG components
 3. Docs in `docs/architecture/rag-pipeline.md` match implemented interfaces
-4. On spec_lock: RAG intra-spec section of `.agents/gaps/spec-lock.md` is green
+4. On spec_lock: RAG intra-spec **and G2/G5** sections of `.agents/gaps/spec-lock.md` are green

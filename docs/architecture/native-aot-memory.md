@@ -18,9 +18,10 @@ unsafe
 This prevents managed heap array allocations (`float[]`) and ensures zero GC pressure during vector search operations.
 
 > [!NOTE]
-> **Implementation Status Banner — Story 1.10 & Story 1.11 Complete**:
+> **Implementation Status Banner — Story 1.10 & Connector AOT CI (Phase 0)**:
 > - **Story 1.10**: `ZVecFilterExpressionVisitor` uses an AOT-safe recursive AST evaluator eliminating `Expression.Compile().DynamicInvoke()`.
-> - **Story 1.11**: Local dev-loop smoke testing (`win-x64`, `linux-x64`) and GitHub Actions quality gate (`.github/workflows/quality-gate.yml`) run AOT publish smoke on the **3 desktop RIDs** (`linux-x64`, `win-x64`, `osx-x64`) with trim-warning verification for non-source-generated record types. Mobile RIDs (`linux-arm64`, `osx-arm64`, `ios-arm64`, `iossimulator-arm64`, `android-*`) are covered by the upstream `ZVec.NET` package CI, not this repo's connector CI.
+> - **Connector AOT CI (not Story 1.11 embedder stamp):** Local dev-loop smoke testing (`win-x64`, `linux-x64`) and GitHub Actions quality gate (`.github/workflows/quality-gate.yml`) run AOT publish smoke on the **3 desktop RIDs** (`linux-x64`, `win-x64`, `osx-x64`) with trim-warning verification for non-source-generated record types. Mobile RIDs (`linux-arm64`, `osx-arm64`, `ios-arm64`, `iossimulator-arm64`, `android-*`) are covered by the upstream `ZVec.NET` package CI, not this repo's connector CI.
+> - **Story 1.11 (embedder stamp manifest)** is a separate upcoming connector story — see `project_tasks_implementation_plan.md`. Do not conflate with Epic 1.11 (InMemory migration wiki).
 
 ---
 
@@ -41,7 +42,7 @@ This prevents managed heap array allocations (`float[]`) and ensures zero GC pre
 
 > **Connector AOT (Phase 0 — complete):** `ZVec.AotTestApp` verifies `ZVec.Extensions.VectorData` connector under Native AOT on desktop RIDs.
 
-> **Pipeline AOT (Phase 2 gate — Story 2.7):** `ZVec.Rag.AotTestApp` verifies the full `ZVec.Rag` pipeline (M.E.AI + **Tiktoken tokenization** + text ingest). Harness must execute real `cl100k_base`/`o200k_base` tokenization — not a mock. SentencePiece `.model` files are **not** required in the AOT gate (ship as Content + `FileStream` if needed). Optional packages (`ZVec.Rag.Pdf`, `ZVec.Rag.LLamaSharp`) are **excluded**.
+> **Pipeline AOT (Phase 2 gate — Story 2.7):** `ZVec.Rag.AotTestApp` verifies the full `ZVec.Rag` pipeline (M.E.AI + plain-text `IngestTextAsync` via Channels + DI chunker + **Tiktoken tokenization**). Harness must execute real `cl100k_base`/`o200k_base` tokenization — not a mock. SentencePiece `.model` files are **not** required in the AOT gate (ship as Content + `FileStream` if needed). Optional packages (`ZVec.Rag.Pdf`, `ZVec.Rag.LLamaSharp`) are **excluded**.
 
 ---
 
