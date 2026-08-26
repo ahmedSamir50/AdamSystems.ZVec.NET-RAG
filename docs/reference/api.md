@@ -9,7 +9,7 @@ Complete API reference surface for `ZVec.Extensions.VectorData` and `ZVec.Rag`.
 | `ZVec.Extensions.VectorData.Store` | `ZVecVectorStore`, `ZVecVectorStoreOptions` |
 | `ZVec.Extensions.VectorData.Collection` | `ZVecVectorizableRecordCollection<TRecord, TKey>` |
 | `ZVec.Extensions.VectorData.Filter` | `ZVecFilterExpressionVisitor`, `ZVecFilterRecordModel` |
-| `ZVec.Extensions.VectorData.Mapping` | `IZVecRecordMapper<T>`, `ZVecRecordMapperRegistry`, `ZVecCollectionSchemaRegistry`, `ZVecVectorDataSchemaBuilder` |
+| `ZVec.Extensions.VectorData.Mapping` | `IZVecRecordMapper<T>`, `ZVecRecordMapperRegistry`, `ZVecCollectionSchemaRegistry`, `ZVecVectorDataSchemaBuilder`, `ZVecVectorIndexResolver` |
 | `ZVec.Extensions.VectorData.Hybrid` | `ZVecHybridSearchOptions<TRecord>` |
 | `Microsoft.Extensions.DependencyInjection` | `AddZVecVectorStore` extension |
 | `ZVec.Extensions.VectorData.Constants` | `ZVecConstants`, `ZVecWellKnownMemberNames`, `ZVecDirectoryNames`, `ZVecErrorMessages` |
@@ -17,7 +17,7 @@ Complete API reference surface for `ZVec.Extensions.VectorData` and `ZVec.Rag`.
 ### Store (`ZVec.Extensions.VectorData.Store`)
 
 - **`ZVecVectorStore`**: `IVectorStore` implementation backed by `IZvecFactory`.
-- **`ZVecVectorStoreOptions`**: Configuration options (`StoragePath`, `MaxConcurrentNativeCalls`, optional custom `IZvecFactory`).
+- **`ZVecVectorStoreOptions`**: Configuration options (`StoragePath`, `MaxConcurrentNativeCalls`, `EnableMmap`, `ReadOnly`, `MemoryLimitMb`, `DefaultQuantizeType`, optional custom `IZvecFactory`).
 
 ### Collection (`ZVec.Extensions.VectorData.Collection`)
 

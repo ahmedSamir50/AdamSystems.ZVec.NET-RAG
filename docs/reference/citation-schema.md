@@ -79,3 +79,17 @@ public sealed record Citation(
 | `FtsScore` | `0.0` – $\infty$ | Raw BM25 keyword relevance score. | Diagnostic inspection of keyword matches. |
 | `Offset` | $0$ – $\text{Length}$ | 0-based **character offset** in extracted text. | UI text highlighting in document preview. |
 | `Page` | $1$ – $N$ or `null` | 1-based page number in PDF/DOCX (`null` for plain text/MD). | Page-specific citation rendering ("Page 42"). |
+
+---
+
+## Prompt Order vs Citation List Order
+
+`ContextPacker` (Story 2.1.3) and `CitationOrder` (Story 2.3.2) are **independent**:
+
+| Concern | Controlled by | Applies to |
+|---|---|---|
+| LLM context block order | `ContextPackingStrategy` (`ScoreDescending` default, optional `LostInTheMiddle`) | `<retrieved_context>` text in the prompt |
+| UI / API citation list order | `CitationOrder` (`ScoreDescending`, `ChunkOrderAscending`, etc.) | `RagChunk.Citations` collection |
+
+When `LostInTheMiddle` permutes prompt slots (e.g. `[C1, C5, C3, C4, C2]`), each `Citation` record **retains** its original `ChunkId`, `ChunkIndex`, and `RankScore`. The UI sorts by `CitationOrder` — not by prompt position. If the LLM emits citation markers, they must reference stable `ChunkId` labels, not 1-based indices into the permuted prompt.
+

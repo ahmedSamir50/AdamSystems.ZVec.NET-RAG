@@ -152,7 +152,7 @@ public static class {{model.ClassName}}{{GeneratorMetadataNames.GeneratedMapperS
         if (model.VectorProp.HasValue)
         {
             var vector = model.VectorProp.Value;
-            lines.AppendLine($"        builder.AddVector(\"{vector.StorageName}\", ZVecDataType.VectorFp32, {vector.VectorDimensions}, {GeneratorMetadataNames.HnswIndexParamExpression});");
+            lines.AppendLine($"        builder.AddVector(\"{vector.StorageName}\", ZVecVectorIndexResolver.ResolveVectorDataType(null), {vector.VectorDimensions}, ZVecVectorIndexResolver.CreateHnswIndexParam());");
         }
 
         return lines.ToString().TrimEnd();

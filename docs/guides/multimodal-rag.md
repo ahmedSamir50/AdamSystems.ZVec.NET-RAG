@@ -69,4 +69,6 @@ public sealed class ClipImagePreprocessor
 
 > [!IMPORTANT]
 > - **Desktop Only (Windows / Linux / macOS)**: Multimodal CLIP models (~600 MB ONNX file size) and ONNX Runtime execution providers are intended for Desktop and Server scenarios. They are **not recommended for mobile app distribution**.
+> - **One embedder per collection**: CLIP text and image vectors share one space by design. Do **not** mix CLIP with MiniLM in one collection — use Story 1.11 embedder stamp (`ModelId` + dimensions) to enforce consistency.
+> - **No `[ZVecModality]` source generator**: Use an ordinary indexed POCO field `SourceKind` (`text` | `image`) for UI/citations. Filter with LINQ (`r => r.SourceKind == "image"`) only when the product wants unimodal results — not inside `SearchAsync` by default.
 > - **Model File Provisioning**: ONNX model files are not embedded inside NuGet packages to keep download sizes small. Application developers must supply model file paths or download models dynamically on first launch.

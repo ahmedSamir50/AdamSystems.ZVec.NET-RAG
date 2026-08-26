@@ -60,6 +60,10 @@ public sealed class ZVecVectorStoreOptions
 {
     public string StoragePath { get; set; } = string.Empty;
     public int MaxConcurrentNativeCalls { get; set; } = Environment.ProcessorCount;
+    public bool EnableMmap { get; set; } = true;
+    public bool ReadOnly { get; set; }
+    public int? MemoryLimitMb { get; set; }
+    public ZVecQuantizeType DefaultQuantizeType { get; set; } = ZVecQuantizeType.Undefined;
 }
 
 public sealed class ZVecEngineOptions
@@ -69,7 +73,7 @@ public sealed class ZVecEngineOptions
 }
 ```
 
-`AddZVecVectorStore` registers `IZvecFactory`, `ZVecVectorStore` (`ZVec.Extensions.VectorData.Store`), and `VectorStore` as singletons. `ZVecVectorStoreOptions.MaxConcurrentNativeCalls` (default `Environment.ProcessorCount`) is passed to `IZvecFactory.Initialize(ZVecOptions)` when the factory is created.
+`AddZVecVectorStore` registers `IZvecFactory`, `ZVecVectorStore` (`ZVec.Extensions.VectorData.Store`), and `VectorStore` as singletons. `ZVecVectorStoreOptions` maps to engine options: `MaxConcurrentNativeCalls` and `MemoryLimitMb` → `ZVecOptions`; `EnableMmap` and `ReadOnly` → `ZVecCollectionOptions` on `OpenOrCreate`; `DefaultQuantizeType` → HNSW index params via `ZVecVectorIndexResolver`.
 
 ---
 

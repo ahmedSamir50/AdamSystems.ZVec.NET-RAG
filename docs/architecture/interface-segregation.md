@@ -78,14 +78,17 @@ public interface IRagGenerator
 }
 ```
 
-### 4. `IRagPipeline` — Composite Facade
-Implements `IRagIngestor`, `IRagRetriever`, and `IRagGenerator` for single-service injection convenience in small applications.
+### 4. `IRagPipeline` — Composite Facade (No Decorator Middleware)
+
+Implements `IRagIngestor`, `IRagRetriever`, and `IRagGenerator` for single-service injection convenience in small applications. **Do not** wrap with `*RagDecorator` middleware — token packing, citations, and sanitization are composed via separate interfaces injected into `IRagGenerator`.
 
 ```csharp
 public interface IRagPipeline : IRagIngestor, IRagRetriever, IRagGenerator
 {
 }
 ```
+
+> **Rejected v1 pattern:** `TokenBudgetingRagDecorator`, `CitationTrackingRagDecorator`, or similar middleware stacks. They fight the 20-line `AddZVecRag` DX and the ISP design below.
 
 ---
 

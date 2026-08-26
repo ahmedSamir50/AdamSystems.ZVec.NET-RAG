@@ -40,12 +40,15 @@
 | G-2 | P1 | 2026-08-12 | 2026-08-12 | 1e282dd | ZVecFullTextSearchAttribute + hybrid search rewrite |
 | G-4 | P1 | 2026-08-12 | 2026-08-12 | 1e282dd | OptimizeAndReopenAsync() method added |
 | G-3-partial | P2 | 2026-08-12 | 2026-08-12 | 1e282dd | [RequiresUnreferencedCode] annotations added to reflection paths |
+| DS-1 | P2 | 2026-08-26 | 2026-08-26 | working-tree | ZVecVectorStoreOptions: EnableMmap, ReadOnly, MemoryLimitMb, DefaultQuantizeType plumbed; ZVecVectorIndexResolver for FP16/INT8 |
+| DS-2 | P2 | 2026-08-26 | 2026-08-26 | working-tree | mobile-memory-budget.md corrected: mmap+ReadOnly for shipped indexes; real ZVecQuantizeType API |
+| DS-3 | P2 | 2026-08-26 | 2026-08-26 | working-tree | Second evaluation: LITM vs CitationOrder decoupled; Sample 03 Flat default; stamp QuantizeType; Tiktoken AOT gate; Channels not Task.Run |
 
 ## Phase 2 Design Gaps (Tracked — Do Not Block)
 
 | ID | Severity | Category | Doc Status |
 |----|----------|----------|------------|
-| D-1 | P2 | no_rag_evaluation_framework | IRagEvaluator specified in rag-pipeline.md |
+| D-1 | P2 | no_rag_evaluation_framework | Story 2.8 tasked in implementation plan; IRagEvaluator in rag-pipeline.md |
 | D-2 | P2 | cross_encoder_reranking_deferred | ICrossEncoderReranker + LlmReranker specified |
 | D-3 | P2 | no_embedding_migration_strategy | IRagMigrationManager specified |
 | D-4 | P2 | citation_chunk_id_undefined | Specified: SHA256(doc_uri \| strategy_id \| chunk_index) |

@@ -61,6 +61,7 @@ nav:
       - Migrate from VectorData.InMemory: guides/migration-from-inmemory.md
       - Multimodal RAG (Text + Image): guides/multimodal-rag.md
       - Mobile Memory Budget & Quantization: guides/mobile-memory-budget.md
+      - Vector Quantization & Index Rebuild: guides/quantization.md
       - TDD & Testing Strategy: guides/testing-strategy.md
       - Code Standards & Conventions: guides/code-standards.md
       - MkDocs & Wiki Maintenance: guides/wiki-maintenance.md

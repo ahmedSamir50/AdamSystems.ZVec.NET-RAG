@@ -235,3 +235,19 @@ else
 
 Both connectors implement the same `VectorStore` abstraction, so test fixtures and
 production code share the same application layer.
+
+---
+
+## 11. Changing quantization or embedder (rebuild required)
+
+If you change `DefaultQuantizeType`, vector dimensions, or the embedding model on an
+existing ZVec collection, you must **delete the collection and re-ingest** (or use
+`IRagMigrationManager` when available). `EnsureSchema` cannot requantize an HNSW index
+in place.
+
+The embedder stamp manifest (`zvec_index_manifest.json`) records `ModelId`,
+`Dimensions`, and `QuantizeType`. A mismatch throws `ZVecEmbedderMismatchException` —
+wrap as `ZVecRagInitializationException` in `ZVec.Rag` with a clear delete-path hint.
+
+See [Quantization & Index Rebuild Guide](quantization.md) for mobile Sample 03 policy
+(Flat default; optional INT8 only after Recall@K gate).

@@ -100,6 +100,8 @@ Even with `ZVec.NET` annotated, `ZVec.Extensions.VectorData` ships:
 2. **`ZVec.Extensions.VectorData.Analyzers`** — emits **`ZVEC001`** / **`ZVEC002`** IDE diagnostics when record types lack generated mappers or reflection is used outside approved fallback paths.
 3. **`ZVec.AotTestApp`** — Native AOT audit harness exercising generated schema/mapper round-trip, filter translation via `ZVecFilterRecordModel`, upsert/search, and a **`ReflectionFallbackRecord`** reference to surface trim warnings (`IL2026` / `IL3050`) for non-source-generated types during CI publish.
 
+4. **`ZVec.Rag.AotTestApp`** (Story 2.7, planned) — Pipeline AOT gate for `ZVec.Rag` (M.E.AI + Tiktoken tokenization + text ingest). Must run a real `cl100k_base`/`o200k_base` tokenize step. SentencePiece models ship as Content/`FileStream`, not EmbeddedResource. Excludes `ZVec.Rag.Pdf` and `ZVec.Rag.LLamaSharp`.
+
 Filter translation for VectorStore-only POCOs uses `ZVecFilterRecordModel`, which reads source-generated `VectorStoreCollectionDefinition` metadata when `[ZVec*]` attributes are absent.
 
 ### CI Quality Gate

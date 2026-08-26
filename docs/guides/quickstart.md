@@ -53,19 +53,21 @@ app.Run();
 
 ---
 
-## 4. Advanced Multi-Format Ingestion (PDF / HTML / Custom Chunkers)
+## 4. Advanced Multi-Format Ingestion (PDF via Optional Package)
 
-For enterprise documents with complex formats (PDFs, HTML web pages) or specialized chunking requirements, configure explicit `IDocumentReader` and `ITextChunker` strategies:
+Core `ZVec.Rag` ingests **text and markdown** only. For PDF documents, add the optional `ZVec.Rag.Pdf` package and configure an explicit `IRagDocumentReader`:
 
 ```csharp
-// Advanced Ingestion with PDF Reader & Markdown Heading Chunking
+// Advanced Ingestion with PDF Reader (optional ZVec.Rag.Pdf) & Markdown Heading Chunking
 app.MapPost("/ingest/pdf", async (IFormFile file, IRagPipeline rag) => {
     await rag.IngestAsync(file.OpenReadStream(), options => {
         options.DocumentId = file.FileName;
-        options.Reader = new PdfDocumentReader(); // From optional ZVec.Rag.Pdf package
+        options.Reader = new PdfDocumentReader(); // ZVec.Rag.Pdf — not in core AOT path
         options.Chunker = TextChunker.ByMarkdownHeadings(maxTokens: 512, overlap: 50);
     });
     return Results.Ok("PDF ingested with heading-aware chunking");
 });
 ```
+
+> Sample 02 (`02-local-first-pdf-chat`) references `ZVec.Rag.Pdf`. The Story 2.7 AOT harness does **not**.
 

@@ -225,19 +225,20 @@ ZVec.Extensions.VectorData         (v1 centerpiece — the bridge)
 ├─ Source-generated record schemas
 │  ([VectorStoreRecord] POCO → static schema builder AddField/AddVector calls + static mapper)
 ├─ Hybrid search bridge (VectorData "hybrid" → ZVec multi-query + ZVecRrfReranker)
-├─ DI extensions: services.AddZVecVectorStore(...) (defaults MaxConcurrentNativeCalls = Environment.ProcessorCount)
+├─ DI extensions: services.AddZVecVectorStore(...) (EnableMmap, ReadOnly, MemoryLimitMb, DefaultQuantizeType)
+├─ ZVecVectorIndexResolver (EmbeddingType → FP16/FP32; HNSW QuantizeType)
 ├─ Conformance test suite (run against Microsoft's published contract)
 └─ AOT/trim annotations on all public API
 
 ZVec.Rag                           (v1 integration layer — the starter)
 ├─ IRagIngestor, IRagRetriever, IRagGenerator interfaces (SOLID Interface Segregation)
-├─ IRagPipeline composite facade (delegates to ingestor, retriever, generator)
-├─ Ingestion (wraps M.E.DataIngestion preview via IZVecTextChunker Anti-Corruption Layer)
-├─ Embedder Stamp Manifest (zvec_index_manifest.json — validates model ID & dim consistency)
+├─ IRagPipeline composite facade (delegates to ingestor, retriever, generator — **no decorator middleware**)
+├─ Ingestion (text/md in core; `IRagDocumentReader` + `IZVecTextChunker` ACL for M.E.DataIngestion; PDF via optional `ZVec.Rag.Pdf`)
+├─ Embedder Stamp Manifest (zvec_index_manifest.json — ModelId, Dimensions, QuantizeType, storage dtype)
 ├─ Storage (via ZVec.Extensions.VectorData with ReaderWriterLockSlim handle management for Optimize reopen)
 ├─ Retrieval (hybrid: dense + FTS + ZVecRrfReranker, backed by ZVec)
 ├─ Security Sanitizer (IRagSecuritySanitizer — prompt injection mitigation)
-├─ Context Window Budgeting (MaxContextTokens token packing via Microsoft.ML.Tokenizers)
+├─ ContextPacker (MaxContextTokens + GenerationReserveTokens; optional LITM reorder — prompt order ≠ CitationOrder)
 ├─ IReranker pluggable hook (default = ZVecRrfReranker for hybrid search)
 ├─ Generation (delegate to M.E.AI IChatClient with IList<ChatMessage> multi-turn support, streaming)
 ├─ Citation tracking (chunk IDs → source doc + page + offset + RankScore / DenseScore)
@@ -249,7 +250,11 @@ ZVec.Rag                           (v1 integration layer — the starter)
 ZVec.Rag.Testing                   (v1 testing package — standalone)
 ├─ DeterministicEmbedder (random hash for fast pipeline unit tests)
 ├─ SemanticTestEmbedder (LSH for semantic rank order unit tests)
-└─ FakeChatClient (dual streaming / non-streaming test chat client)
+├─ FakeChatClient (dual streaming / non-streaming test chat client)
+└─ IRagEvaluator + DeterministicEvaluator (Recall@K/MRR/nDCG; optional LLM-as-judge off in CI)
+
+ZVec.Rag.Pdf                       (v1 optional — not in core AOT path)
+└─ PdfDocumentReader for Sample 02 / enterprise PDF chat
 
 ZVec.Rag.LLamaSharp                (v1.1 — local LLM recipe, Desktop only)
 ├─ LLamaSharpChatClient : IChatClient
@@ -259,7 +264,7 @@ ZVec.Rag.LLamaSharp                (v1.1 — local LLM recipe, Desktop only)
 ZVec.Rag.ONNX                      (v1.1 — ONNX runtime recipe)
 ├─ OnnxEmbedder : IEmbeddingGenerator<...> (CLIP, MiniLM, EmbeddingGemma)
 ├─ ImagePreprocessor (SixLabors.ImageSharp NCHW normalization pipeline for CLIP)
-└─ Recipe: multimodal RAG (text + image, see demos repo POC)
+└─ Recipe: multimodal RAG (text + image; `SourceKind` indexed metadata — **not** `[ZVecModality]` SG filter)
 
 ZVec.Rag.Template                  (v1 distribution)
 ├─ dotnet new rag template (Console variant)
@@ -302,7 +307,7 @@ app.MapPost("/chat", async (string question, IRagPipeline rag, CancellationToken
 app.Run();
 ```
 
-That's it. No Azure. No Python. No Qdrant. Single-file publish (AOT pending Phase 0 audit). The virality lives in this 20-line demo.
+That's it. No Azure. No Python. No Qdrant. Connector Native AOT verified (Phase 0); full pipeline AOT is Phase 2 gate (Story 2.7). The virality lives in this 20-line demo.
 
 ---
 
@@ -330,7 +335,7 @@ That's it. No Azure. No Python. No Qdrant. Single-file publish (AOT pending Phas
 - [x] 1.8 DI extensions: `services.AddZVecVectorStore(...)` (works alongside existing `AddZVec()`)
 - [ ] 1.9 Conformance test suite (run against Microsoft's VectorData contract tests) *(Partial — custom 13-test conformance suite; Microsoft's official suite not integrated.)*
 - [x] 1.10 AOT/trim annotations + CI AOT publish test
-- [x] 1.11 Documentation: how to migrate from M.E.VectorData.InMemory to ZVec *(Added `docs/guides/migration-from-inmemory.md`.)*
+- [x] 1.11 Documentation: how to migrate from M.E.VectorData.InMemory to ZVec *(Added `docs/guides/migration-from-inmemory.md`.)* — **not** the embedder stamp story (see implementation-plan Story 1.11).
 
 ### Epic 2 — `ZVec.Rag` integration layer
 
@@ -581,7 +586,7 @@ It's also **the only candidate we've evaluated that leverages an existing asset*
 - **VectorData Score Normalization**: Convert ZVec Cosine distance to similarity (`1.0 - dist`).
 - **Filter AST Visitor Expansion**: Pattern match `Enumerable.Contains` / `List.Contains` to `ZVecFilterBuilder.ContainAny`; throw explicit `ZVecFilterTranslationException` for unsupported LINQ operators.
 - **iOS MonoAOT & SafeHandle Finalizer Interop Audit**: Run physical/simulator iOS test harness to ensure `zvec_collection_close` thread safety from finalizer.
-- **Embedder Stamp Manifest & Schema Immutability Locking**: Write `zvec_index_manifest.json` on creation and validate on startup.
+- **Embedder Stamp Manifest & Schema Immutability Locking**: Write `zvec_index_manifest.json` on creation (`ModelId`, `Dimensions`, `QuantizeType`, storage dtype) and validate on startup. `ZVec.Rag` wraps mismatch as `ZVecRagInitializationException` with delete-path / `IRagMigrationManager` guidance.
 
 ### Phase 2 — `ZVec.Rag` integration layer (4–5 weeks)
 
@@ -592,7 +597,10 @@ It's also **the only candidate we've evaluated that leverages an existing asset*
   - Storage & Reopen (`Optimize()` lifecycle managed via `ReaderWriterLockSlim`)
   - Retrieval (hybrid via ZVec connector, default `ZVecRrfReranker`, rich `HybridSearchOptions`)
   - Security Sanitizer (`IRagSecuritySanitizer` prompt injection filter)
-  - Context Window Token Budgeting (`MaxContextTokens` via `Microsoft.ML.Tokenizers`)
+  - ContextPacker (`MaxContextTokens`, `GenerationReserveTokens`, optional `LostInTheMiddle` reorder — **prompt order independent of `CitationOrder`**)
+  - Ingestion dataflow: bounded `Channels` (no `Task.Run` chunker wrapper); core text/md only
+  - Story 2.7: `ZVec.Rag.AotTestApp` pipeline AOT gate (M.E.AI + Tiktoken tokenization + text ingest)
+  - Story 2.8: `IRagEvaluator` in `ZVec.Rag.Testing` (Recall@K/MRR/nDCG)
   - Multi-turn conversation history (`IList<ChatMessage>`)
   - Citation tracking (chunk IDs → source doc + page + offset + `RankScore` / `DenseScore` distinction)
   - Streaming IAsyncEnumerable<RagChunk> with `app.MapRagSseEndpoint` unbuffered SSE helper
@@ -608,7 +616,7 @@ It's also **the only candidate we've evaluated that leverages an existing asset*
 - Pre-embedded micro-fixture (100 pre-computed chunks) shipped with template for 60s working onboarding
 - Sample 01: RAG your docs in 60 seconds (Console)
 - Sample 02: Local-first PDF chat (AspNet + SSE)
-- Sample 03: Offline phone RAG (MAUI Blazor Hybrid, INT8/INT4 quantized, EnableMmap=false)
+- Sample 03: Offline phone RAG (MAUI: ship read-only mmap Flat index ≤20k chunks; optional INT8 HNSW only if Recall@K ≥0.95 vs FP32 Flat; no on-device LLamaSharp)
 - Sample 04: Air-gapped enterprise RAG (LLamaSharp, Desktop only)
 - Sample 05: Multimodal RAG (CLIP ONNX + SixLabors.ImageSharp)
 - Sample 06: Aspire dashboard
@@ -622,7 +630,7 @@ It's also **the only candidate we've evaluated that leverages an existing asset*
 - `ZVec.Rag.ONNX` (OnnxEmbedder for CLIP / MiniLM / EmbeddingGemma + ImagePreprocessor)
 - Observability (ActivitySource, token tracking, OTLP)
 - Docs site extension (quickstart, architecture, comparison, migration guides)
-- Benchmark suite vs sqlite-vec, M.E.VectorData.InMemory
+- Benchmark suite vs sqlite-vec, M.E.VectorData.InMemory, and Recall@K (FP32 vs FP16 vs INT8)
 
 **Ship v1.1.0.**
 

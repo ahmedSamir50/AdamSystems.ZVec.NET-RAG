@@ -107,7 +107,7 @@ All NuGet package versions across the solution are managed centrally in `Directo
 ### Store (`ZVec.Extensions.VectorData.Store`)
 
 - **`ZVecVectorStore`**: [`src/ZVec.Extensions.VectorData/Store/ZVecVectorStore.cs`](../../src/ZVec.Extensions.VectorData/Store/ZVecVectorStore.cs)
-- **`ZVecVectorStoreOptions`**: [`src/ZVec.Extensions.VectorData/Store/ZVecVectorStoreOptions.cs`](../../src/ZVec.Extensions.VectorData/Store/ZVecVectorStoreOptions.cs)
+- **`ZVecVectorStoreOptions`**: [`src/ZVec.Extensions.VectorData/Store/ZVecVectorStoreOptions.cs`](../../src/ZVec.Extensions.VectorData/Store/ZVecVectorStoreOptions.cs) — `EnableMmap`, `ReadOnly`, `MemoryLimitMb`, `DefaultQuantizeType`
 
 ### Collection (`ZVec.Extensions.VectorData.Collection`)
 
@@ -119,6 +119,7 @@ All NuGet package versions across the solution are managed centrally in `Directo
 - **`ZVecRecordMapperRegistry`**: [`src/ZVec.Extensions.VectorData/Mapping/ZVecRecordMapperRegistry.cs`](../../src/ZVec.Extensions.VectorData/Mapping/ZVecRecordMapperRegistry.cs)
 - **`ZVecCollectionSchemaRegistry`**: [`src/ZVec.Extensions.VectorData/Mapping/ZVecCollectionSchemaRegistry.cs`](../../src/ZVec.Extensions.VectorData/Mapping/ZVecCollectionSchemaRegistry.cs)
 - **`ZVecVectorDataSchemaBuilder`**: [`src/ZVec.Extensions.VectorData/Mapping/ZVecVectorDataSchemaBuilder.cs`](../../src/ZVec.Extensions.VectorData/Mapping/ZVecVectorDataSchemaBuilder.cs)
+- **`ZVecVectorIndexResolver`**: [`src/ZVec.Extensions.VectorData/Mapping/ZVecVectorIndexResolver.cs`](../../src/ZVec.Extensions.VectorData/Mapping/ZVecVectorIndexResolver.cs) — maps `EmbeddingType` (`Half` → FP16), `DefaultQuantizeType`, and per-property `IndexKind` to HNSW params
 
 ### Filter (`ZVec.Extensions.VectorData.Filter`)
 
@@ -149,6 +150,8 @@ Native collection schemas are resolved in this order (no reflection on the hot p
 1. **Source-generated factory** — `{Record}ZVecMetadataMapper.BuildSchema(collectionName)` registered in `ZVecCollectionSchemaRegistry` via `[ModuleInitializer]`.
 2. **Caller `VectorStoreCollectionDefinition`** — passed to `GetCollection` / collection ctor, mapped by `ZVecVectorDataSchemaBuilder.BuildFromDefinition`.
 3. **Annotated reflection fallback** — `ZVecCollectionSchemaBuilder.From<TRecord>()` with `[RequiresUnreferencedCode]` / `[RequiresDynamicCode]` (legacy `[ZVec*]` attributes).
+
+After schema resolution, `ZVecVectorIndexResolver.ApplyStoreVectorOptions` applies `DefaultQuantizeType` from `ZVecVectorStoreOptions` to HNSW vector definitions (immutable schema rebuild).
 
 Consumer projects (tests, `ZVec.AotTestApp`, samples) must reference the source generator as an analyzer:
 

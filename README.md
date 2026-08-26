@@ -15,10 +15,10 @@
 - **Streaming Citations (`IAsyncEnumerable<RagChunk>`)**: Real-time token streaming with precise document & page citation tracking (`SourceDoc`, `Page`, `Offset`, `Score`).
 - **Universal Tokenization**: Universal `Microsoft.ML.Tokenizers` engine (Tiktoken BPE, SentencePiece for LLaMA 3 / Nomic, WordPiece for BERT) with pluggable support for `tryAGI/Tiktoken`.
 > **Status:** Planned for Phase 2 (Story 2.2 — Document Ingestion)
-- **Transparent Document Ingestion**: Structured ingestion pipeline aligned with `Microsoft.Extensions.DataIngestion` preview (`IDocumentReader` + customizable `ITextChunker` strategies).
+- **Transparent Document Ingestion**: Core `ZVec.Rag` ships text/markdown readers only. PDF/HTML via optional `ZVec.Rag.Pdf` package. Chunking ACL wraps `Microsoft.Extensions.DataIngestion` preview (`ITextChunker` only; readers are separate).
 > **Status:** Planned for Phase 2 (Story 2.3 — Hybrid Search Bridge)
 - **Embedded Hybrid Search**: In-database dense + FTS (full-text search) retrieval with native Reciprocal Rank Fusion (`ZVecRrfReranker`).
-- **Native AOT & Trimmer Friendly**: Designed from day zero for zero-reflection Roslyn source-generated schemas and zero-copy `ReadOnlyMemory<float>` memory pinning.
+- **Native AOT & Trimmer Friendly**: `ZVec.Extensions.VectorData` connector is Native AOT-verified (`ZVec.AotTestApp`, Phase 0). Full `ZVec.Rag` pipeline AOT is a **Phase 2 gate** (`ZVec.Rag.AotTestApp`, Story 2.7) — do not claim end-to-end pipeline AOT until that story passes.
 - **Instant Scaffolding**: Get started in 60 seconds with `dotnet new rag`.
 
 ---
@@ -29,7 +29,7 @@
 |---|---|---|---|
 | **`ZVec.Extensions.VectorData`** | `0.1.0-alpha` | Official `Microsoft.Extensions.VectorData` connector for ZVec.NET | Core vector store (`IVectorStore`). *Need full RAG orchestration & citations? Add **`ZVec.Rag`**. Need zero-reflection AOT schemas? Add **`ZVec.Extensions.VectorData.SourceGenerator`**.* |
 | **`ZVec.Rag`** | `0.5.0-alpha` | Batteries-included RAG orchestration (`IRagIngestor`, `IRagRetriever`, `IRagGenerator`, `IRagPipeline`, citations, SSE) | *Need pure vector storage for Semantic Kernel / Agent Framework? Use **`ZVec.Extensions.VectorData`**. Need unit test fakes without LLMs? Add **`ZVec.Rag.Testing`**. Running air-gapped without Ollama? Add **`ZVec.Rag.LLamaSharp`** or **`ZVec.Rag.ONNX`**.* |
-| **`ZVec.Rag.Testing`** | `0.5.0-alpha` | Standalone unit testing fakes (`DeterministicEmbedder`, `SemanticTestEmbedder`, `FakeChatClient`) | *Add to test projects to mock RAG pipelines without external Ollama/LLM dependencies.* |
+| **`ZVec.Rag.Testing`** | `0.5.0-alpha` | Standalone unit testing fakes (`DeterministicEmbedder`, `SemanticTestEmbedder`, `FakeChatClient`, `IRagEvaluator`, `DeterministicEvaluator`) | *Add to test projects to mock RAG pipelines and measure Recall@K/MRR without external LLMs.* |
 | **`ZVec.Rag.Template`** | `1.0.0-alpha` | Scaffolding project template for `dotnet new rag` | *Instantly scaffolds ASP.NET Core SSE, Console, or MAUI Blazor Hybrid apps powered by **`ZVec.Rag`**.* |
 | **`ZVec.Rag.LLamaSharp`** | `1.1.0-alpha` | Recipe adapter for air-gapped local LLM execution via LLamaSharp (GGUF, Desktop Only) | *Combines with **`ZVec.Rag`** and **`ZVec.Extensions.VectorData`** for 100% offline, zero-network LLM RAG on Windows, Linux, and macOS.* |
 | **`ZVec.Rag.ONNX`** | `1.1.0-alpha` | Recipe adapter for local ONNX embeddings & CLIP multimodal image processing | *Combines with **`ZVec.Rag`** to eliminate external network requests for vector embeddings.* |
@@ -80,13 +80,13 @@ Ingestion in `ZVec.Rag` is divided into pluggable pipeline stages aligned with `
 ```
 ┌─────────────────────────┐    ┌─────────────────────────┐    ┌─────────────────────────┐    ┌─────────────────────────┐
 │   1. Document Reader    │ -> │    2. Text Chunker      │ -> │  3. Vector Embedder     │ -> │  4. Persistent Store    │
-│  (PDF / HTML / MD / TXT │    │ (Token / Markdown AST / │    │ (IEmbeddingGenerator<   │    │(ZVec.VectorData +       │
-│    / JSON Stream)       │    │  Sentence / Sliding)    │    │    string, Embedding>)  │    │     ZVec FTS Index)     │
+│  (MD / TXT in core;     │    │ (Token / Markdown AST / │    │ (IEmbeddingGenerator<   │    │(ZVec.VectorData +       │
+│   PDF via ZVec.Rag.Pdf) │    │  Sentence / Sliding)    │    │    string, Embedding>)  │    │     ZVec FTS Index)     │
 └─────────────────────────┘    └─────────────────────────┘    └─────────────────────────┘    └─────────────────────────┘
 ```
 
 - **Built-in Defaults**: Out-of-the-box `IngestTextAsync` handles plain text & markdown using token-boundary chunking (`TokenTextChunker`).
-- **Advanced File Formats (PDF / HTML)**: Pluggable `IDocumentReader` implementations allow parsing complex formats (e.g. via `ZVec.Rag.Pdf` or custom readers).
+- **Advanced File Formats (PDF / HTML)**: Optional `ZVec.Rag.Pdf` package (`PdfDocumentReader`); not referenced by core `ZVec.Rag` or the AOT harness.
 - **Explicit Chunking Strategies**: Developers can choose `TokenTextChunker` (512 tokens, 50 overlap), `MarkdownHeadingChunker`, or `SentenceTextChunker` based on document structure.
 
 ---
@@ -110,9 +110,9 @@ Ingestion in `ZVec.Rag` is divided into pluggable pipeline stages aligned with `
   ┌──────────────────────────────▼──────────────────────────────┐
   │                        ZVec.Rag                             │
   │   • IRagIngestor (Ingest/Chunk) • IRagRetriever (Retrieve)  │
-  │   • IRagGenerator (Chat/Stream) • IRagPipeline (Composite)  │
-  │   • Citation tracking           • Security Sanitizer        │
-  │   • MapRagSseEndpoint helpers   • Token Budget Manager      │
+│   • IRagGenerator (Chat/Stream) • IRagPipeline (Composite — no decorator middleware)  │
+│   • Citation tracking           • Security Sanitizer        │
+│   • MapRagSseEndpoint helpers   • ContextPacker (token budget) │
   └──────────────┬──────────────┬───────────────┬───────────────┘
                  │              │               │
   ┌──────────────▼──────┐  ┌────▼─────────────┐ │

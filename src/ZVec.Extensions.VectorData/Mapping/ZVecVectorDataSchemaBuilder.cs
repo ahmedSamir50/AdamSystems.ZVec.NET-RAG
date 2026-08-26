@@ -1,6 +1,5 @@
-using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.VectorData;
-using ZVec.Extensions.VectorData.Constants;
+using ZVec.Extensions.VectorData.Store;
 using ZVec.NET;
 
 namespace ZVec.Extensions.VectorData.Mapping;
@@ -16,12 +15,17 @@ public static class ZVecVectorDataSchemaBuilder
     /// </summary>
     /// <param name="collectionName">Native collection name.</param>
     /// <param name="definition">VectorData collection definition describing key, data, and vector properties.</param>
+    /// <param name="options">Optional vector store options controlling default quantization.</param>
     /// <returns>A fully constructed <see cref="ZVecCollectionSchema"/>.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="definition"/> is null.</exception>
-    public static ZVecCollectionSchema BuildFromDefinition(string collectionName, VectorStoreCollectionDefinition definition)
+    public static ZVecCollectionSchema BuildFromDefinition(
+        string collectionName,
+        VectorStoreCollectionDefinition definition,
+        ZVecVectorStoreOptions? options = null)
     {
         if (definition == null) throw new ArgumentNullException(nameof(definition));
 
+        options ??= new ZVecVectorStoreOptions();
         var builder = new ZVecCollectionSchemaBuilder(collectionName);
 
         foreach (var property in definition.Properties)
@@ -29,11 +33,12 @@ public static class ZVecVectorDataSchemaBuilder
             switch (property)
             {
                 case VectorStoreVectorProperty vectorProperty:
+                    var quantizeType = ZVecVectorIndexResolver.ResolveQuantizeType(vectorProperty, options);
                     builder.AddVector(
                         ResolveStorageName(vectorProperty, vectorProperty.Name),
-                        ZVecDataType.VectorFp32,
+                        ZVecVectorIndexResolver.ResolveVectorDataType(vectorProperty.EmbeddingType),
                         vectorProperty.Dimensions,
-                        new ZVecHnswIndexParam());
+                        ZVecVectorIndexResolver.CreateHnswIndexParam(quantizeType));
                     break;
 
                 case VectorStoreDataProperty dataProperty:

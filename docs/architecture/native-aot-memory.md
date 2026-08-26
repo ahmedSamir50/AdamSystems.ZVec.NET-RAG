@@ -39,12 +39,11 @@ This prevents managed heap array allocations (`float[]`) and ensures zero GC pre
 | `iossimulator-arm64` | Upstream `ZVec.NET` CI | Package CI | iOS Simulator target; validated upstream. |
 | `android-arm64` / `android-x64` | Upstream `ZVec.NET` CI | Package CI | Android native binaries; validated upstream. |
 
-> **Connector CI scope:** This repo's `aot-smoke` job verifies the connector's
-> source-generated mappers and filter evaluator under Native AOT on the 3 desktop
-> RIDs. The mobile RIDs are exercised by the upstream `ZVec.NET` package CI (which
-> owns the native C++ core and its 9-RID build matrix). To expand connector CI to a
-> mobile RID, add the runner image and RID to the `aot-smoke` matrix in
-> `.github/workflows/quality-gate.yml`.
+> **Connector AOT (Phase 0 — complete):** `ZVec.AotTestApp` verifies `ZVec.Extensions.VectorData` connector under Native AOT on desktop RIDs.
+
+> **Pipeline AOT (Phase 2 gate — Story 2.7):** `ZVec.Rag.AotTestApp` verifies the full `ZVec.Rag` pipeline (M.E.AI + **Tiktoken tokenization** + text ingest). Harness must execute real `cl100k_base`/`o200k_base` tokenization — not a mock. SentencePiece `.model` files are **not** required in the AOT gate (ship as Content + `FileStream` if needed). Optional packages (`ZVec.Rag.Pdf`, `ZVec.Rag.LLamaSharp`) are **excluded**.
+
+---
 
 ### AOT Filter Evaluator Mechanics
 

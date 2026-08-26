@@ -33,16 +33,21 @@ public sealed partial class ZVecVectorizableRecordCollection<TRecord, TKey>
         var generatedFactory = ZVecCollectionSchemaRegistry.Get<TRecord>();
         if (generatedFactory != null)
         {
-            return generatedFactory(Name);
+            return FinalizeCollectionSchema(generatedFactory(Name));
         }
 
         if (Definition != null)
         {
-            return ZVecVectorDataSchemaBuilder.BuildFromDefinition(Name, Definition);
+            return ZVecVectorIndexResolver.ApplyStoreVectorOptions(
+                ZVecVectorDataSchemaBuilder.BuildFromDefinition(Name, Definition, _options),
+                _options);
         }
 
-        return BuildCollectionSchemaFromReflection();
+        return ZVecVectorIndexResolver.ApplyStoreVectorOptions(BuildCollectionSchemaFromReflection(), _options);
     }
+
+    private ZVecCollectionSchema FinalizeCollectionSchema(ZVecCollectionSchema schema) =>
+        ZVecVectorIndexResolver.ApplyStoreVectorOptions(schema, _options);
 
     [RequiresUnreferencedCode("Reflection-based schema building may be trimmed under Native AOT. Use the source generator or supply a VectorStoreCollectionDefinition.")]
     [RequiresDynamicCode("Reflection-based schema building requires dynamic code generation.")]
@@ -179,6 +184,9 @@ public sealed partial class ZVecVectorizableRecordCollection<TRecord, TKey>
         }
 
         Directory.CreateDirectory(_options.EffectiveCollectionBasePath);
-        return _factory.OpenOrCreate(CollectionPath, BuildCollectionSchema());
+        return _factory.OpenOrCreate(
+            CollectionPath,
+            BuildCollectionSchema(),
+            _options.CreateZVecCollectionOptions());
     }
 }

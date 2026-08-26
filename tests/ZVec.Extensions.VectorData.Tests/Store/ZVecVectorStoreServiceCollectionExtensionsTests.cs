@@ -42,6 +42,27 @@ public sealed class ZVecVectorStoreServiceCollectionExtensionsTests
     }
 
     [Fact]
+    public void AddZVecVectorStore_AppliesMmapReadOnlyAndMemoryLimit_WhenConfigured()
+    {
+        var services = new ServiceCollection();
+        services.AddZVecVectorStore(options =>
+        {
+            options.EnableMmap = false;
+            options.ReadOnly = true;
+            options.MemoryLimitMb = 256;
+            options.DefaultQuantizeType = ZVecQuantizeType.Int8;
+        });
+
+        var provider = services.BuildServiceProvider();
+        var options = provider.GetRequiredService<ZVecVectorStoreOptions>();
+
+        Assert.False(options.EnableMmap);
+        Assert.True(options.ReadOnly);
+        Assert.Equal(256, options.MemoryLimitMb);
+        Assert.Equal(ZVecQuantizeType.Int8, options.DefaultQuantizeType);
+    }
+
+    [Fact]
     public void AddZVecVectorStore_RegistersVectorStoreServices_WhenCalledWithDefaults()
     {
         var services = new ServiceCollection();
