@@ -1,12 +1,16 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using System.Reflection;
 using Microsoft.Extensions.VectorData;
 using ZVec.Extensions.VectorData.Attributes;
+using ZVec.Extensions.VectorData.Constants;
+using ZVec.Extensions.VectorData.Mapping;
+using ZVec.Extensions.VectorData.Store;
 using ZVec.NET;
 using ZVec.NET.Mapping;
 using ZVec.NET.Query;
 
-namespace ZVec.Extensions.VectorData;
+namespace ZVec.Extensions.VectorData.Collection;
 
 /// <summary>
 /// Schema building, full-text field resolution, and native collection open logic
@@ -16,7 +20,33 @@ public sealed partial class ZVecVectorizableRecordCollection<TRecord, TKey>
     where TRecord : class
     where TKey : notnull
 {
+    /// <summary>
+    /// Builds the native collection schema using the following precedence:
+    /// <list type="number">
+    /// <item><description>Source-generated zero-reflection schema factory (preferred for AOT).</description></item>
+    /// <item><description>Caller-supplied <see cref="Definition"/> mapped via <see cref="ZVecVectorDataSchemaBuilder"/>.</description></item>
+    /// <item><description>Annotated reflection fallback via <see cref="ZVecCollectionSchemaBuilder.From{TRecord}"/>.</description></item>
+    /// </list>
+    /// </summary>
     private ZVecCollectionSchema BuildCollectionSchema()
+    {
+        var generatedFactory = ZVecCollectionSchemaRegistry.Get<TRecord>();
+        if (generatedFactory != null)
+        {
+            return generatedFactory(Name);
+        }
+
+        if (Definition != null)
+        {
+            return ZVecVectorDataSchemaBuilder.BuildFromDefinition(Name, Definition);
+        }
+
+        return BuildCollectionSchemaFromReflection();
+    }
+
+    [RequiresUnreferencedCode("Reflection-based schema building may be trimmed under Native AOT. Use the source generator or supply a VectorStoreCollectionDefinition.")]
+    [RequiresDynamicCode("Reflection-based schema building requires dynamic code generation.")]
+    private ZVecCollectionSchema BuildCollectionSchemaFromReflection()
     {
         var schemaBuilder = ZVecCollectionSchemaBuilder.From<TRecord>();
         var schema = schemaBuilder.Build();
@@ -91,7 +121,41 @@ public sealed partial class ZVecVectorizableRecordCollection<TRecord, TKey>
                 return firstField.StorageName;
         }
 
-        return "Content";
+        if (Definition != null)
+        {
+            foreach (var property in Definition.Properties.OfType<VectorStoreDataProperty>())
+            {
+                if (property.IsFullTextIndexed)
+                {
+                    return ZVecVectorDataSchemaBuilder.ResolveStorageName(property, property.Name);
+                }
+            }
+
+            if (Definition.Properties.OfType<VectorStoreDataProperty>().FirstOrDefault() is { } firstData)
+            {
+                return ZVecVectorDataSchemaBuilder.ResolveStorageName(firstData, firstData.Name);
+            }
+        }
+
+        return ZVecConstants.DefaultFullTextFieldName;
+    }
+
+    /// <summary>
+    /// Resolves the native dense vector field storage name from the type model, generated
+    /// definition, or connector defaults.
+    /// </summary>
+    private string ResolveVectorFieldName(string? optionsVectorProperty = null)
+    {
+        if (!string.IsNullOrEmpty(optionsVectorProperty))
+            return optionsVectorProperty;
+
+        if (_typeModel?.Vectors.FirstOrDefault() is { } typeModelVector)
+            return typeModelVector.StorageName;
+
+        if (Definition?.Properties.OfType<VectorStoreVectorProperty>().FirstOrDefault() is { } definitionVector)
+            return ZVecVectorDataSchemaBuilder.ResolveStorageName(definitionVector, definitionVector.Name);
+
+        return ZVecConstants.DefaultVectorFieldName;
     }
 
     /// <summary>
@@ -110,7 +174,9 @@ public sealed partial class ZVecVectorizableRecordCollection<TRecord, TKey>
     private IZvecCollection OpenNativeCollection()
     {
         if (!_factory.IsInitialized)
-            _factory.Initialize();
+        {
+            _factory.Initialize(_options.CreateZVecOptions());
+        }
 
         Directory.CreateDirectory(_options.EffectiveCollectionBasePath);
         return _factory.OpenOrCreate(CollectionPath, BuildCollectionSchema());

@@ -2,8 +2,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.VectorData;
 using ZVec.NET;
+using ZVec.Extensions.VectorData.Store;
 
-namespace ZVec.Extensions.VectorData;
+namespace Microsoft.Extensions.DependencyInjection;
 
 /// <summary>
 /// Service collection extension methods for registering ZVec vector store services into DI containers.
@@ -43,13 +44,13 @@ public static class ZVecVectorStoreServiceCollectionExtensions
             {
                 if (!options.Factory.IsInitialized)
                 {
-                    options.Factory.Initialize();
+                    options.Factory.Initialize(options.CreateZVecOptions());
                 }
                 return options.Factory;
             }
 
             var factory = new ZVecFactory();
-            factory.Initialize();
+            factory.Initialize(options.CreateZVecOptions());
             return factory;
         });
 

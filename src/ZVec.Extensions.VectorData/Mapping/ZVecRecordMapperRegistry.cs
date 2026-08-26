@@ -1,6 +1,6 @@
 using System.Collections.Concurrent;
 
-namespace ZVec.Extensions.VectorData;
+namespace ZVec.Extensions.VectorData.Mapping;
 
 /// <summary>
 /// Process-wide registry of AOT-clean record mappers emitted by the source generator.

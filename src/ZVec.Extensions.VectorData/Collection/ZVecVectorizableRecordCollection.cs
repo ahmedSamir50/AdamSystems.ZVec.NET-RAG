@@ -5,11 +5,15 @@ using System.Runtime.CompilerServices;
 using Microsoft.Extensions.VectorData;
 using ZVec.Extensions.VectorData.Attributes;
 using ZVec.Extensions.VectorData.Constants;
+using ZVec.Extensions.VectorData.Filter;
+using ZVec.Extensions.VectorData.Hybrid;
+using ZVec.Extensions.VectorData.Mapping;
+using ZVec.Extensions.VectorData.Store;
 using ZVec.NET;
 using ZVec.NET.Mapping;
 using ZVec.NET.Query;
 
-namespace ZVec.Extensions.VectorData;
+namespace ZVec.Extensions.VectorData.Collection;
 
 /// <summary>
 /// Implements <see cref="VectorStoreCollection{TKey, TRecord}"/> and <see cref="IKeywordHybridSearchable{TRecord}"/>
@@ -64,11 +68,14 @@ public sealed partial class ZVecVectorizableRecordCollection<TRecord, TKey> :
             throw new ArgumentException(ZVecErrorMessages.NullOrEmptyCollectionName, nameof(name));
 
         Name = name;
-        Definition = definition;
+        _mapper = ZVecRecordMapperRegistry.Get<TRecord>();
+        Definition = definition ?? ZVecCollectionSchemaRegistry.GetDefinition<TRecord>();
         if (typeof(TRecord) != typeof(Dictionary<string, object?>))
         {
-            _typeModel = ZVecTypeModel.Get<TRecord>();
-            _mapper = ZVecRecordMapperRegistry.Get<TRecord>();
+            if (_mapper == null && Definition == null)
+            {
+                _typeModel = ZVecTypeModel.Get<TRecord>();
+            }
         }
     }
 
@@ -165,7 +172,7 @@ public sealed partial class ZVecVectorizableRecordCollection<TRecord, TKey> :
         var collection = GetOrOpenNativeCollection();
         string pk = key.ToString()!;
         var doc = await collection.FetchAsync(pk, includeVector: options?.IncludeVectors ?? true, ct: cancellationToken);
-        if (doc == null || _typeModel == null) return null;
+        if (doc == null || (_typeModel == null && _mapper == null)) return null;
 
         return MapFromDoc(doc);
     }
@@ -181,7 +188,7 @@ public sealed partial class ZVecVectorizableRecordCollection<TRecord, TKey> :
 
         var collection = GetOrOpenNativeCollection();
         var pkList = keys.Select(k => k.ToString()!).ToList();
-        if (pkList.Count == 0 || _typeModel == null) yield break;
+        if (pkList.Count == 0 || (_typeModel == null && _mapper == null)) yield break;
 
         var docs = await collection.FetchAsync(pkList, includeVector: options?.IncludeVectors ?? true, ct: cancellationToken);
         foreach (var doc in docs)
@@ -212,12 +219,15 @@ public sealed partial class ZVecVectorizableRecordCollection<TRecord, TKey> :
         // vector sized to the collection's actual vector dimension (read from the type
         // model) so non-768-dim collections do not produce malformed queries.
         var firstVector = _typeModel?.Vectors.FirstOrDefault();
-        string vectorFieldName = firstVector?.StorageName ?? "Vector";
-        int vectorDimension = firstVector?.Dimension > 0 ? firstVector.Dimension : ZVecConstants.DefaultVectorDimension;
+        string vectorFieldName = ResolveVectorFieldName();
+        int vectorDimension = firstVector?.Dimension > 0
+            ? firstVector.Dimension
+            : Definition?.Properties.OfType<VectorStoreVectorProperty>().FirstOrDefault()?.Dimensions
+                ?? ZVecConstants.DefaultVectorDimension;
         var dummyQuery = new ZVecQuery { FieldName = vectorFieldName, Vector = new float[vectorDimension] };
         var docs = await collection.QueryAsync(dummyQuery, effectiveTop, filterBuilder, includeVector: options?.IncludeVectors ?? true, ct: cancellationToken);
 
-        if (_typeModel != null)
+        if (_typeModel != null || _mapper != null)
         {
             foreach (var doc in docs)
             {
@@ -232,7 +242,7 @@ public sealed partial class ZVecVectorizableRecordCollection<TRecord, TKey> :
         if (record == null) throw new ArgumentNullException(nameof(record));
         cancellationToken.ThrowIfCancellationRequested();
 
-        if (_typeModel == null) return;
+        if (_typeModel == null && _mapper == null) return;
         var collection = GetOrOpenNativeCollection();
         var doc = MapToDoc(record);
         await collection.UpsertAsync(doc, cancellationToken);
@@ -244,7 +254,7 @@ public sealed partial class ZVecVectorizableRecordCollection<TRecord, TKey> :
         if (records == null) throw new ArgumentNullException(nameof(records));
         cancellationToken.ThrowIfCancellationRequested();
 
-        if (_typeModel == null) return;
+        if (_typeModel == null && _mapper == null) return;
         var collection = GetOrOpenNativeCollection();
         var docs = records.Select(MapToDoc).ToList();
         if (docs.Count > 0)
@@ -279,7 +289,7 @@ public sealed partial class ZVecVectorizableRecordCollection<TRecord, TKey> :
         int effectiveTop = top > 0 ? top : ZVecConstants.DefaultQueryLimit;
         double scoreThreshold = options?.ScoreThreshold ?? ZVecConstants.DefaultMinScoreThreshold;
 
-        string vectorFieldName = _typeModel?.Vectors.FirstOrDefault()?.StorageName ?? "Vector";
+        string vectorFieldName = ResolveVectorFieldName(TryGetPropertyName(options?.VectorProperty));
         var query = new ZVecQuery { FieldName = vectorFieldName, Vector = floatMemory };
         IReadOnlyList<ZVecDoc> docs;
 
@@ -293,7 +303,7 @@ public sealed partial class ZVecVectorizableRecordCollection<TRecord, TKey> :
             docs = await collection.QueryAsync(query, effectiveTop, filter: (string?)null, includeVector: options?.IncludeVectors ?? true, ct: cancellationToken);
         }
 
-        if (_typeModel != null)
+        if (_typeModel != null || _mapper != null)
         {
             foreach (var doc in docs)
             {
@@ -341,7 +351,7 @@ public sealed partial class ZVecVectorizableRecordCollection<TRecord, TKey> :
         string? optionsVectorProperty = TryGetPropertyName(options?.VectorProperty);
         string vectorFieldName = !string.IsNullOrEmpty(optionsVectorProperty)
             ? optionsVectorProperty!
-            : (_typeModel?.Vectors.FirstOrDefault()?.StorageName ?? "Vector");
+            : ResolveVectorFieldName();
 
         // Resolve the FTS field. Honor AdditionalProperty when supplied; otherwise pick
         // the first field marked [ZVecFullTextSearch] / IsFullTextIndexed on the type
@@ -372,7 +382,7 @@ public sealed partial class ZVecVectorizableRecordCollection<TRecord, TKey> :
             docs = await collection.QueryAsync(new[] { denseQuery, ftsQuery }, effectiveTop, reranker, filter: (string?)null, includeVector: options?.IncludeVectors ?? true, ct: cancellationToken);
         }
 
-        if (_typeModel != null)
+        if (_typeModel != null || _mapper != null)
         {
             foreach (var doc in docs)
             {

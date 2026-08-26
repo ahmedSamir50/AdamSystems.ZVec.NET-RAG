@@ -1,0 +1,17 @@
+<Project>
+  <!--
+    dotnet publish app /p:PublishAot=true propagates PublishAot to the full project graph.
+    Roslyn analyzer/source-generator projects (netstandard2.0) and class libraries must not
+    inherit publish/AOT settings — only the executable being published should compile with AOT.
+  -->
+  <Target Name="_ZVecSuppressInheritedPublishAot"
+          BeforeTargets="ProcessFrameworkReferences"
+          Condition="'$(IsRoslynComponent)' == 'true' Or ('$(OutputType)' != 'Exe' And '$(OutputType)' != 'WinExe')">
+    <PropertyGroup>
+      <PublishAot>false</PublishAot>
+      <PublishTrimmed>false</PublishTrimmed>
+      <IsTrimmable Condition="'$(IsRoslynComponent)' == 'true'">false</IsTrimmable>
+      <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
+    </PropertyGroup>
+  </Target>
+</Project>

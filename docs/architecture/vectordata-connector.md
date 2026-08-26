@@ -104,15 +104,37 @@ All NuGet package versions across the solution are managed centrally in `Directo
 
 ## 4. Core Types & Implementation Files
 
-- **`ZVecVectorStore`**: [`src/ZVec.Extensions.VectorData/ZVecVectorStore.cs`](file:///d:/A_S/ZVec_NET_RAG_SLN/src/ZVec.Extensions.VectorData/ZVecVectorStore.cs)
-- **`ZVecVectorStoreOptions`**: [`src/ZVec.Extensions.VectorData/ZVecVectorStoreOptions.cs`](file:///d:/A_S/ZVec_NET_RAG_SLN/src/ZVec.Extensions.VectorData/ZVecVectorStoreOptions.cs) (Storage path routing & factory options).
-- **`ZVecVectorizableRecordCollection<TRecord, TKey>`**: [`src/ZVec.Extensions.VectorData/ZVecVectorizableRecordCollection.cs`](file:///d:/A_S/ZVec_NET_RAG_SLN/src/ZVec.Extensions.VectorData/ZVecVectorizableRecordCollection.cs)
-- **`ZVecFullTextSearchAttribute`**: [`src/ZVec.Extensions.VectorData/Attributes/ZVecFullTextSearchAttribute.cs`](file:///d:/A_S/ZVec_NET_RAG_SLN/src/ZVec.Extensions.VectorData/Attributes/ZVecFullTextSearchAttribute.cs) (Decorates text properties for native FTS indexing).
-- **`IZVecRecordMapper<TRecord>`**: [`src/ZVec.Extensions.VectorData/IZVecRecordMapper.cs`](file:///d:/A_S/ZVec_NET_RAG_SLN/src/ZVec.Extensions.VectorData/IZVecRecordMapper.cs) (Zero-reflection POCO record mapper interface).
-- **`ZVecRecordMapperRegistry`**: [`src/ZVec.Extensions.VectorData/ZVecRecordMapperRegistry.cs`](file:///d:/A_S/ZVec_NET_RAG_SLN/src/ZVec.Extensions.VectorData/ZVecRecordMapperRegistry.cs) (Process-wide registry for SG-emitted mappers populated via `[ModuleInitializer]`).
-- **`ZVecFilterExpressionVisitor`**: [`src/ZVec.Extensions.VectorData/ZVecFilterExpressionVisitor.cs`](file:///d:/A_S/ZVec_NET_RAG_SLN/src/ZVec.Extensions.VectorData/ZVecFilterExpressionVisitor.cs)
-- **`ZVecRecordMetadataGenerator`**: [`src/ZVec.Extensions.VectorData.SourceGenerator/ZVecRecordMetadataGenerator.cs`](file:///d:/A_S/ZVec_NET_RAG_SLN/src/ZVec.Extensions.VectorData.SourceGenerator/ZVecRecordMetadataGenerator.cs) (Emits zero-reflection `IZVecRecordMapper<TRecord>` mappers, `VectorStoreCollectionDefinition`, and `[ModuleInitializer]` registration).
-- **`ZVec.Extensions.VectorData.Analyzers`**: [`src/ZVec.Extensions.VectorData.Analyzers/ZVecAotAnalyzers.cs`](file:///d:/A_S/ZVec_NET_RAG_SLN/src/ZVec.Extensions.VectorData.Analyzers/ZVecAotAnalyzers.cs) (Roslyn analyzers `ZVEC001` / `ZVEC002` for mapper and reflection hot-path enforcement).
+### Store (`ZVec.Extensions.VectorData.Store`)
+
+- **`ZVecVectorStore`**: [`src/ZVec.Extensions.VectorData/Store/ZVecVectorStore.cs`](../../src/ZVec.Extensions.VectorData/Store/ZVecVectorStore.cs)
+- **`ZVecVectorStoreOptions`**: [`src/ZVec.Extensions.VectorData/Store/ZVecVectorStoreOptions.cs`](../../src/ZVec.Extensions.VectorData/Store/ZVecVectorStoreOptions.cs)
+
+### Collection (`ZVec.Extensions.VectorData.Collection`)
+
+- **`ZVecVectorizableRecordCollection<TRecord, TKey>`**: [`src/ZVec.Extensions.VectorData/Collection/`](../../src/ZVec.Extensions.VectorData/Collection/) (partials: `.cs`, `.Schema.cs`, `.Mapping.cs`)
+
+### Mapping (`ZVec.Extensions.VectorData.Mapping`)
+
+- **`IZVecRecordMapper<TRecord>`**: [`src/ZVec.Extensions.VectorData/Mapping/IZVecRecordMapper.cs`](../../src/ZVec.Extensions.VectorData/Mapping/IZVecRecordMapper.cs)
+- **`ZVecRecordMapperRegistry`**: [`src/ZVec.Extensions.VectorData/Mapping/ZVecRecordMapperRegistry.cs`](../../src/ZVec.Extensions.VectorData/Mapping/ZVecRecordMapperRegistry.cs)
+- **`ZVecCollectionSchemaRegistry`**: [`src/ZVec.Extensions.VectorData/Mapping/ZVecCollectionSchemaRegistry.cs`](../../src/ZVec.Extensions.VectorData/Mapping/ZVecCollectionSchemaRegistry.cs)
+- **`ZVecVectorDataSchemaBuilder`**: [`src/ZVec.Extensions.VectorData/Mapping/ZVecVectorDataSchemaBuilder.cs`](../../src/ZVec.Extensions.VectorData/Mapping/ZVecVectorDataSchemaBuilder.cs)
+
+### Filter (`ZVec.Extensions.VectorData.Filter`)
+
+- **`ZVecFilterRecordModel`**: [`src/ZVec.Extensions.VectorData/Filter/ZVecFilterRecordModel.cs`](../../src/ZVec.Extensions.VectorData/Filter/ZVecFilterRecordModel.cs)
+- **`ZVecFilterExpressionVisitor`**: [`src/ZVec.Extensions.VectorData/Filter/`](../../src/ZVec.Extensions.VectorData/Filter/) (partials: `.cs`, `.MethodCalls.cs`, `.Evaluation.cs`)
+
+### Hybrid (`ZVec.Extensions.VectorData.Hybrid`)
+
+- **`ZVecHybridSearchOptions<TRecord>`**: [`src/ZVec.Extensions.VectorData/Hybrid/ZVecHybridSearchOptions.cs`](../../src/ZVec.Extensions.VectorData/Hybrid/ZVecHybridSearchOptions.cs)
+
+### Shared infrastructure
+
+- **`ZVecFullTextSearchAttribute`**: [`src/ZVec.Extensions.VectorData/Attributes/ZVecFullTextSearchAttribute.cs`](../../src/ZVec.Extensions.VectorData/Attributes/ZVecFullTextSearchAttribute.cs)
+- **`ZVecWellKnownMemberNames` / `ZVecDirectoryNames`**: [`src/ZVec.Extensions.VectorData/Constants/`](../../src/ZVec.Extensions.VectorData/Constants/)
+- **`ZVecRecordMetadataGenerator`**: [`src/ZVec.Extensions.VectorData.SourceGenerator/`](../../src/ZVec.Extensions.VectorData.SourceGenerator/) (partials: `.cs`, `.Discovery.cs`, `.Emission.cs`)
+- **`ZVec.Extensions.VectorData.Analyzers`**: [`src/ZVec.Extensions.VectorData.Analyzers/`](../../src/ZVec.Extensions.VectorData.Analyzers/) (`ZVecRecordMapperAnalyzer`, `ZVecReflectionHotPathAnalyzer`)
 - **`ZVecFilterOperators`**: Enum covering 12 comparison, logical, collection, and null filter operators (`Equals`, `NotEquals`, `LessThan`, `LessThanOrEqual`, `GreaterThan`, `GreaterThanOrEqual`, `And`, `Or`, `Not`, `ContainsAny`, `IsNull`, `IsNotNull`).
 - **`ZVecFilterErrorCode`**: Structured error codes carried by `ZVecFilterTranslationException` for programmatic filter translation error handling.
 - **`ZVecErrorMessages`**: Strongly-typed error formatting helpers eliminating magic strings (field-aware remediation messages for unsupported string filter methods).
@@ -120,7 +142,25 @@ All NuGet package versions across the solution are managed centrally in `Directo
 
 ---
 
-## 5. Filter Expression Translation (`ZVecFilterExpressionVisitor`)
+## 5. Schema Emission Precedence (`BuildCollectionSchema`)
+
+Native collection schemas are resolved in this order (no reflection on the hot path when SG or caller definition is present):
+
+1. **Source-generated factory** — `{Record}ZVecMetadataMapper.BuildSchema(collectionName)` registered in `ZVecCollectionSchemaRegistry` via `[ModuleInitializer]`.
+2. **Caller `VectorStoreCollectionDefinition`** — passed to `GetCollection` / collection ctor, mapped by `ZVecVectorDataSchemaBuilder.BuildFromDefinition`.
+3. **Annotated reflection fallback** — `ZVecCollectionSchemaBuilder.From<TRecord>()` with `[RequiresUnreferencedCode]` / `[RequiresDynamicCode]` (legacy `[ZVec*]` attributes).
+
+Consumer projects (tests, `ZVec.AotTestApp`, samples) must reference the source generator as an analyzer:
+
+```xml
+<ProjectReference Include="path/to/ZVec.Extensions.VectorData.SourceGenerator.csproj"
+                  OutputItemType="Analyzer"
+                  ReferenceOutputAssembly="false" />
+```
+
+---
+
+## 6. Filter Expression Translation (`ZVecFilterExpressionVisitor`)
 
 `ZVecFilterExpressionVisitor` translates `Expression<Func<TRecord, bool>>` LINQ predicates into native `ZVecFilterBuilder` AST nodes and SQL-style filter strings.
 
@@ -134,7 +174,7 @@ All NuGet package versions across the solution are managed centrally in `Directo
 | `&&` | `And` | `x.InStock && x.Price < 50` |
 | `\|\|` | `Or` | `x.Category == "A" \|\| x.Category == "B"` |
 | `!` | `Not` / bool negation | `!x.InStock` |
-| `x.Tags.Contains(value)` | `ContainAny` | `x.Tags.Contains("Sale")`, `x.NumberTags.Contains(42)` |
+| `x.Tags.Contains(value)` | `ContainAny` | `x.Tags.Contains("Sale")`, `x.NumberTags.Contains(42)`, `Enumerable.Contains(x.Tags, "Sale")`, `List<string>.Contains` on record properties |
 
 **ContainAny typed value dispatch:** `int`, `long`, `float`, `double`, `bool`, `string`, `Guid`, `DateTime`, `DateTimeOffset` (unsupported collection field types such as `Guid[]` remain a schema limitation; scalar `Guid` values are supported in `ContainAny`).
 
@@ -154,7 +194,7 @@ User-defined implicit/explicit conversion operators (outside approved BCL conver
 
 ---
 
-## 6. Score Normalization, Index Optimization & Native AOT Safety
+## 7. Score Normalization, Index Optimization & Native AOT Safety
 
 - **Score Normalization Formula:** ZVec native scores are normalized transparently using a metric-switch formula:
   - **Cosine Metric:** \(\text{Score} = 1.0f - d_{\text{cosine}}\) (maps distance \([0, 2]\) to similarity \([-1, 1]\))

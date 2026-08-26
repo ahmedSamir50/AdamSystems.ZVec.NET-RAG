@@ -8,6 +8,9 @@ public static class ZVecErrorMessages
     /// <summary>Error message when collection name is null, empty, or whitespace.</summary>
     public const string NullOrEmptyCollectionName = "Collection name cannot be null, empty, or whitespace.";
 
+    /// <summary>Error message when the ZVec type model is unavailable for record mapping.</summary>
+    public const string TypeModelUninitialized = "ZVec type model is unavailable. Add [VectorStore*] attributes and reference the source generator, or decorate the record with ZVec mapping attributes.";
+
     /// <summary>Error message when expression text is null, empty, or whitespace.</summary>
     public const string NullOrEmptyExpressionText = "Expression text cannot be null, empty, or whitespace.";
 
@@ -50,7 +53,7 @@ public static class ZVecErrorMessages
     /// <summary>Error message when <c>string.StartsWith</c> is used in a LINQ filter expression.</summary>
     /// <param name="fieldName">Name of the filtered field, when available.</param>
     /// <returns>Formatted error message with remediation guidance.</returns>
-    public static string UnsupportedStartsWithMethod(string fieldName = "unknown") =>
+    public static string UnsupportedStartsWithMethod(string fieldName = ZVecWellKnownMemberNames.UnknownMember) =>
         $"Field '{fieldName}': Filter method 'StartsWith' is not supported in LINQ filter expressions. " +
         "Remediation: Use ZVec full-text search (FTS) keyword queries for prefix matching, " +
         "or pre-compute a normalized field for exact equality filtering.";
@@ -58,7 +61,7 @@ public static class ZVecErrorMessages
     /// <summary>Error message when <c>string.EndsWith</c> is used in a LINQ filter expression.</summary>
     /// <param name="fieldName">Name of the filtered field, when available.</param>
     /// <returns>Formatted error message with remediation guidance.</returns>
-    public static string UnsupportedEndsWithMethod(string fieldName = "unknown") =>
+    public static string UnsupportedEndsWithMethod(string fieldName = ZVecWellKnownMemberNames.UnknownMember) =>
         $"Field '{fieldName}': Filter method 'EndsWith' is not supported in LINQ filter expressions. " +
         "Remediation: Use ZVec full-text search (FTS) keyword queries for suffix matching, " +
         "or pre-compute a normalized field for exact equality filtering.";
@@ -66,7 +69,7 @@ public static class ZVecErrorMessages
     /// <summary>Error message when <c>Regex.IsMatch</c> is used in a LINQ filter expression.</summary>
     /// <param name="fieldName">Name of the filtered field, when available.</param>
     /// <returns>Formatted error message with remediation guidance.</returns>
-    public static string UnsupportedRegexMethod(string fieldName = "unknown") =>
+    public static string UnsupportedRegexMethod(string fieldName = ZVecWellKnownMemberNames.UnknownMember) =>
         $"Field '{fieldName}': Filter method 'IsMatch' is not supported in LINQ filter expressions. " +
         "Remediation: Use ZVec full-text search (FTS) keyword queries for pattern matching, " +
         "or pre-compute a normalized field for exact equality filtering.";
@@ -74,7 +77,7 @@ public static class ZVecErrorMessages
     /// <summary>Error message when <c>string.Contains</c> is used in a LINQ filter expression.</summary>
     /// <param name="fieldName">Name of the filtered field, when available.</param>
     /// <returns>Formatted error message with remediation guidance.</returns>
-    public static string UnsupportedStringContainsMethod(string fieldName = "unknown") =>
+    public static string UnsupportedStringContainsMethod(string fieldName = ZVecWellKnownMemberNames.UnknownMember) =>
         $"Field '{fieldName}': string.Contains is not supported in LINQ filters. " +
         "Remediation: Use ZVec full-text search (FTS) keyword search, or ContainAny on collection properties.";
 
@@ -90,4 +93,29 @@ public static class ZVecErrorMessages
                "Only direct record properties are allowed. Remediation: flatten the nested collection " +
                "into a top-level property on the record, or pre-project the nested values before filtering.";
     }
+
+    /// <summary>Error message when ContainAny receives a null search value.</summary>
+    public const string ContainAnyRequiresNonNullValue = "ContainAny requires a non-null search value.";
+
+    /// <summary>Error message when an IN clause collection is empty.</summary>
+    public const string EmptyInClauseCollection = "Empty IN clause collection.";
+
+    /// <summary>Error message when an IN clause collection is invalid.</summary>
+    public const string InvalidInClauseCollection = "Invalid IN clause collection.";
+
+    /// <summary>Formats error message for unsupported user-defined conversions between types.</summary>
+    public static string UnsupportedUserDefinedConversion(string sourceTypeName, string targetTypeName) =>
+        $"User-defined conversion from '{sourceTypeName}' to '{targetTypeName}' is not supported in filter expressions.";
+
+    /// <summary>Formats error message for unsupported user-defined conversion operators.</summary>
+    public static string UnsupportedUserDefinedConversionOperator(string declaringTypeName, string operatorName) =>
+        $"User-defined conversion operator '{declaringTypeName}.{operatorName}' is not supported in filter expressions.";
+
+    /// <summary>Formats error message when a method cannot be evaluated under AOT.</summary>
+    public static string CannotEvaluateMethodUnderAot(string methodName, string reason) =>
+        $"Cannot evaluate method '{methodName}' under AOT: {reason}";
+
+    /// <summary>Formats error message when static expression evaluation fails under AOT.</summary>
+    public static string CannotStaticallyEvaluateExpressionUnderAot(string expressionText) =>
+        $"Cannot statically evaluate expression '{expressionText}' under AOT without dynamic compilation.";
 }

@@ -6,10 +6,8 @@
 
 | ID | Severity | Category | File | Status | Since | Last Checked |
 |----|----------|----------|------|--------|-------|-------------|
-| P2-E | P2 | dynamic_dictionary_collections_stubbed | src/ZVec.Extensions.VectorData/ZVecVectorizableRecordCollection.cs | OPEN | 2026-08-13 | 2026-08-13 |
-| P2-F | P2 | vectordata_collection_definition_ignored | src/ZVec.Extensions.VectorData/ZVecVectorizableRecordCollection.cs | OPEN | 2026-08-13 | 2026-08-13 |
-| P2-H | P2 | class_line_count_exceeds_500 | src/ZVec.Extensions.VectorData/ZVecFilterExpressionVisitor.cs | OPEN | 2026-08-13 | 2026-08-13 |
-| P3-C | P3 | sample_app_not_smoke_tested | samples/ZVec.Rag.Console/ | OPEN | 2026-08-13 | 2026-08-13 |
+| P2-E | P2 | dynamic_dictionary_collections_stubbed | src/ZVec.Extensions.VectorData/Collection/ZVecVectorizableRecordCollection.cs | OPEN | 2026-08-13 | 2026-08-26 |
+| P3-C | P3 | sample_app_not_smoke_tested | samples/ZVec.Rag.Console/ | OPEN | 2026-08-13 | 2026-08-26 |
 
 ## Fixed Gaps (Historical)
 
@@ -24,6 +22,8 @@
 | P3-B | P3 | 2026-08-13 | 2026-08-13 | working-tree | ZVec.Extensions.VectorData.SourceGenerator.Tests added to ZVec.NET-RAG.slnx and to quality-gate.yml test run; CS8892 suppressed to match other test projects |
 | P3-D | P3 | 2026-08-13 | 2026-08-13 | working-tree | ZVec.NET-RAG-project-plan.md Epic 0.2 + Epic 1.1/1.2/1.3/1.6/1.8/1.10/1.11 checkboxes updated to reflect actual implementation; partial items (1.4, 1.5, 1.7, 1.9) annotated with status notes |
 | P2-I | P2 | 2026-08-13 | 2026-08-13 | working-tree | ZVecVectorizableRecordCollection.cs refactored into partial classes (Schema.cs + Mapping.cs); main file reduced from 607 to 446 lines, under the 500-line CI cap |
+| P2-H | P2 | 2026-08-13 | 2026-08-26 | 9b54094 | ZVecFilterExpressionVisitor split into partial classes (Evaluation.cs + MethodCalls.cs); largest file 241 lines |
+| P2-F | P2 | 2026-08-13 | 2026-08-26 | working-tree | BuildCollectionSchema precedence: SG registry → caller Definition (ZVecVectorDataSchemaBuilder) → reflection fallback; collection ctor defaults Definition from ZVecCollectionSchemaRegistry |
 | NC-2 | P2 | 2026-08-13 | 2026-08-13 | working-tree | DateTime + DateTimeOffset ContainAny dispatch verified by tests; object fallback proven for all BCL types |
 | NC-3 | P2 | 2026-08-13 | 2026-08-13 | working-tree | TryGetRecordCollectionProperty rejects nested member access rooted at record parameter with ZVecFilterTranslationException; closure-variable access preserved |
 | NC-4 | P3 | 2026-08-13 | 2026-08-13 | working-tree | RejectUserDefinedConversionExpression guard verified on all paths; BCL conversion whitelist test added proving no over-rejection |

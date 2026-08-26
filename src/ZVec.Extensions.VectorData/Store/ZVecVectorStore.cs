@@ -1,9 +1,10 @@
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.VectorData;
 using ZVec.Extensions.VectorData.Constants;
+using ZVec.Extensions.VectorData.Collection;
 using ZVec.NET;
 
-namespace ZVec.Extensions.VectorData;
+namespace ZVec.Extensions.VectorData.Store;
 
 /// <summary>
 /// Implements Microsoft's <see cref="VectorStore"/> abstract base class over embedded vector database engine <see cref="IZvecFactory"/>.
@@ -135,10 +136,7 @@ public sealed class ZVecVectorStore : VectorStore
         // Filter out non-collection directories. Native ZVec collections are detected by
         // the presence of a marker file (zvec_collection.json or similar) — if no marker
         // file convention exists, fall back to excluding known infrastructure directories.
-        var excludedNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-        {
-            "bin", "obj", "logs", "node_modules", ".vs", ".idea", ".git"
-        };
+        var excludedNames = new HashSet<string>(ZVecDirectoryNames.CollectionEnumerationExclusions, StringComparer.OrdinalIgnoreCase);
 
         foreach (var dir in Directory.EnumerateDirectories(basePath))
         {

@@ -30,7 +30,7 @@ public sealed class FilterTestRecord
 }
 
 /// <summary>
-/// TDD Unit tests for ZVecFilterExpressionVisitor covering all 10 filter operators and AST translation error handling.
+/// TDD unit tests for <see cref="ZVecFilterExpressionVisitor"/> covering all 12 filter operators and AST translation error handling.
 /// </summary>
 public sealed class ZVecFilterExpressionVisitorTests
 {
@@ -311,10 +311,11 @@ public sealed class ZVecFilterExpressionVisitorTests
     public void Translate_GuidCollectionContains_ReturnsContainAnyFilterString()
     {
         var targetId = Guid.Parse("11111111-1111-1111-1111-111111111111");
-        var filter = ZVec.NET.Query.ZVecFilterBuilder.Create().ContainAny("AllowedIds", targetId).Build();
+        Expression<Func<GuidCollectionTestRecord, bool>> filter = x => x.AllowedIds.Contains(targetId);
+        var result = ZVecFilterExpressionVisitor.Translate(filter);
 
-        Assert.Contains("AllowedIds CONTAIN_ANY", filter);
-        Assert.Contains("11111111-1111-1111-1111-111111111111", filter, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("AllowedIds CONTAIN_ANY", result);
+        Assert.Contains("11111111-1111-1111-1111-111111111111", result, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -331,20 +332,102 @@ public sealed class ZVecFilterExpressionVisitorTests
     public void Translate_DateTimeCollectionContains_ReturnsContainAnyFilterString()
     {
         var targetDate = new DateTime(2026, 8, 13);
-        var filter = ZVec.NET.Query.ZVecFilterBuilder.Create().ContainAny("EventDates", targetDate).Build();
+        Expression<Func<DateTimeCollectionTestRecord, bool>> filter = x => x.EventDates.Contains(targetDate);
+        var result = ZVecFilterExpressionVisitor.Translate(filter);
 
-        Assert.Contains("EventDates CONTAIN_ANY", filter);
-        Assert.Contains("2026", filter);
+        Assert.Contains("EventDates CONTAIN_ANY", result);
+        Assert.Contains("2026", result);
     }
 
     [Fact]
     public void Translate_DateTimeOffsetCollectionContains_ReturnsContainAnyFilterString()
     {
         var targetDto = new DateTimeOffset(2026, 8, 13, 0, 0, 0, TimeSpan.Zero);
-        var filter = ZVec.NET.Query.ZVecFilterBuilder.Create().ContainAny("TimestampLog", targetDto).Build();
+        Expression<Func<DateTimeOffsetCollectionTestRecord, bool>> filter = x => x.TimestampLog.Contains(targetDto);
+        var result = ZVecFilterExpressionVisitor.Translate(filter);
 
-        Assert.Contains("TimestampLog CONTAIN_ANY", filter);
-        Assert.Contains("2026", filter);
+        Assert.Contains("TimestampLog CONTAIN_ANY", result);
+        Assert.Contains("2026", result);
+    }
+
+    [Fact]
+    public void Translate_ListCollectionPropertyContains_ReturnsContainAnyFilterString()
+    {
+        Expression<Func<ListCollectionTestRecord, bool>> filter = x => x.Tags.Contains("Featured");
+        var result = ZVecFilterExpressionVisitor.Translate(filter);
+
+        Assert.Contains("Tags CONTAIN_ANY", result);
+        Assert.Contains("\"Featured\"", result);
+    }
+
+    [Fact]
+    public void Translate_EnumerableStaticContains_ReturnsContainAnyFilterString()
+    {
+        string tag = "Sale";
+        Expression<Func<FilterTestRecord, bool>> filter = x => Enumerable.Contains(x.Tags, tag);
+        var result = ZVecFilterExpressionVisitor.Translate(filter);
+
+        Assert.Contains("Tags CONTAIN_ANY", result);
+        Assert.Contains("\"Sale\"", result);
+    }
+
+    [Fact]
+    public void Translate_FloatCollectionContains_ReturnsContainAnyFilterString()
+    {
+        Expression<Func<FloatCollectionTestRecord, bool>> filter = x => x.Scores.Contains(3.14f);
+        var result = ZVecFilterExpressionVisitor.Translate(filter);
+
+        Assert.Contains("Scores CONTAIN_ANY", result);
+        Assert.Contains("3.14", result);
+    }
+
+    [Fact]
+    public void Translate_DoubleCollectionContains_ReturnsContainAnyFilterString()
+    {
+        Expression<Func<DoubleCollectionTestRecord, bool>> filter = x => x.Ratings.Contains(9.99);
+        var result = ZVecFilterExpressionVisitor.Translate(filter);
+
+        Assert.Contains("Ratings CONTAIN_ANY", result);
+        Assert.Contains("9.99", result);
+    }
+
+    [Fact]
+    public void Translate_BoolCollectionContains_ReturnsContainAnyFilterString()
+    {
+        Expression<Func<BoolCollectionTestRecord, bool>> filter = x => x.Flags.Contains(true);
+        var result = ZVecFilterExpressionVisitor.Translate(filter);
+
+        Assert.Contains("Flags CONTAIN_ANY", result);
+        Assert.Contains("true", result, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Translate_DirectBooleanProperty_ReturnsTrueComparisonFilterString()
+    {
+        Expression<Func<FilterTestRecord, bool>> filter = x => x.InStock;
+        var result = ZVecFilterExpressionVisitor.Translate(filter);
+
+        Assert.Contains("InStock = true", result);
+    }
+
+    [Fact]
+    public void Translate_ContainsAny_OnlyNullElements_ReturnsIsNullFilterString()
+    {
+        string?[] categories = new string?[] { null, null }!;
+        Expression<Func<FilterTestRecord, bool>> filter = x => categories.Contains(x.Category);
+        var result = ZVecFilterExpressionVisitor.Translate(filter);
+
+        Assert.Contains("IS NULL", result.ToUpperInvariant());
+        Assert.DoesNotContain("IN", result.ToUpperInvariant());
+    }
+
+    [Fact]
+    public void Translate_UnsupportedMethodName_ThrowsZVecFilterTranslationException()
+    {
+        Expression<Func<FilterTestRecord, bool>> filter = x => x.Category.Substring(0, 1) == "E";
+        var ex = Assert.Throws<ZVecFilterTranslationException>(() => ZVecFilterExpressionVisitor.Translate(filter));
+
+        Assert.Contains("Substring", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -555,6 +638,76 @@ public sealed class LongCollectionTestRecord
 
     [ZVecField]
     public long[] LongTags { get; set; } = Array.Empty<long>();
+}
+
+/// <summary>Record with Guid collection property for ContainAny type dispatch tests.</summary>
+public sealed class GuidCollectionTestRecord
+{
+    [ZVecId]
+    public string Id { get; set; } = string.Empty;
+
+    [ZVecIgnore]
+    public Guid[] AllowedIds { get; set; } = Array.Empty<Guid>();
+}
+
+/// <summary>Record with DateTime collection property for ContainAny type dispatch tests.</summary>
+public sealed class DateTimeCollectionTestRecord
+{
+    [ZVecId]
+    public string Id { get; set; } = string.Empty;
+
+    [ZVecIgnore]
+    public DateTime[] EventDates { get; set; } = Array.Empty<DateTime>();
+}
+
+/// <summary>Record with DateTimeOffset collection property for ContainAny type dispatch tests.</summary>
+public sealed class DateTimeOffsetCollectionTestRecord
+{
+    [ZVecId]
+    public string Id { get; set; } = string.Empty;
+
+    [ZVecIgnore]
+    public DateTimeOffset[] TimestampLog { get; set; } = Array.Empty<DateTimeOffset>();
+}
+
+/// <summary>Record with List collection property for ContainAny List&lt;T&gt; dispatch tests.</summary>
+public sealed class ListCollectionTestRecord
+{
+    [ZVecId]
+    public string Id { get; set; } = string.Empty;
+
+    [ZVecIgnore]
+    public List<string> Tags { get; set; } = new();
+}
+
+/// <summary>Record with float collection property for ContainAny type dispatch tests.</summary>
+public sealed class FloatCollectionTestRecord
+{
+    [ZVecId]
+    public string Id { get; set; } = string.Empty;
+
+    [ZVecIgnore]
+    public float[] Scores { get; set; } = Array.Empty<float>();
+}
+
+/// <summary>Record with double collection property for ContainAny type dispatch tests.</summary>
+public sealed class DoubleCollectionTestRecord
+{
+    [ZVecId]
+    public string Id { get; set; } = string.Empty;
+
+    [ZVecIgnore]
+    public double[] Ratings { get; set; } = Array.Empty<double>();
+}
+
+/// <summary>Record with bool collection property for ContainAny type dispatch tests.</summary>
+public sealed class BoolCollectionTestRecord
+{
+    [ZVecId]
+    public string Id { get; set; } = string.Empty;
+
+    [ZVecIgnore]
+    public bool[] Flags { get; set; } = Array.Empty<bool>();
 }
 
 /// <summary>Holder with a string collection property, nested inside <see cref="NestedCollectionRecord"/>.</summary>

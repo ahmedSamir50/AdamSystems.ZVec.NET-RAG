@@ -20,6 +20,11 @@ public sealed class SampleHybridRecord
     [VectorStoreData(IsIndexed = true, IsFullTextIndexed = true)]
     public string Content { get; set; } = string.Empty;
 
+    /// <summary>Filterable category field (scalar index, not FTS).</summary>
+    [ZVecField]
+    [VectorStoreData(IsIndexed = true)]
+    public string Category { get; set; } = string.Empty;
+
     /// <summary>Embedding Vector Field.</summary>
     [ZVecVector(768)]
     [VectorStoreVector(768)]
@@ -173,5 +178,151 @@ public sealed class ZVecHybridSearchTests
                 try { Directory.Delete(storagePath, recursive: true); } catch { }
             }
         }
+    }
+
+    [Fact]
+    public async Task HybridSearchAsync_AppliesFilterExpression_WhenFilterProvided()
+    {
+        string storagePath = CreateTempStoragePath();
+        Directory.CreateDirectory(storagePath);
+        try
+        {
+            var options = new ZVecVectorStoreOptions { StoragePath = storagePath };
+            IZvecFactory factory = new ZVecFactory();
+            factory.Initialize();
+
+            string colName = "hybrid_filter_" + Guid.NewGuid().ToString("N")[..8];
+            var collection = new ZVecVectorizableRecordCollection<SampleHybridRecord, string>(factory, options, colName);
+            await collection.EnsureCollectionExistsAsync(TestContext.Current.CancellationToken);
+
+            await collection.UpsertAsync(new[]
+            {
+                new SampleHybridRecord { Id = "doc1", Content = "alpha keyword", Category = "alpha", Vector = CreateVector(1.0f) },
+                new SampleHybridRecord { Id = "doc2", Content = "beta keyword", Category = "beta", Vector = CreateVector(0.5f) }
+            }, TestContext.Current.CancellationToken);
+
+            var hybridOptions = new HybridSearchOptions<SampleHybridRecord>
+            {
+                Filter = record => record.Category == "beta"
+            };
+
+            var results = new List<VectorSearchResult<SampleHybridRecord>>();
+            IKeywordHybridSearchable<SampleHybridRecord> hybrid = collection;
+            await foreach (var res in hybrid.HybridSearchAsync(
+                CreateVector(0.6f), new[] { "keyword" }, 10, hybridOptions, TestContext.Current.CancellationToken))
+            {
+                results.Add(res);
+            }
+
+            Assert.NotEmpty(results);
+            Assert.All(results, r => Assert.Equal("beta", r.Record.Category));
+
+            await collection.EnsureCollectionDeletedAsync(TestContext.Current.CancellationToken);
+        }
+        finally
+        {
+            if (Directory.Exists(storagePath))
+            {
+                try { Directory.Delete(storagePath, recursive: true); } catch { }
+            }
+        }
+    }
+
+    [Fact]
+    public async Task HybridSearchAsync_HonorsCustomRrfK_WhenZVecHybridSearchOptionsProvided()
+    {
+        string storagePath = CreateTempStoragePath();
+        Directory.CreateDirectory(storagePath);
+        try
+        {
+            var options = new ZVecVectorStoreOptions { StoragePath = storagePath };
+            IZvecFactory factory = new ZVecFactory();
+            factory.Initialize();
+
+            string colName = "hybrid_rrf_" + Guid.NewGuid().ToString("N")[..8];
+            var collection = new ZVecVectorizableRecordCollection<SampleHybridRecord, string>(factory, options, colName);
+            await collection.EnsureCollectionExistsAsync(TestContext.Current.CancellationToken);
+
+            await collection.UpsertAsync(new[]
+            {
+                new SampleHybridRecord { Id = "doc1", Content = "hybrid keyword ranking", Vector = CreateVector(1.0f) }
+            }, TestContext.Current.CancellationToken);
+
+            var hybridOptions = new ZVecHybridSearchOptions<SampleHybridRecord> { RrfK = 42 };
+
+            var results = new List<VectorSearchResult<SampleHybridRecord>>();
+            IKeywordHybridSearchable<SampleHybridRecord> hybrid = collection;
+            await foreach (var res in hybrid.HybridSearchAsync(
+                CreateVector(0.9f), new[] { "keyword" }, 5, hybridOptions, TestContext.Current.CancellationToken))
+            {
+                results.Add(res);
+            }
+
+            Assert.NotEmpty(results);
+            Assert.Equal("doc1", results[0].Record.Id);
+
+            await collection.EnsureCollectionDeletedAsync(TestContext.Current.CancellationToken);
+        }
+        finally
+        {
+            if (Directory.Exists(storagePath))
+            {
+                try { Directory.Delete(storagePath, recursive: true); } catch { }
+            }
+        }
+    }
+
+    [Fact]
+    public async Task HybridSearchAsync_HonorsAdditionalProperty_WhenSpecified()
+    {
+        string storagePath = CreateTempStoragePath();
+        Directory.CreateDirectory(storagePath);
+        try
+        {
+            var options = new ZVecVectorStoreOptions { StoragePath = storagePath };
+            IZvecFactory factory = new ZVecFactory();
+            factory.Initialize();
+
+            string colName = "hybrid_fts_override_" + Guid.NewGuid().ToString("N")[..8];
+            var collection = new ZVecVectorizableRecordCollection<SampleHybridRecord, string>(factory, options, colName);
+            await collection.EnsureCollectionExistsAsync(TestContext.Current.CancellationToken);
+
+            await collection.UpsertAsync(new[]
+            {
+                new SampleHybridRecord { Id = "doc1", Content = "override keyword match", Category = "a", Vector = CreateVector(1.0f) }
+            }, TestContext.Current.CancellationToken);
+
+            var hybridOptions = new HybridSearchOptions<SampleHybridRecord>
+            {
+                AdditionalProperty = record => record.Content
+            };
+
+            var results = new List<VectorSearchResult<SampleHybridRecord>>();
+            IKeywordHybridSearchable<SampleHybridRecord> hybrid = collection;
+            await foreach (var res in hybrid.HybridSearchAsync(
+                CreateVector(0.9f), new[] { "override" }, 5, hybridOptions, TestContext.Current.CancellationToken))
+            {
+                results.Add(res);
+            }
+
+            Assert.NotEmpty(results);
+            Assert.Equal("doc1", results[0].Record.Id);
+
+            await collection.EnsureCollectionDeletedAsync(TestContext.Current.CancellationToken);
+        }
+        finally
+        {
+            if (Directory.Exists(storagePath))
+            {
+                try { Directory.Delete(storagePath, recursive: true); } catch { }
+            }
+        }
+    }
+
+    private static float[] CreateVector(float firstComponent)
+    {
+        var vector = new float[768];
+        vector[0] = firstComponent;
+        return vector;
     }
 }

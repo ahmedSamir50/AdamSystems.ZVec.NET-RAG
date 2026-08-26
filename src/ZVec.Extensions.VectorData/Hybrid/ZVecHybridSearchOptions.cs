@@ -1,7 +1,7 @@
 using Microsoft.Extensions.VectorData;
 using ZVec.Extensions.VectorData.Constants;
 
-namespace ZVec.Extensions.VectorData;
+namespace ZVec.Extensions.VectorData.Hybrid;
 
 /// <summary>
 /// ZVec-specific hybrid search options. Derives from <see cref="HybridSearchOptions{TRecord}"/>

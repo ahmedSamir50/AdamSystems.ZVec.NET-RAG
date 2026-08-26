@@ -81,9 +81,12 @@ public static class ZVecMapper
 
 ```text
 === ZVec.NET Native AOT Audit Harness Starting ===
-[AOT Test 1] Model resolved: SampleAotDoc (Id: Id, Fields: 1, Vectors: 1)
-[AOT Test 2] ZVecDoc created successfully. Id: doc_aot_001, Fields Count: 1
+[AOT Test 1] Generated schema resolved: aot_schema_probe (Vectors: 2, Fields: 0)
+[AOT Test 2] ZVecDoc created via generated mapper. Id: doc_aot_001, Fields Count: 2
 [AOT Test 3] Document restored: Id=doc_aot_001, Title=AOT Document Test, VectorDim=768
+[AOT Test 5] Filter translated: Category = "integration"
+[AOT Test 6] Upsert + Get round-trip OK. Fetched Title=AOT Document Test
+[AOT Test 7] Vectorized search returned 1 result(s). Top score: 1
 === All Native AOT Verification Tests Passed Successfully ===
 ```
 
@@ -93,9 +96,11 @@ public static class ZVecMapper
 
 Even with `ZVec.NET` annotated, `ZVec.Extensions.VectorData` ships:
 
-1. **`ZVecRecordMetadataGenerator`** (Roslyn Source Generator) — emits static `IZVecRecordMapper<TRecord>` classes at build time for `[VectorStoreRecord]` POCOs, eliminating runtime reflection on query hot paths.
+1. **`ZVecRecordMetadataGenerator`** (Roslyn Source Generator) — emits static `IZVecRecordMapper<TRecord>` classes, `BuildSchema(collectionName)` factories, and `VectorStoreCollectionDefinition` metadata at build time for `[VectorStore*]` POCOs. Registers via `[ModuleInitializer]` into `ZVecRecordMapperRegistry` and `ZVecCollectionSchemaRegistry`.
 2. **`ZVec.Extensions.VectorData.Analyzers`** — emits **`ZVEC001`** / **`ZVEC002`** IDE diagnostics when record types lack generated mappers or reflection is used outside approved fallback paths.
-3. **`ZVec.AotTestApp`** — Native AOT audit harness including a **`ReflectionFallbackRecord`** reference to surface trim warnings (`IL2026` / `IL3050`) for non-source-generated types during CI publish.
+3. **`ZVec.AotTestApp`** — Native AOT audit harness exercising generated schema/mapper round-trip, filter translation via `ZVecFilterRecordModel`, upsert/search, and a **`ReflectionFallbackRecord`** reference to surface trim warnings (`IL2026` / `IL3050`) for non-source-generated types during CI publish.
+
+Filter translation for VectorStore-only POCOs uses `ZVecFilterRecordModel`, which reads source-generated `VectorStoreCollectionDefinition` metadata when `[ZVec*]` attributes are absent.
 
 ### CI Quality Gate
 

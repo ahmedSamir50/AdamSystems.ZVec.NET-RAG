@@ -1,6 +1,6 @@
 using ZVec.NET;
 
-namespace ZVec.Extensions.VectorData;
+namespace ZVec.Extensions.VectorData.Store;
 
 /// <summary>
 /// Configuration options for registering ZVec.Extensions.VectorData services via Dependency Injection.
@@ -36,4 +36,18 @@ public sealed class ZVecVectorStoreOptions
     internal string EffectiveCollectionBasePath => string.IsNullOrEmpty(_storagePath)
         ? AppDomain.CurrentDomain.BaseDirectory
         : _storagePath;
+
+    /// <summary>
+    /// Gets or sets the maximum number of concurrent native calls allowed by the ZVec engine.
+    /// Defaults to <see cref="Environment.ProcessorCount"/>.
+    /// </summary>
+    public int MaxConcurrentNativeCalls { get; set; } = Environment.ProcessorCount;
+
+    /// <summary>
+    /// Creates a <see cref="ZVecOptions"/> snapshot from the current vector store configuration.
+    /// </summary>
+    internal ZVecOptions CreateZVecOptions() => new()
+    {
+        MaxConcurrentNativeCalls = MaxConcurrentNativeCalls
+    };
 }

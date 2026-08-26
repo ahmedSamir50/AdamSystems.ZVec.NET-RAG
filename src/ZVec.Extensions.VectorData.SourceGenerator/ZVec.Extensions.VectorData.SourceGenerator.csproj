@@ -5,6 +5,9 @@
     <LangVersion>latest</LangVersion>
     <IsRoslynComponent>true</IsRoslynComponent>
     <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+    <PublishAot>false</PublishAot>
+    <IsAotCompatible>false</IsAotCompatible>
+    <EnableSdkPublishing>false</EnableSdkPublishing>
     <PackageId>ZVec.Extensions.VectorData.SourceGenerator</PackageId>
     <Description>Roslyn Incremental Source Generator emitting zero-reflection AOT mappers for [VectorStoreRecord] POCOs.</Description>
   </PropertyGroup>
@@ -13,5 +16,15 @@
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" PrivateAssets="all" />
     <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" PrivateAssets="all" />
   </ItemGroup>
+
+  <!-- CLI /p:PublishAot=true must not flow into netstandard2.0 Roslyn components during consumer AOT publish. -->
+  <Target Name="SuppressPublishAotForRoslynComponent" BeforeTargets="ProcessFrameworkReferences">
+    <PropertyGroup>
+      <PublishAot>false</PublishAot>
+      <PublishTrimmed>false</PublishTrimmed>
+      <IsTrimmable>false</IsTrimmable>
+      <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
+    </PropertyGroup>
+  </Target>
 
 </Project>

@@ -1,29 +1,28 @@
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.VectorData;
-using ZVec.Extensions.VectorData;
 using ZVec.NET;
 using ZVec.NET.Mapping;
 
 namespace ZVec.AotTestApp;
 
 /// <summary>
-/// Sample document model for Native AOT trim verification.
+/// Sample document model for Native AOT trim verification using source-generated mapper/schema.
 /// </summary>
-[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
 public sealed class SampleAotDoc
 {
     /// <summary>Unique Identifier.</summary>
-    [ZVecId]
     [VectorStoreKey]
     public string Id { get; set; } = string.Empty;
 
     /// <summary>Dense embedding vector.</summary>
-    [ZVecVector(768)]
     [VectorStoreVector(768)]
     public ReadOnlyMemory<float> Vector { get; set; }
 
+    /// <summary>Filterable category (scalar index, not FTS).</summary>
+    [VectorStoreData(IsIndexed = true)]
+    public string Category { get; set; } = string.Empty;
+
     /// <summary>Sample title field.</summary>
-    [ZVecField]
     [VectorStoreData(IsIndexed = true, IsFullTextIndexed = true)]
     public string Title { get; set; } = string.Empty;
 }
@@ -52,11 +51,11 @@ public static class Program
 
         try
         {
-            // Test 1: TypeModel Resolution under AOT
-            var model = ZVecTypeModel.Get<SampleAotDoc>();
-            Console.WriteLine($"[AOT Test 1] Model resolved: {model.ClrType.Name} (Id: {model.Id.Property.Name}, Fields: {model.Fields.Count}, Vectors: {model.Vectors.Count})");
+            // Test 1: Generated schema factory under AOT
+            var schema = SampleAotDocZVecMetadataMapper.BuildSchema("aot_schema_probe");
+            Console.WriteLine($"[AOT Test 1] Generated schema resolved: {schema.Name} (Vectors: {schema.Vectors.Count}, Fields: {schema.Fields.Count})");
 
-            // Test 2: POCO to ZVecDoc Conversion & Vector Pinning under AOT
+            // Test 2: Generated mapper ToDoc under AOT
             float[] sampleVector = new float[768];
             sampleVector[0] = 0.42f;
 
@@ -64,14 +63,16 @@ public static class Program
             {
                 Id = "doc_aot_001",
                 Title = "AOT Document Test",
+                Category = "integration",
                 Vector = sampleVector
             };
 
-            var doc = ZVecMapper.ToDoc(record, model);
-            Console.WriteLine($"[AOT Test 2] ZVecDoc created successfully. Id: {doc.Id}, Fields Count: {doc.Fields.Count}");
+            var mapper = new SampleAotDocZVecMetadataMapper.Mapper();
+            var doc = mapper.ToDoc(record, null!);
+            Console.WriteLine($"[AOT Test 2] ZVecDoc created via generated mapper. Id: {doc.Id}, Fields Count: {doc.Fields.Count}");
 
-            // Test 3: Reverse ZVecDoc to POCO Mapping under AOT
-            var restored = ZVecMapper.FromDoc<SampleAotDoc>(doc, model);
+            // Test 3: Generated mapper FromDoc under AOT
+            var restored = mapper.FromDoc(doc, null!);
             Console.WriteLine($"[AOT Test 3] Document restored: Id={restored.Id}, Title={restored.Title}, VectorDim={restored.Vector.Length}");
 
             // Test 4: ZVecVectorStore instantiation + collection retrieval under AOT
@@ -86,7 +87,7 @@ public static class Program
             Console.WriteLine($"[AOT Test 4] ZVecVectorStore + collection resolved: {collection.Name}");
 
             // Test 5: Filter Expression Translation under AOT (no Expression.Compile)
-            System.Linq.Expressions.Expression<Func<SampleAotDoc, bool>> filter = x => x.Title == "AOT Document Test";
+            System.Linq.Expressions.Expression<Func<SampleAotDoc, bool>> filter = x => x.Category == "integration";
             string filterStr = ZVecFilterExpressionVisitor.Translate(filter);
             Console.WriteLine($"[AOT Test 5] Filter translated: {filterStr}");
 

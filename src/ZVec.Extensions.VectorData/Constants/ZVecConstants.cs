@@ -25,4 +25,14 @@ public static class ZVecConstants
     /// Standard RRF value used by the native <c>ZVecRrfReranker</c>.
     /// </summary>
     public const int DefaultRrfRankConstant = 60;
+
+    /// <summary>
+    /// Fallback FTS field storage name when no indexed text property can be resolved.
+    /// </summary>
+    public const string DefaultFullTextFieldName = "Content";
+
+    /// <summary>
+    /// Fallback dense vector field storage name when schema metadata is unavailable.
+    /// </summary>
+    public const string DefaultVectorFieldName = "Vector";
 }

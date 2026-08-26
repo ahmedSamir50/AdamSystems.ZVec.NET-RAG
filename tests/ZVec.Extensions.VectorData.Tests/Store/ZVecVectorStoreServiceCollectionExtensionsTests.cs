@@ -18,6 +18,30 @@ public sealed class ZVecVectorStoreServiceCollectionExtensionsTests
     }
 
     [Fact]
+    public void AddZVecVectorStore_DefaultsMaxConcurrentNativeCallsToProcessorCount()
+    {
+        var services = new ServiceCollection();
+        services.AddZVecVectorStore();
+
+        var provider = services.BuildServiceProvider();
+        var options = provider.GetRequiredService<ZVecVectorStoreOptions>();
+
+        Assert.Equal(Environment.ProcessorCount, options.MaxConcurrentNativeCalls);
+    }
+
+    [Fact]
+    public void AddZVecVectorStore_AppliesCustomMaxConcurrentNativeCalls_WhenConfigured()
+    {
+        var services = new ServiceCollection();
+        services.AddZVecVectorStore(options => options.MaxConcurrentNativeCalls = 2);
+
+        var provider = services.BuildServiceProvider();
+        var options = provider.GetRequiredService<ZVecVectorStoreOptions>();
+
+        Assert.Equal(2, options.MaxConcurrentNativeCalls);
+    }
+
+    [Fact]
     public void AddZVecVectorStore_RegistersVectorStoreServices_WhenCalledWithDefaults()
     {
         var services = new ServiceCollection();

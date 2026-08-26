@@ -1,9 +1,11 @@
 using System.Diagnostics.CodeAnalysis;
+using ZVec.Extensions.VectorData.Constants;
+using ZVec.Extensions.VectorData.Mapping;
 using ZVec.NET;
 using ZVec.NET.Mapping;
 using ZVec.NET.Query;
 
-namespace ZVec.Extensions.VectorData;
+namespace ZVec.Extensions.VectorData.Collection;
 
 /// <summary>
 /// Record mapping (POCO &lt;-&gt; <see cref="ZVecDoc"/>) and score normalization
@@ -39,18 +41,27 @@ public sealed partial class ZVecVectorizableRecordCollection<TRecord, TKey>
         {
             return _mapper.ToDoc(record, _typeModel!);
         }
-        return ZVecMapper.ToDoc(record, _typeModel!);
+
+        if (_typeModel == null)
+        {
+            throw new InvalidOperationException(ZVecErrorMessages.TypeModelUninitialized);
+        }
+
+        return ZVecMapper.ToDoc(record, _typeModel);
     }
 
     [RequiresUnreferencedCode("Source generated mappers should be used for Native AOT. Reflection fallback may be trimmed.")]
     [RequiresDynamicCode("Reflection fallback requires dynamic code generation.")]
     private TRecord MapFromDoc(ZVecDoc doc)
     {
-        if (_typeModel == null) throw new InvalidOperationException("Type model is uninitialized.");
-
         if (_mapper != null)
         {
-            return _mapper.FromDoc(doc, _typeModel);
+            return _mapper.FromDoc(doc, _typeModel!);
+        }
+
+        if (_typeModel == null)
+        {
+            throw new InvalidOperationException(ZVecErrorMessages.TypeModelUninitialized);
         }
 
         // Reflection fallback — only used for Dictionary<string, object?> dynamic collections

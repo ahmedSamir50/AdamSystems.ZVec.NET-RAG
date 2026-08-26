@@ -1,7 +1,7 @@
 using ZVec.NET;
 using ZVec.NET.Mapping;
 
-namespace ZVec.Extensions.VectorData;
+namespace ZVec.Extensions.VectorData.Mapping;
 
 /// <summary>
 /// AOT-clean zero-reflection mapper between a POCO record type and a <see cref="ZVecDoc"/>.

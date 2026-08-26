@@ -156,27 +156,27 @@ ZVec.NET-RAG.slnx
   - [x] **Task 1.4.4**: Implement `OptimizeAndReopenAsync()` to execute native index optimization, safely release native handle lock file, and reopen fresh collection handle. Verified in `ZVecOptimizeReopenTests.cs`.
   - **Acceptance Criteria**: 100% path coverage; zero heap allocations on vector query paths for managed array embedders; atomic handle refresh post-optimization.
 
-- [ ] **Story 1.5: Filter Expression Visitor (`VectorDataFilter` -> `ZVecFilterBuilder`) — RE-OPENED** (Owner: `zvec-vectordata-expert`, Reviewer: `zvec-code-reviewer-expert`) 🔄
-  - [ ] **Task 1.5.1 (TDD)**: Write unit tests in `ZVecFilterExpressionVisitorTests.cs` covering all filter operators (`==`, `!=`, `<`, `<=`, `>`, `>=`, `&&`, `||`, `!`, `ContainsAny`, `IsNull`, `IsNotNull`), plus `Enumerable.Contains` / `List<T>.Contains` pattern matching.
-  - [ ] **Task 1.5.2**: Update `ZVecFilterExpressionVisitor` AST translator to map `Enumerable.Contains` on array/collection properties to `ZVecFilterBuilder.ContainAny(...)`.
-  - [ ] **Task 1.5.3**: Add diagnostic error handling throwing `ZVecFilterTranslationException` with explicit remediation for unsupported LINQ expressions (`StartsWith`, `EndsWith`).
-  - [ ] **Task 1.5.4**: Add ASCII AST tree diagram in code comments illustrating expression translation steps.
+- [x] **Story 1.5: Filter Expression Visitor (`VectorDataFilter` -> `ZVecFilterBuilder`) — RE-OPENED** (Owner: `zvec-vectordata-expert`, Reviewer: `zvec-code-reviewer-expert`) ✅
+  - [x] **Task 1.5.1 (TDD)**: Write unit tests in `ZVecFilterExpressionVisitorTests.cs` covering all filter operators (`==`, `!=`, `<`, `<=`, `>`, `>=`, `&&`, `||`, `!`, `ContainsAny`, `IsNull`, `IsNotNull`), plus `Enumerable.Contains` / `List<T>.Contains` pattern matching.
+  - [x] **Task 1.5.2**: Update `ZVecFilterExpressionVisitor` AST translator to map `Enumerable.Contains` on array/collection properties to `ZVecFilterBuilder.ContainAny(...)`.
+  - [x] **Task 1.5.3**: Add diagnostic error handling throwing `ZVecFilterTranslationException` with explicit remediation for unsupported LINQ expressions (`StartsWith`, `EndsWith`).
+  - [x] **Task 1.5.4**: Add ASCII AST tree diagram in code comments illustrating expression translation steps.
   - **Acceptance Criteria**: All 12 filter operators supported with 100% branch test coverage.
 
-- [ ] **Story 1.6: Roslyn Source Generator `ZVecRecordMetadataGenerator` — RE-OPENED** (Owner: `zvec-vectordata-expert`, Reviewer: `zvec-native-aot-expert`) 🔄
-  - [ ] **Task 1.6.1 (TDD)**: Write generator tests in `ZVecRecordMetadataGeneratorTests.cs` using Roslyn CSharpCompilation and GeneratorDriver harness.
-  - [ ] **Task 1.6.2**: Implement `ZVecRecordMetadataGenerator : IIncrementalGenerator` inspecting `[VectorStoreRecord]` attributes.
-  - [ ] **Task 1.6.3**: Emit zero-reflection static metadata mappers (`IVectorRecordMapper<TRecord>`) AND static schema registration methods calling `AddField(...)` / `AddVector(...)` directly to bypass `ZVecCollectionSchemaBuilder.From<T>()` reflection.
-  - [ ] **Task 1.6.4**: Verify generated code compiles under Native AOT `PublishAot=true` with 0 trimming warnings and 0 runtime reflection calls.
+- [x] **Story 1.6: Roslyn Source Generator `ZVecRecordMetadataGenerator` — CLOSED** (Owner: `zvec-vectordata-expert`, Reviewer: `zvec-native-aot-expert`) ✅
+  - [x] **Task 1.6.1 (TDD)**: Write generator tests in `ZVecRecordMetadataGeneratorTests.cs` using Roslyn CSharpCompilation and GeneratorDriver harness.
+  - [x] **Task 1.6.2**: Implement `ZVecRecordMetadataGenerator : IIncrementalGenerator` inspecting `[VectorStore*]` attributes.
+  - [x] **Task 1.6.3**: Emit zero-reflection static metadata mappers (`IZVecRecordMapper<TRecord>`) AND static schema registration methods calling `AddField(...)` / `AddVector(...)` directly to bypass `ZVecCollectionSchemaBuilder.From<T>()` reflection.
+  - [x] **Task 1.6.4**: Verify generated code compiles under Native AOT (`ZVec.AotTestApp` harness; SG path 0 unexpected trim warnings; reflection fallback surfaces IL2026/IL3050 by design).
   - **Acceptance Criteria**: AOT-clean schema generation and record mapping with 0 reflection at runtime.
 
-- [ ] **Story 1.7: Hybrid Search Bridge & DI Extensions — RE-OPENED** (Owner: `zvec-vectordata-expert`, Reviewer: `zvec-performance-expert`) 🔄
-  - [ ] **Task 1.7.1 (TDD)**: Write unit tests for hybrid dense vector + FTS queries in `ZVecHybridSearchTests.cs`.
-  - [ ] **Task 1.7.2**: Implement `IKeywordHybridSearchable<TRecord>` bridge in `ZVecVectorizableRecordCollection` with normalized `Score = 1.0f - ZVecDistance` for Cosine.
-  - [ ] **Task 1.7.3 (TDD)**: Test `services.AddZVecVectorStore(...)` DI configuration options in `ZVecVectorStoreServiceCollectionExtensionsTests.cs`.
-  - [ ] **Task 1.7.4**: Implement `ZVecVectorStoreServiceCollectionExtensions` defaulting `MaxConcurrentNativeCalls = Environment.ProcessorCount`.
-  - [ ] **Task 1.7.5**: Run full `ZVec.Extensions.VectorData.ConformanceTests` suite.
-  - [ ] **Task 1.7.6**: Sync MkDocs wiki (`docs/architecture/vectordata-connector.md`).
+- [x] **Story 1.7: Hybrid Search Bridge & DI Extensions — CLOSED** (Owner: `zvec-vectordata-expert`, Reviewer: `zvec-performance-expert`) ✅
+  - [x] **Task 1.7.1 (TDD)**: Write unit tests for hybrid dense vector + FTS queries in `ZVecHybridSearchTests.cs`.
+  - [x] **Task 1.7.2**: Implement `IKeywordHybridSearchable<TRecord>` bridge in `ZVecVectorizableRecordCollection` with normalized `Score = 1.0f - ZVecDistance` for Cosine.
+  - [x] **Task 1.7.3 (TDD)**: Test `services.AddZVecVectorStore(...)` DI configuration options in `ZVecVectorStoreServiceCollectionExtensionsTests.cs`.
+  - [x] **Task 1.7.4**: Implement `ZVecVectorStoreServiceCollectionExtensions` defaulting `MaxConcurrentNativeCalls = Environment.ProcessorCount`.
+  - [x] **Task 1.7.5**: Run full `ZVec.Extensions.VectorData.ConformanceTests` suite.
+  - [x] **Task 1.7.6**: Sync MkDocs wiki (`docs/architecture/vectordata-connector.md`, `hybrid-search-rrf.md`, `di-composition.md`).
   - **Acceptance Criteria**: Pass 100% conformance tests; code reviewer approval achieved; MkDocs wiki updated.
 
 ---
@@ -190,9 +190,9 @@ ZVec.NET-RAG.slnx
   - **Task 1.8.2**: Implement score conversion helper in `ZVecVectorizableRecordCollection` so all returned `VectorSearchResults<TRecord>.Score` values are normalized similarity (higher = better).
   - **Acceptance Criteria**: 100% path coverage; higher similarity vectors strictly return higher score values.
 
-- [ ] **Story 1.9: Filter AST Visitor Expansion (`Enumerable.Contains` $\rightarrow$ `ContainAny`)** (Owner: `zvec-vectordata-expert`, Reviewer: `zvec-code-reviewer-expert`)
-  - **Task 1.9.1 (TDD)**: Write unit tests in `ZVecFilterExpressionVisitorTests.cs` for `Enumerable.Contains` and `List<T>.Contains` mapping to `ContainAny`.
-  - **Task 1.9.2**: Update `ZVecFilterExpressionVisitor` to inspect `MethodCallExpression` on collection properties and generate `ZVecFilterBuilder.ContainAny`. Throw `ZVecFilterTranslationException` with diagnostic instructions for unsupported methods (`StartsWith`, `EndsWith`).
+- [x] **Story 1.9: Filter AST Visitor Expansion (`Enumerable.Contains` $\rightarrow$ `ContainAny`) — DUPLICATE OF STORY 1.5 (closed)** (Owner: `zvec-vectordata-expert`, Reviewer: `zvec-code-reviewer-expert`) ✅
+  - [x] **Task 1.9.1 (TDD)**: Write unit tests in `ZVecFilterExpressionVisitorTests.cs` for `Enumerable.Contains` and `List<T>.Contains` mapping to `ContainAny`. *(Delivered under Story 1.5 Task 1.5.1.)*
+  - [x] **Task 1.9.2**: Update `ZVecFilterExpressionVisitor` to inspect `MethodCallExpression` on collection properties and generate `ZVecFilterBuilder.ContainAny`. Throw `ZVecFilterTranslationException` with diagnostic instructions for unsupported methods (`StartsWith`, `EndsWith`). *(Delivered under Story 1.5 Tasks 1.5.2–1.5.3.)*
   - **Acceptance Criteria**: `Tags.Contains("tag")` LINQ expressions translate to valid `ZVecFilterBuilder.ContainAny` AST.
 
 - [ ] **Story 1.10: iOS MonoAOT & SafeHandle Finalizer Interop Audit** (Owner: `zvec-native-aot-expert`, Reviewer: `zvec-code-reviewer-expert`)

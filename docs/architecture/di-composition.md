@@ -56,12 +56,20 @@ public sealed class ZVecRagOptions
     public ZVecEngineOptions ZVec { get; set; } = new();
 }
 
+public sealed class ZVecVectorStoreOptions
+{
+    public string StoragePath { get; set; } = string.Empty;
+    public int MaxConcurrentNativeCalls { get; set; } = Environment.ProcessorCount;
+}
+
 public sealed class ZVecEngineOptions
 {
     public int MaxConcurrentNativeCalls { get; set; } = Environment.ProcessorCount;
     public LogLevel LogLevel { get; set; } = LogLevel.Warning;
 }
 ```
+
+`AddZVecVectorStore` registers `IZvecFactory`, `ZVecVectorStore` (`ZVec.Extensions.VectorData.Store`), and `VectorStore` as singletons. `ZVecVectorStoreOptions.MaxConcurrentNativeCalls` (default `Environment.ProcessorCount`) is passed to `IZvecFactory.Initialize(ZVecOptions)` when the factory is created.
 
 ---
 
