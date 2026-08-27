@@ -1,6 +1,4 @@
-using Microsoft.Extensions.VectorData;
 using ZVec.NET;
-using ZVec.NET.Mapping;
 using Xunit;
 
 namespace ZVec.Extensions.VectorData.Tests;

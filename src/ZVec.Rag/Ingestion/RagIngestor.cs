@@ -16,6 +16,9 @@ namespace ZVec.Rag.Ingestion;
 /// </summary>
 public sealed partial class RagIngestor : IRagIngestor
 {
+    private static readonly FilteredRecordRetrievalOptions<ZVecRagRecordV1> DuplicateScanRetrievalOptions =
+        new() { IncludeVectors = false };
+
     private readonly RagCollectionProvider _collectionProvider;
     private readonly ZVecRagOptions _ragOptions;
     private readonly ZVecTextChunkerRegistry _chunkerRegistry;
@@ -368,6 +371,7 @@ public sealed partial class RagIngestor : IRagIngestor
             await foreach (var record in collection.GetAsync(
                 r => r.SourceDoc == documentId,
                 ZVecRagConstants.DuplicateScanBatchSize,
+                DuplicateScanRetrievalOptions,
                 cancellationToken: cancellationToken).ConfigureAwait(false))
             {
                 keys.Add(record.ChunkId);
@@ -390,6 +394,7 @@ public sealed partial class RagIngestor : IRagIngestor
         await foreach (var _ in collection.GetAsync(
             r => r.SourceDoc == documentId,
             1,
+            DuplicateScanRetrievalOptions,
             cancellationToken: cancellationToken).ConfigureAwait(false))
         {
             return true;
@@ -412,6 +417,7 @@ public sealed partial class RagIngestor : IRagIngestor
             await foreach (var record in collection.GetAsync(
                 r => r.SourceDoc == documentId,
                 ZVecRagConstants.DuplicateScanBatchSize,
+                DuplicateScanRetrievalOptions,
                 cancellationToken: cancellationToken).ConfigureAwait(false))
             {
                 if (seen.Add(record.ChunkId))

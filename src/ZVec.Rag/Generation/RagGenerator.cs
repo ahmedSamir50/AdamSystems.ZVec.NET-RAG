@@ -1,7 +1,6 @@
 using Microsoft.Extensions.AI;
 using ZVec.Rag.Abstractions;
 using ZVec.Rag.Constants;
-using ZVec.Rag.Generation;
 using ZVec.Rag.Models;
 using ZVec.Rag.Options;
 using ZVec.Rag.Retrieval;

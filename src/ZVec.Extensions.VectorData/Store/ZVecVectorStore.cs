@@ -125,7 +125,7 @@ public sealed class ZVecVectorStore : VectorStore
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        await Task.Yield();
+        await Task.CompletedTask.ConfigureAwait(ConfigureAwaitOptions.ForceYielding);
 
         string basePath = _options.EffectiveCollectionBasePath;
         if (!Directory.Exists(basePath))

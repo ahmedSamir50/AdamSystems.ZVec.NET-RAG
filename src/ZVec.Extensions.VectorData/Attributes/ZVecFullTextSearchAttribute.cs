@@ -1,5 +1,3 @@
-using System;
-
 namespace ZVec.Extensions.VectorData.Attributes;
 
 /// <summary>

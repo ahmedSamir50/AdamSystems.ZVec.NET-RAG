@@ -1,13 +1,7 @@
-using System;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.Extensions.VectorData;
-using ZVec.Extensions.VectorData.SourceGenerator;
 using ZVec.NET;
-using ZVec.NET.Mapping;
 using Xunit;
 
 namespace ZVec.Extensions.VectorData.SourceGenerator.Tests;

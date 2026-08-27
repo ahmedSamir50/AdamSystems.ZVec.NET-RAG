@@ -1,9 +1,7 @@
 using System.Collections;
 using System.Linq.Expressions;
-using System.Reflection;
 using ZVec.Extensions.VectorData.Constants;
 using ZVec.Extensions.VectorData.Exceptions;
-using ZVec.NET.Mapping;
 using ZVec.NET.Query;
 
 namespace ZVec.Extensions.VectorData.Filter;

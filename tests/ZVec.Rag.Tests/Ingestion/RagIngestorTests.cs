@@ -3,7 +3,6 @@ using ZVec.Rag.Abstractions;
 using ZVec.Rag.Constants;
 using ZVec.Rag.Ingestion;
 using ZVec.Rag.Models;
-using ZVec.Rag.Schema;
 
 namespace ZVec.Rag.Tests.Ingestion;
 

@@ -1,5 +1,4 @@
 using Microsoft.Extensions.VectorData;
-using ZVec.Extensions.VectorData;
 using ZVec.NET;
 using ZVec.NET.Mapping;
 

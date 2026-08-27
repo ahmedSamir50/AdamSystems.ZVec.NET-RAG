@@ -3,7 +3,6 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
-using Microsoft.Extensions.DependencyInjection;
 using ZVec.Rag.Abstractions;
 
 namespace ZVec.Rag.Streaming;

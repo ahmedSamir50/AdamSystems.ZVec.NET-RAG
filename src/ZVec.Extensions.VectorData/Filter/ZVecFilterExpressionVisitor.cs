@@ -2,10 +2,8 @@ using System.Linq.Expressions;
 using System.Reflection;
 using ZVec.Extensions.VectorData.Constants;
 using ZVec.Extensions.VectorData.Exceptions;
-using ZVec.Extensions.VectorData.Mapping;
 using ZVec.NET;
 using ZVec.NET.Exceptions;
-using ZVec.NET.Mapping;
 using ZVec.NET.Query;
 
 namespace ZVec.Extensions.VectorData.Filter;

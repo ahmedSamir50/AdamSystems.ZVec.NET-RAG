@@ -1,9 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using ZVec.Extensions.VectorData.Constants;
-using ZVec.Extensions.VectorData.Mapping;
 using ZVec.NET;
 using ZVec.NET.Mapping;
-using ZVec.NET.Query;
 
 namespace ZVec.Extensions.VectorData.Collection;
 

@@ -1,4 +1,3 @@
-using ZVec.Extensions.VectorData.Collection;
 using ZVec.NET;
 using Xunit;
 

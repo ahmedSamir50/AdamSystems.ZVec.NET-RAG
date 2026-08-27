@@ -1,6 +1,4 @@
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.ML.Tokenizers;
-using ZVec.Extensions.VectorData.Store;
 using ZVec.Rag;
 using ZVec.Rag.Abstractions;
 using ZVec.Rag.Generation;

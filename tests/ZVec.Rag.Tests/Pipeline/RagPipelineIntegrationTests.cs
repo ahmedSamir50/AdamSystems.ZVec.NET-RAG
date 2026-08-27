@@ -2,8 +2,6 @@ using Microsoft.Extensions.DependencyInjection;
 using ZVec.Extensions.VectorData.Store;
 using ZVec.Rag.Abstractions;
 using ZVec.Rag.Ingestion;
-using ZVec.Rag.Options;
-using ZVec.Rag.Schema;
 using ZVec.Rag.Testing;
 
 namespace ZVec.Rag.Tests.Pipeline;

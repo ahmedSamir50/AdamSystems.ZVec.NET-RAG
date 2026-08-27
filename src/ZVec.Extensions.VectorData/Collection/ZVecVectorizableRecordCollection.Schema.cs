@@ -6,10 +6,7 @@ using ZVec.Extensions.VectorData.Attributes;
 using ZVec.Extensions.VectorData.Constants;
 using ZVec.Extensions.VectorData.Manifest;
 using ZVec.Extensions.VectorData.Mapping;
-using ZVec.Extensions.VectorData.Store;
 using ZVec.NET;
-using ZVec.NET.Mapping;
-using ZVec.NET.Query;
 
 namespace ZVec.Extensions.VectorData.Collection;
 

@@ -1,4 +1,3 @@
-using Microsoft.Extensions.AI;
 using Microsoft.ML.Tokenizers;
 using ZVec.Rag.Constants;
 using ZVec.Rag.Options;

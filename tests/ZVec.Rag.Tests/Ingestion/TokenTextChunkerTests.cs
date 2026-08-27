@@ -1,6 +1,7 @@
 using Microsoft.ML.Tokenizers;
 using ZVec.Rag.Constants;
 using ZVec.Rag.Ingestion;
+using ZVec.Rag.Models;
 
 namespace ZVec.Rag.Tests.Ingestion;
 
@@ -20,6 +21,22 @@ public sealed class TokenTextChunkerTests
 
         Assert.Single(chunks);
         Assert.Equal(0, chunks[0].Offset);
+    }
+
+    [Fact]
+    public void Chunk_LongText_YieldsIncrementally_WithoutMaterializingList()
+    {
+        string text = string.Join(' ', Enumerable.Range(0, 200).Select(i => $"token{i}"));
+        var chunker = CreateChunker(maxTokens: 16, overlap: 4);
+        using var enumerator = chunker.Chunk(text).GetEnumerator();
+
+        Assert.True(enumerator.MoveNext());
+        TextChunk first = enumerator.Current;
+        Assert.True(enumerator.MoveNext());
+        TextChunk second = enumerator.Current;
+
+        Assert.NotEqual(first.Text, second.Text);
+        Assert.True(second.Offset >= first.Offset);
     }
 
     [Fact]

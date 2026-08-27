@@ -49,29 +49,33 @@ public sealed class TokenTextChunker : IZVecTextChunker
             return Array.Empty<TextChunk>();
         }
 
+        return ChunkCore(text);
+    }
+
+    private IEnumerable<TextChunk> ChunkCore(string text)
+    {
         IReadOnlyList<int> tokenIds = _tokenizer.EncodeToIds(text);
         if (tokenIds.Count == 0)
         {
-            return Array.Empty<TextChunk>();
+            yield break;
         }
 
-        var chunks = new List<TextChunk>();
         int stride = _maxTokens - _overlapTokens;
+        long searchFrom = 0;
         for (int startToken = 0; startToken < tokenIds.Count; startToken += stride)
         {
             int endToken = Math.Min(startToken + _maxTokens, tokenIds.Count);
             int[] slice = tokenIds.Skip(startToken).Take(endToken - startToken).ToArray();
             string chunkText = _tokenizer.Decode(slice);
-            long offset = FindOffset(text, chunkText, chunks.Count == 0 ? 0 : chunks[^1].Offset + 1);
-            chunks.Add(new TextChunk(chunkText, offset));
+            long offset = FindOffset(text, chunkText, searchFrom);
+            searchFrom = offset + 1;
+            yield return new TextChunk(chunkText, offset);
 
             if (endToken >= tokenIds.Count)
             {
                 break;
             }
         }
-
-        return chunks;
     }
 
     private static long FindOffset(string fullText, string chunkText, long searchFrom)

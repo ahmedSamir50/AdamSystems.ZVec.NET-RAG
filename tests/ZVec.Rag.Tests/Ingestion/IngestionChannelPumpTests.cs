@@ -12,6 +12,24 @@ namespace ZVec.Rag.Tests.Ingestion;
 public sealed class IngestionChannelPumpTests
 {
     [Fact]
+    public async Task PumpChunksAsync_RecordsCallerThread_ForFirstChunks()
+    {
+        var channel = IngestionChannelPump.CreateParseChannel();
+        int callerThreadId = Environment.CurrentManagedThreadId;
+        var chunker = new ThreadRecordingChunker(8);
+
+        int pumped = await IngestionChannelPump.PumpChunksAsync(
+            chunker,
+            "ignored",
+            channel.Writer,
+            TestContext.Current.CancellationToken);
+
+        channel.Writer.Complete();
+        Assert.Equal(8, pumped);
+        Assert.All(chunker.RecordedThreadIds, id => Assert.Equal(callerThreadId, id));
+    }
+
+    [Fact]
     public async Task PumpChunksAsync_AppliesBackpressure_WhenConsumerIsSlow()
     {
         var channel = Channel.CreateBounded<TextChunk>(new BoundedChannelOptions(ZVecRagConstants.ParseChannelCapacity)
@@ -50,6 +68,26 @@ public sealed class IngestionChannelPumpTests
         int pumped = await pumpTask;
         Assert.Equal(2000, pumped);
         Assert.Equal(2000, readCount);
+    }
+
+    private sealed class ThreadRecordingChunker : IZVecTextChunker
+    {
+        private readonly int _count;
+
+        public ThreadRecordingChunker(int count) => _count = count;
+
+        public List<int> RecordedThreadIds { get; } = new();
+
+        public string StrategyId => "thread-recording";
+
+        public IEnumerable<TextChunk> Chunk(string text)
+        {
+            for (int i = 0; i < _count; i++)
+            {
+                RecordedThreadIds.Add(Environment.CurrentManagedThreadId);
+                yield return new TextChunk($"chunk-{i}", i);
+            }
+        }
     }
 
     private sealed class SlowFakeChunker : IZVecTextChunker

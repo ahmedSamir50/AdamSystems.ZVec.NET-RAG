@@ -82,6 +82,8 @@ Locked findings from spec_lock / consultant restudies. Process gaps live here to
 | S-CATEGORY-G | P1 | runtime_interop_harness_gap | Fixed | 2026-08-26 | spec-lock.md §7 + skill pushbacks G1–G5 |
 | S-TEXTCHUNKER | P2 | itextchunker_stale_api | Fixed | 2026-08-27 | Task 2.2.3: IZVecTextChunker in-repo; no M.E.DataIngestion PackageReference |
 | S-SSE-FXREF | P2 | sse_framework_reference | Fixed | 2026-08-27 | MapRagSseEndpoint in ZVec.Rag/Streaming with FrameworkReference; trim annotated |
+| S-INGEST-CALLER-ENUM | P2 | ingest_caller_continuation_docs | Fixed | 2026-08-27 | rag-pipeline.md async contract aligned with Channels + ForceYielding open; not Task.Run |
+| NC-CA-CONNECTOR | P2 | connector_configure_await_hygiene | Fixed | 2026-08-27 | CAF on ZVecVectorizableRecordCollection CRUD/search awaits + ListCollectionNames Yield |
 
 DS-1…DS-3 (mmap/quantize plumbing, mobile wiki, second-evaluation docs) remain in Fixed Gaps (Historical).
 

@@ -2,7 +2,6 @@ using System.Text.Json;
 using ZVec.Extensions.VectorData.Constants;
 using ZVec.Extensions.VectorData.Store;
 using ZVec.NET;
-using ZVec.NET.Mapping;
 
 namespace ZVec.Extensions.VectorData.Manifest;
 

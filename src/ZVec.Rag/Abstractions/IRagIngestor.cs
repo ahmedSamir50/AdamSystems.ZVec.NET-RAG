@@ -1,4 +1,3 @@
-using Microsoft.Extensions.AI;
 using ZVec.Rag.Models;
 
 namespace ZVec.Rag.Abstractions;

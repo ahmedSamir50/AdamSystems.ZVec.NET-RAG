@@ -2,7 +2,6 @@ using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.VectorData;
 using ZVec.Extensions.VectorData.Constants;
 using ZVec.NET;
-using ZVec.NET.Mapping;
 
 namespace ZVec.AotTestApp;
 

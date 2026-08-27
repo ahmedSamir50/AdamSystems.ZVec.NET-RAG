@@ -29,7 +29,7 @@ Ingestion is transparently divided into four distinct, pluggable stages (ZVec-ow
    - Chunk IDs are generated using content-addressable SHA256 hashes: `ChunkId = SHA256(doc_uri | strategy_id | chunk_index)`. This ensures stability across re-ingestion and native content-based deduplication.
 4. **Bounded Channel Dataflow Graph**:
    - Ingestion executes over bounded `System.Threading.Channels`: Document Parsing (Capacity 1024) $\rightarrow$ Deduplication (Capacity 2048) $\rightarrow$ Batch Embedding (Batch size 32) $\rightarrow$ Batch Vector Insertion (Batch size 100). `IngestionCheckpoint` deferred post-v1.
-   - **Async contract:** synchronous `IZVecTextChunker` `IEnumerable<TextChunk>` output is pushed into the channel writer — **not** wrapped in `Task.Run` and **not** enumerated on the ASP.NET request thread for large corpora. Use `ConfigureAwait(false)` on all awaits.
+   - **Async contract:** `IZVecTextChunker` `IEnumerable<TextChunk>` is pushed into the bounded channel writer on the **caller continuation** — never `Task.Run`. Use `ConfigureAwait(false)` on every await. `EnsureCollectionExistsAsync` ForceYields then opens native on that worker; the first channel await is the consumer `WaitToReadAsync` on an empty channel; producer `WriteAsync` yields only when the channel is full (capacity 1024). ASP.NET Core has no request `SynchronizationContext`. Native upsert/query occupy that worker for the P/Invoke duration.
 
 ---
 

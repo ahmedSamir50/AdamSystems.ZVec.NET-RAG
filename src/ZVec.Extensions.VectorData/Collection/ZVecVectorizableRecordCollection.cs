@@ -1,9 +1,6 @@
-using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.VectorData;
-using ZVec.Extensions.VectorData.Attributes;
 using ZVec.Extensions.VectorData.Constants;
 using ZVec.Extensions.VectorData.Filter;
 using ZVec.Extensions.VectorData.Hybrid;
@@ -11,7 +8,6 @@ using ZVec.Extensions.VectorData.Mapping;
 using ZVec.Extensions.VectorData.Store;
 using ZVec.NET;
 using ZVec.NET.Mapping;
-using ZVec.NET.Query;
 
 namespace ZVec.Extensions.VectorData.Collection;
 
@@ -25,13 +21,17 @@ namespace ZVec.Extensions.VectorData.Collection;
 /// Input vectors of type <see cref="ReadOnlyMemory{T}"/> of <see cref="float"/> are pinned directly using <see cref="ReadOnlyMemory{T}.Pin"/>
 /// without heap allocation or array copying.
 /// </para>
-/// <code>
-/// ┌─────────────────────────────────────────────────────────────┐
-/// │            SearchAsync(ReadOnlyMemory&lt;float&gt;)               │
-/// ├─────────────────────────────────────────────────────────────┤
-/// │  memory.Pin() ──► SafeHandle ──► P/Invoke float* Native Query │
-/// └─────────────────────────────────────────────────────────────┘
-/// </code>
+/// <para>
+/// <b>Async occupancy:</b> Native <c>*Async</c> methods delegate to ZVec.NET engine APIs that are
+/// cancellation-aware wrappers around synchronous P/Invoke (not thread-pool offloads). The caller
+/// thread is occupied until the first <b>incomplete</b> engine gate <c>WaitAsync</c>. When the
+/// native <see cref="ValueTask"/> is already complete, <c>await</c> does not yield and P/Invoke has
+/// already run on that caller. <see cref="ConfigureAwait"/> does not change native occupancy.
+/// First open uses <see cref="ConfigureAwaitOptions.ForceYielding"/> then sync
+/// <c>OpenOrCreate</c> inside <see cref="GetOrOpenNativeCollection"/> (no <c>await</c> while holding
+/// <c>_initLock</c>). MAUI hosts must still <c>await</c> open off the UI thread and must not
+/// block with <c>.Result</c> / <c>.Wait()</c>.
+/// </para>
 /// </remarks>
 /// <typeparam name="TRecord">Record POCO type.</typeparam>
 /// <typeparam name="TKey">Primary key type.</typeparam>
@@ -111,11 +111,16 @@ public sealed partial class ZVecVectorizableRecordCollection<TRecord, TKey> :
     }
 
     /// <inheritdoc />
-    public override Task EnsureCollectionExistsAsync(CancellationToken cancellationToken = default)
+    public override async Task EnsureCollectionExistsAsync(CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        if (_nativeCollection != null)
+        {
+            return;
+        }
+
+        await Task.CompletedTask.ConfigureAwait(ConfigureAwaitOptions.ForceYielding);
         GetOrOpenNativeCollection();
-        return Task.CompletedTask;
     }
 
     /// <inheritdoc />
@@ -146,7 +151,7 @@ public sealed partial class ZVecVectorizableRecordCollection<TRecord, TKey> :
 
         var collection = GetOrOpenNativeCollection();
         string pk = key.ToString()!;
-        await collection.DeleteAsync(pk, cancellationToken);
+        await collection.DeleteAsync(pk, cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
@@ -159,7 +164,7 @@ public sealed partial class ZVecVectorizableRecordCollection<TRecord, TKey> :
         var pkList = keys.Select(k => k.ToString()!).ToList();
         if (pkList.Count > 0)
         {
-            await collection.DeleteAsync(pkList, cancellationToken);
+            await collection.DeleteAsync(pkList, cancellationToken).ConfigureAwait(false);
         }
     }
 
@@ -171,7 +176,7 @@ public sealed partial class ZVecVectorizableRecordCollection<TRecord, TKey> :
 
         var collection = GetOrOpenNativeCollection();
         string pk = key.ToString()!;
-        var doc = await collection.FetchAsync(pk, includeVector: options?.IncludeVectors ?? true, ct: cancellationToken);
+        var doc = await collection.FetchAsync(pk, includeVector: options?.IncludeVectors ?? true, ct: cancellationToken).ConfigureAwait(false);
         if (doc == null || (_typeModel == null && _mapper == null)) return null;
 
         return MapFromDoc(doc);
@@ -190,7 +195,7 @@ public sealed partial class ZVecVectorizableRecordCollection<TRecord, TKey> :
         var pkList = keys.Select(k => k.ToString()!).ToList();
         if (pkList.Count == 0 || (_typeModel == null && _mapper == null)) yield break;
 
-        var docs = await collection.FetchAsync(pkList, includeVector: options?.IncludeVectors ?? true, ct: cancellationToken);
+        var docs = await collection.FetchAsync(pkList, includeVector: options?.IncludeVectors ?? true, ct: cancellationToken).ConfigureAwait(false);
         foreach (var doc in docs)
         {
             if (doc != null)
@@ -225,7 +230,7 @@ public sealed partial class ZVecVectorizableRecordCollection<TRecord, TKey> :
             : Definition?.Properties.OfType<VectorStoreVectorProperty>().FirstOrDefault()?.Dimensions
                 ?? ZVecConstants.DefaultVectorDimension;
         var dummyQuery = new ZVecQuery { FieldName = vectorFieldName, Vector = new float[vectorDimension] };
-        var docs = await collection.QueryAsync(dummyQuery, effectiveTop, filterBuilder, includeVector: options?.IncludeVectors ?? true, ct: cancellationToken);
+        var docs = await collection.QueryAsync(dummyQuery, effectiveTop, filterBuilder, includeVector: options?.IncludeVectors ?? true, ct: cancellationToken).ConfigureAwait(false);
 
         if (_typeModel != null || _mapper != null)
         {
@@ -245,7 +250,7 @@ public sealed partial class ZVecVectorizableRecordCollection<TRecord, TKey> :
         if (_typeModel == null && _mapper == null) return;
         var collection = GetOrOpenNativeCollection();
         var doc = MapToDoc(record);
-        await collection.UpsertAsync(doc, cancellationToken);
+        await collection.UpsertAsync(doc, cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
@@ -259,7 +264,7 @@ public sealed partial class ZVecVectorizableRecordCollection<TRecord, TKey> :
         var docs = records.Select(MapToDoc).ToList();
         if (docs.Count > 0)
         {
-            await collection.UpsertAsync(docs, cancellationToken);
+            await collection.UpsertAsync(docs, cancellationToken).ConfigureAwait(false);
         }
     }
 
@@ -296,11 +301,11 @@ public sealed partial class ZVecVectorizableRecordCollection<TRecord, TKey> :
         if (options?.Filter != null)
         {
             var filterBuilder = ZVecFilterExpressionVisitor.TranslateToBuilder(options.Filter);
-            docs = await collection.QueryAsync(query, effectiveTop, filterBuilder, includeVector: options?.IncludeVectors ?? true, ct: cancellationToken);
+            docs = await collection.QueryAsync(query, effectiveTop, filterBuilder, includeVector: options?.IncludeVectors ?? true, ct: cancellationToken).ConfigureAwait(false);
         }
         else
         {
-            docs = await collection.QueryAsync(query, effectiveTop, filter: (string?)null, includeVector: options?.IncludeVectors ?? true, ct: cancellationToken);
+            docs = await collection.QueryAsync(query, effectiveTop, filter: (string?)null, includeVector: options?.IncludeVectors ?? true, ct: cancellationToken).ConfigureAwait(false);
         }
 
         if (_typeModel != null || _mapper != null)
@@ -375,11 +380,11 @@ public sealed partial class ZVecVectorizableRecordCollection<TRecord, TKey> :
         if (options?.Filter != null)
         {
             var filterBuilder = ZVecFilterExpressionVisitor.TranslateToBuilder(options.Filter);
-            docs = await collection.QueryAsync(new[] { denseQuery, ftsQuery }, effectiveTop, reranker, filterBuilder, includeVector: options?.IncludeVectors ?? true, ct: cancellationToken);
+            docs = await collection.QueryAsync(new[] { denseQuery, ftsQuery }, effectiveTop, reranker, filterBuilder, includeVector: options?.IncludeVectors ?? true, ct: cancellationToken).ConfigureAwait(false);
         }
         else
         {
-            docs = await collection.QueryAsync(new[] { denseQuery, ftsQuery }, effectiveTop, reranker, filter: (string?)null, includeVector: options?.IncludeVectors ?? true, ct: cancellationToken);
+            docs = await collection.QueryAsync(new[] { denseQuery, ftsQuery }, effectiveTop, reranker, filter: (string?)null, includeVector: options?.IncludeVectors ?? true, ct: cancellationToken).ConfigureAwait(false);
         }
 
         if (_typeModel != null || _mapper != null)
