@@ -44,6 +44,10 @@ public sealed class RagPipeline : IRagPipeline
         => _ingestor.IngestBatchAsync(requests, options, cancellationToken);
 
     /// <inheritdoc />
+    public Task OptimizeAsync(CancellationToken cancellationToken = default)
+        => _ingestor.OptimizeAsync(cancellationToken);
+
+    /// <inheritdoc />
     public Task<IReadOnlyList<Models.Citation>> RetrieveAsync(
         string query,
         int? topK = null,

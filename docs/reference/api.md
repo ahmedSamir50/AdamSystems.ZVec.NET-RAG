@@ -45,26 +45,57 @@ Complete API reference surface for `ZVec.Extensions.VectorData` and `ZVec.Rag`.
 
 | Namespace | Key types |
 |-----------|-----------|
-| `ZVec.Rag.Abstractions` | `IRagIngestor`, `IRagRetriever`, `IRagGenerator`, `IRagPipeline` |
+| `ZVec.Rag.Abstractions` | `IRagIngestor`, `IRagRetriever`, `IRagGenerator`, `IRagPipeline`, `IRagDocumentReader`, `IZVecTextChunker` |
 | `ZVec.Rag` | `RagPipeline` |
 | `ZVec.Rag.Generation` | `ContextPacker`, `RagGenerator` |
-| `ZVec.Rag.Ingestion` | `RagIngestor`, `ZVecChunkIdGenerator` |
+| `ZVec.Rag.Ingestion` | `RagIngestor`, `PlainTextDocumentReader`, `TokenTextChunker`, `MarkdownHeadingChunker`, `SentenceTextChunker`, `ZVecChunkIdGenerator`, `ZVecTokenizerResolver`, `ZVecTextChunkerRegistry` |
 | `ZVec.Rag.Retrieval` | `RagRetriever` |
-| `ZVec.Rag.Models` | `Citation`, `RagChunk`, `IngestionResult`, `IngestOptions`, `IngestTextRequest`, `CitationOrder`, `ContextPackingStrategy` |
+| `ZVec.Rag.Streaming` | `RagSseEndpointExtensions` (`MapRagSseEndpoint`) |
+| `ZVec.Rag.Models` | `Citation`, `RagChunk`, `IngestionResult`, `IngestOptions`, `IngestTextRequest`, `TextChunk`, `DuplicateMode`, `CitationOrder`, `ContextPackingStrategy` |
 | `ZVec.Rag.Options` | `ZVecRagOptions` |
 | `ZVec.Rag.Schema` | `ZVecRagRecordV1` |
 | `ZVec.Rag.Exceptions` | `ZVecRagInitializationException` |
-| `Microsoft.Extensions.DependencyInjection` | `AddZVecRag` extension |
+| `ZVec.Rag.Internal` | `RagCollectionProvider` (scoped native handle; releases on scope dispose) |
+| `Microsoft.Extensions.DependencyInjection` | `AddZVecRag`, `AddTokenChunker`, `AddMarkdownChunker`, `AddSentenceChunker` |
+
+### Ingestion (`IRagIngestor`)
+
+- **`IngestTextAsync`**: Chunk, embed, and upsert plain text or markdown.
+- **`IngestDocumentAsync`**: UTF-8 stream ingest with `contentType` (`text/plain`, `text/markdown`).
+- **`IngestBatchAsync`**: Sequential multi-document ingest; auto-runs **`OptimizeAsync`** after the batch.
+- **`OptimizeAsync`**: Delegates to `ZVecVectorizableRecordCollection.OptimizeAndReopenAsync` (native optimize outside lock; dispose-reopen inside `lock (_initLock)`).
+
+### Chunking ACL
+
+- **`IZVecTextChunker`**: Sync `IEnumerable<TextChunk>` (text + char offset). Output is pushed into bounded channels — never `Task.Run`.
+- **`TokenTextChunker`**: Default strategy `token-v1` (512 max tokens, 64 overlap via `AddTokenChunker`).
+- **`MarkdownHeadingChunker`**: Strategy `markdown-heading-v1`; line `#` heading boundaries + token cap.
+- **`SentenceTextChunker`**: Strategy `sentence-v1`; no mid-sentence splits.
+- **`DuplicateMode`**: `Replace` (delete all `SourceDoc` chunks, paged `GetAsync`), `Append` (`max(ChunkIndex)+1`), `Skip` (no-op if any chunk exists).
+
+### Retrieval & citations
 
 - **`IRagPipeline`**: Composite facade (`IRagIngestor` + `IRagRetriever` + `IRagGenerator`).
 - **`RagChunk`**: Streamed response chunk (`Text`, `Citations`, `IsFinal`, `Usage`).
-- **`Citation`**: Source attribution (`SourceDoc`, `SourceUri`, `SourceHash`, `Page`, `Offset`, `ChunkIndex`, `ChunkId`, `RankScore`, `DenseScore`, `FtsScore`).
-- **`ZVecRagOptions`**: `StoragePath`, `Embedder`, `Chat`, `RrfK`, `MaxContextTokens`, `GenerationReserveTokens`, nested `ZVecVectorStoreOptions`.
+- **`Citation`**: `SourceDoc`, `SourceUri`, `SourceHash`, `Page`, `Offset`, `ChunkIndex`, `ChunkId`, `RankScore`, `DenseScore`, `FtsScore`. Hybrid search sets `RankScore` from fused RRF; `DenseScore`/`FtsScore` remain `0` until connector exposes per-leg scores.
+- **`CitationOrder`**: `ScoreDescending` (default), `ChunkOrderAscending`, `SourceDocThenChunkOrder`, `PageAscending`, `None`. UI list order; independent of `ContextPacker` prompt order.
+
+### SSE
+
+- **`MapRagSseEndpoint(pattern)`**: Maps GET endpoint; reads `question` query string; writes `text/event-stream`; `FlushAsync` after each chunk; links `HttpContext.RequestAborted` into `AskAsync`. Requires `FrameworkReference Microsoft.AspNetCore.App` on `ZVec.Rag`; trim-annotated in `Streaming/`.
+
+### Options
+
+- **`ZVecRagOptions`**: `StoragePath`, `Embedder`, `Chat`, `RrfK`, `MaxContextTokens`, `GenerationReserveTokens`, `TokenizerEncoding`, `TokenizerModelPath`, nested `ZVecVectorStoreOptions`.
 - **`ZVecRagInitializationException`**: Wraps embedder stamp mismatch with delete-path / `IRagMigrationManager` remediation.
+
+### Connector (`ZVecVectorizableRecordCollection`)
+
+- **`ReleaseNativeHandle()`**: Disposes native read-write handle without deleting on-disk data. Called by scoped `RagCollectionProvider` on scope dispose so subsequent scopes can reopen the same collection path.
 
 ## `ZVec.Rag.Testing`
 
 | Type | Purpose |
 |------|---------|
 | `DeterministicEmbedder` | Hash-based `IEmbeddingGenerator` for fast CI tests |
-| `FakeChatClient` | Dual streaming/non-streaming `IChatClient` fake |
+| `FakeChatClient` | Dual streaming/non-streaming `IChatClient` fake (`LastStreamingCallWasCanceled`, `TokensYielded`) |

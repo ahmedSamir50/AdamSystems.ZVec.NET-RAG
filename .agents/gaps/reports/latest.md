@@ -1,6 +1,6 @@
 ```yaml
 date: 2026-08-27
-run: epic_2_story_2.1_spec_lock_pre_write
+run: epic_2_story_2.2_2.3_spec_lock_pre_write
 gates:
   write_allowed: true
   blocking_gaps: []
@@ -16,10 +16,9 @@ checklist:
   section_7_runtime_interop: PASS
 
 labels_applied:
-  - Epic 2 project-plan 2.1-2.15 mapped to implementation-plan Stories 2.1-2.8
-  - project-plan 2.3 IRagEmbedder rejected (use IEmbeddingGenerator)
-  - project-plan 2.2 aligned to text/md core (PDF via ZVec.Rag.Pdf)
-  - citation-schema ChunkId SHA256 (D-4)
-  - di-composition ZVecEngineOptions removed; RrfK on ZVecRagOptions
-  - interface-segregation IngestBatchAsync + Story 2.1 Citation/RagChunk note
+  - Task 2.2.3 amended: IZVecTextChunker in-repo (no M.E.DataIngestion ref); S-TEXTCHUNKER closed
+  - Overlap locked 512/64 in ZVecRagConstants
+  - IngestionCheckpoint deferred; DuplicateMode.Append max(ChunkIndex)+1
+  - S-SSE-FXREF: MapRagSseEndpoint via FrameworkReference on ZVec.Rag Streaming/
+  - G1 OptimizeAsync delegates to OptimizeAndReopenAsync; G2 RequestAborted linked in MapRagSseEndpoint
 ```

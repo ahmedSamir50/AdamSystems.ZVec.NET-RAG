@@ -73,11 +73,21 @@ public sealed class RagRetriever : IRagRetriever
         return SortCitations(citations, _ragOptions.CitationOrder);
     }
 
-    internal static IReadOnlyList<Citation> SortCitations(IReadOnlyList<Citation> citations, CitationOrder order)
+    public static IReadOnlyList<Citation> SortCitations(IReadOnlyList<Citation> citations, CitationOrder order)
     {
         return order switch
         {
             CitationOrder.ScoreDescending => citations.OrderByDescending(c => c.RankScore).ToList(),
+            CitationOrder.ChunkOrderAscending => citations.OrderBy(c => c.ChunkIndex).ToList(),
+            CitationOrder.SourceDocThenChunkOrder => citations
+                .OrderBy(c => c.SourceDoc, StringComparer.Ordinal)
+                .ThenBy(c => c.ChunkIndex)
+                .ToList(),
+            CitationOrder.PageAscending => citations
+                .OrderBy(c => c.Page ?? int.MaxValue)
+                .ThenBy(c => c.ChunkIndex)
+                .ToList(),
+            CitationOrder.None => citations.ToList(),
             _ => citations.OrderByDescending(c => c.RankScore).ToList()
         };
     }
@@ -94,7 +104,7 @@ public sealed class RagRetriever : IRagRetriever
             record.ChunkId,
             record.Text,
             RankScore: rankScore,
-            DenseScore: rankScore,
+            DenseScore: 0f,
             FtsScore: 0f);
     }
 

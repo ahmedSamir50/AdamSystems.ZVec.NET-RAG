@@ -398,6 +398,25 @@ public sealed partial class ZVecVectorizableRecordCollection<TRecord, TKey> :
     }
 
     /// <summary>
+    /// Releases the native read-write collection handle without deleting on-disk data.
+    /// </summary>
+    /// <remarks>
+    /// ZVec enforces a single read-write handle per collection path. Scoped RAG services call this
+    /// when a DI scope ends so a subsequent scope can reopen the same collection.
+    /// </remarks>
+    public void ReleaseNativeHandle()
+    {
+        lock (_initLock)
+        {
+            if (_nativeCollection != null)
+            {
+                try { _nativeCollection.Dispose(); } catch { }
+                _nativeCollection = null;
+            }
+        }
+    }
+
+    /// <summary>
     /// Optimizes the underlying native collection index and refreshes the internal collection handle.
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>

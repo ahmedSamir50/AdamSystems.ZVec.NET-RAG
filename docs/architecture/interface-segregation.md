@@ -1,6 +1,6 @@
 # RAG Pipeline Interface Segregation (ISP)
 
-> **Status:** Story 2.1 shipped — `IRagIngestor`, `IRagRetriever`, `IRagGenerator`, `RagPipeline`, `AddZVecRag`. Story 2.2 expands ingestion ACL and bounded Channels.
+> **Status:** Stories 2.1–2.3 shipped — ISP facades, Channels ingestion ACL, `OptimizeAsync`, full `CitationOrder`, `MapRagSseEndpoint`. Story 2.6 (sanitizer) and 2.7 (pipeline AOT) remain planned.
 
 The `ZVec.Rag` framework enforces strict **Interface Segregation Principle (ISP)** compliance to eliminate God interfaces and allow application components to depend strictly on the capabilities they require.
 
@@ -15,7 +15,8 @@ Rather than bundling document ingestion, context retrieval, and LLM text generat
                   │    IRagIngestor      │
                   │ (IngestTextAsync,    │
                   │  IngestDocumentAsync,│
-                  │  IngestBatchAsync)   │
+                  │  IngestBatchAsync,   │
+                  │  OptimizeAsync)      │
                   └──────────┬───────────┘
                              │
      ┌───────────────────────┼───────────────────────┐
@@ -53,10 +54,14 @@ public interface IRagIngestor
         IEnumerable<IngestTextRequest> requests,
         IngestOptions? options = null,
         CancellationToken ct = default);
+
+  Task OptimizeAsync(CancellationToken ct = default);
 }
 ```
 
-> **Story 2.1 ships** `Citation`, `RagChunk`, and minimal `CitationOrder.ScoreDescending`. Full `CitationOrder` enum expansion is **Story 2.3.2**.
+`IngestBatchAsync` auto-runs `OptimizeAsync` after the batch. `OptimizeAsync` delegates to `ZVecVectorizableRecordCollection.OptimizeAndReopenAsync` — no `ReaderWriterLockSlim`.
+
+`IngestOptions` supports `OnDuplicate` (`Replace`, `Append`, `Skip`) and optional `Chunker` override. Chunkers register via `AddTokenChunker` / `AddMarkdownChunker` / `AddSentenceChunker`.
 
 ### 2. `IRagRetriever` — Hybrid Vector & FTS Search
 Responsible for querying the vector store using dense vector similarity, full-text search (FTS), and native Reciprocal Rank Fusion (RRF).
@@ -72,7 +77,7 @@ public interface IRagRetriever
 ```
 
 ### 3. `IRagGenerator` — LLM Generation & Token Streaming
-Responsible for retrieving context, assembling prompt windows, querying `IChatClient`, and streaming SSE tokens with citations.
+Responsible for retrieving context, assembling prompt windows, querying `IChatClient`, and streaming SSE tokens with citations. ASP.NET apps can use `MapRagSseEndpoint` which links `HttpContext.RequestAborted` into `AskAsync`.
 
 ```csharp
 public interface IRagGenerator

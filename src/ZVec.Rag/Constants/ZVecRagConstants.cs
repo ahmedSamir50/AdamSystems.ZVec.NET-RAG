@@ -11,6 +11,33 @@ public static class ZVecRagConstants
     /// <summary>Story 2.1 whole-text ingest strategy identifier for chunk id hashing.</summary>
     public const string WholeTextStrategyId = "whole-text-v1";
 
+    /// <summary>Token-boundary chunking strategy identifier.</summary>
+    public const string TokenChunkerStrategyId = "token-v1";
+
+    /// <summary>Markdown heading-aware chunking strategy identifier.</summary>
+    public const string MarkdownHeadingChunkerStrategyId = "markdown-heading-v1";
+
+    /// <summary>Sentence-boundary chunking strategy identifier.</summary>
+    public const string SentenceChunkerStrategyId = "sentence-v1";
+
+    /// <summary>Default maximum tokens per chunk for <see cref="Ingestion.TokenTextChunker"/>.</summary>
+    public const int DefaultChunkMaxTokens = 512;
+
+    /// <summary>Default token overlap between consecutive token chunks.</summary>
+    public const int DefaultChunkOverlapTokens = 64;
+
+    /// <summary>Bounded channel capacity for parse stage.</summary>
+    public const int ParseChannelCapacity = 1024;
+
+    /// <summary>Bounded channel capacity for deduplication stage.</summary>
+    public const int DedupChannelCapacity = 2048;
+
+    /// <summary>Embedding batch size during ingestion.</summary>
+    public const int EmbedBatchSize = 32;
+
+    /// <summary>Vector upsert batch size during ingestion.</summary>
+    public const int UpsertBatchSize = 100;
+
     /// <summary>Default maximum context tokens for <see cref="Generation.ContextPacker"/>.</summary>
     public const int DefaultMaxContextTokens = 4096;
 
@@ -22,6 +49,9 @@ public static class ZVecRagConstants
 
     /// <summary>Default hybrid retrieval top-k.</summary>
     public const int DefaultRetrieveTopK = 5;
+
+    /// <summary>Batch size when scanning existing document chunks for duplicate handling.</summary>
+    public const int DuplicateScanBatchSize = 10;
 
     /// <summary>Default dense vector dimension for <see cref="Schema.ZVecRagRecordV1"/>.</summary>
     public const int DefaultVectorDimensions = 768;

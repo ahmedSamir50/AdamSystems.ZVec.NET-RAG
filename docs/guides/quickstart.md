@@ -20,11 +20,12 @@ dotnet new rag -n MyLocalRagApp --llm ollama --embedder ollama
 
 ---
 
-## 3. Honest 20-Line Application Code (Ingestion + Chat)
+## 3. Honest 20-Line Application Code (Ingestion + SSE Chat)
 
 ```csharp
 using Microsoft.Extensions.AI;
 using ZVec.Rag;
+using ZVec.Rag.Streaming;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -32,21 +33,21 @@ builder.Services.AddZVecRag(opts => {
     opts.StoragePath = "./rag.zvec";
     opts.Embedder = ollama.Embeddings(model: "nomic-embed-text");
     opts.Chat = ollama.Chat(model: "llama3.2");
-});
+})
+.AddTokenChunker(maxTokens: 512, overlapTokens: 64)
+.AddMarkdownChunker();
 
 var app = builder.Build();
 
-// 1. Document Ingestion Endpoint (Text / Markdown auto-chunked by TokenTextChunker)
+// 1. Document Ingestion Endpoint (text / markdown auto-chunked)
 app.MapPost("/ingest", async (string text, string docId, IRagPipeline rag) => {
     await rag.IngestTextAsync(text, documentId: docId);
     return Results.Ok($"Indexed document {docId}");
 });
 
-// 2. Hybrid Search + LLM Generation Endpoint
-app.MapPost("/chat", async (string question, IRagPipeline rag, CancellationToken ct) => {
-    await foreach (var chunk in rag.AskAsync(question, streamCitations: true, ct))
-        await Response.WriteAsync(chunk.Text, ct);
-});
+// 2. Real-time unbuffered SSE streaming chat (?question=...)
+// Links HttpContext.RequestAborted to AskAsync so client disconnect cancels generation.
+app.MapRagSseEndpoint("/chat");
 
 app.Run();
 ```
@@ -55,19 +56,20 @@ app.Run();
 
 ## 4. Advanced Multi-Format Ingestion (PDF via Optional Package)
 
-Core `ZVec.Rag` ingests **text and markdown** only. For PDF documents, add the optional `ZVec.Rag.Pdf` package and configure an explicit `IRagDocumentReader`:
+Core `ZVec.Rag` ingests **text and markdown** only. For PDF documents, add the optional `ZVec.Rag.Pdf` package.
+
+> **Status:** Planned — `ZVec.Rag.Pdf` and `PdfDocumentReader` ship in Sample 02 (`02-local-first-pdf-chat`). Not in core or the Story 2.7 AOT harness.
 
 ```csharp
-// Advanced Ingestion with PDF Reader (optional ZVec.Rag.Pdf) & Markdown Heading Chunking
+// Planned: optional ZVec.Rag.Pdf — not in core AOT path
 app.MapPost("/ingest/pdf", async (IFormFile file, IRagPipeline rag) => {
-    await rag.IngestAsync(file.OpenReadStream(), options => {
-        options.DocumentId = file.FileName;
-        options.Reader = new PdfDocumentReader(); // ZVec.Rag.Pdf — not in core AOT path
-        options.Chunker = TextChunker.ByMarkdownHeadings(maxTokens: 512, overlap: 50);
-    });
-    return Results.Ok("PDF ingested with heading-aware chunking");
+    await rag.IngestDocumentAsync(
+        file.OpenReadStream(),
+        documentId: file.FileName,
+        contentType: "application/pdf",
+        options: new IngestOptions { OnDuplicate = DuplicateMode.Replace });
+    return Results.Ok("PDF ingested");
 });
 ```
 
-> Sample 02 (`02-local-first-pdf-chat`) references `ZVec.Rag.Pdf`. The Story 2.7 AOT harness does **not**.
-
+For markdown with explicit heading chunking, register `AddMarkdownChunker()` — `IngestDocumentAsync` selects it automatically for `text/markdown` content types.

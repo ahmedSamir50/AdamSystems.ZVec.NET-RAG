@@ -15,11 +15,25 @@ AddZVecRag(opts => { ... })
   │           └── Registers IZvecFactory (Singleton)
   │     └── Registers IVectorStore (Singleton)
   │     └── Registers IVectorStoreRecordCollection<TKey, TRecord> (Singleton)
+  ├── Registers ZVecTokenizerResolver, PlainTextDocumentReader, ZVecTextChunkerRegistry (Singleton)
+  ├── Optional: AddTokenChunker / AddMarkdownChunker / AddSentenceChunker (Singleton enumerable IZVecTextChunker)
+  ├── Registers RagCollectionProvider (Scoped — releases native handle on scope dispose)
   ├── Registers IRagIngestor (Scoped)
   ├── Registers IRagRetriever (Scoped)
   ├── Registers IRagGenerator (Scoped)
   └── Registers IRagPipeline (Scoped, Composite Facade)
 ```
+
+### Chunker registration
+
+```csharp
+services.AddZVecRag(opts => { ... })
+    .AddTokenChunker(maxTokens: 512, overlapTokens: 64)  // default chunker; strategy token-v1
+    .AddMarkdownChunker()                                 // auto-selected for text/markdown when registered
+    .AddSentenceChunker();
+```
+
+Chunker selection: `IngestOptions.Chunker` override → else `text/markdown` uses markdown chunker when registered → else token chunker. No `Activator.CreateInstance`.
 
 ---
 
@@ -30,10 +44,11 @@ AddZVecRag(opts => { ... })
 | `IZvecFactory` | `ZVecFactory` | **Singleton** | Holds native C++ library handles (`SafeZvecHandle`). Must survive process lifetime. Shut down via `ApplicationStopping`. |
 | `IVectorStore` | `ZVecVectorStore` | **Singleton** | Thread-safe entry point for collection management and listing. |
 | `IVectorStoreRecordCollection<TKey, TRecord>` | `ZVecVectorizableRecordCollection` | **Singleton** | Holds collection file handle. Concurrent reads + optimize/reopen via shipped `OptimizeAndReopenAsync` (`lock (_initLock)`; native `MaxConcurrentReads` throttle). |
-| `IRagIngestor` | `RagIngestor` | **Scoped** | Per-request/operation document ingestion state and batch channel buffers. |
+| `IRagIngestor` | `RagIngestor` | **Scoped** | Per-request/operation document ingestion state and bounded channel buffers. |
 | `IRagRetriever` | `RagRetriever` | **Scoped** | Per-request query tokenization and candidate ranking. |
 | `IRagGenerator` | `RagGenerator` | **Scoped** | Per-request LLM streaming state, context window budget manager, and HTTP client references. |
 | `IRagPipeline` | `RagPipeline` | **Scoped** | Composite facade delegating to scoped sub-services. |
+| `RagCollectionProvider` | `RagCollectionProvider` | **Scoped** | Single native collection handle per scope; `ReleaseNativeHandle` on dispose to avoid LOCK conflicts across scopes. |
 
 ---
 
@@ -53,6 +68,12 @@ public sealed class ZVecRagOptions
     public int MaxContextTokens { get; set; } = 4096;
     public int GenerationReserveTokens { get; set; } = 512;
     public ContextPackingStrategy ContextPacking { get; set; } = ContextPackingStrategy.ScoreDescending;
+
+    // Tiktoken encoding override (default cl100k_base; o200k_base when embedder model indicates GPT-4o)
+    public string? TokenizerEncoding { get; set; }
+
+    // SentencePiece/WordPiece vocab path (FileStream load; not EmbeddedResource)
+    public string? TokenizerModelPath { get; set; }
 
     // Nested VectorStore options (shipped ZVec.Extensions.VectorData.Store.ZVecVectorStoreOptions)
     public ZVecVectorStoreOptions VectorStore { get; set; } = new();
@@ -80,4 +101,4 @@ services.AddZVecVectorStore(); // registers shutdown on ApplicationStopping when
 
 Future `AddZVecRag` idempotently calls `AddZVecVectorStore`, so connector apps get the same teardown without duplicating the hook.
 
-`AddZVecRag` is shipped in Story 2.1 and registers scoped `IRagIngestor`, `IRagRetriever`, `IRagGenerator`, `IRagPipeline`, and a per-scope `RagCollectionProvider` (single native collection handle per scope).
+`AddZVecRag` registers scoped `IRagIngestor`, `IRagRetriever`, `IRagGenerator`, `IRagPipeline`, and `RagCollectionProvider` (single native collection handle per scope, released on scope dispose). Call `AddTokenChunker` (and optionally `AddMarkdownChunker` / `AddSentenceChunker`) after `AddZVecRag` to register chunkers.

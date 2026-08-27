@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.ML.Tokenizers;
 using ZVec.Extensions.VectorData.Store;
 using ZVec.Rag;
 using ZVec.Rag.Abstractions;
@@ -54,6 +55,10 @@ public static class ZVecRagServiceCollectionExtensions
             opts.Factory = ragOptions.VectorStore.Factory;
         });
 
+        services.TryAddSingleton<ZVecTokenizerResolver>();
+        services.TryAddSingleton<IRagDocumentReader, PlainTextDocumentReader>();
+        services.TryAddSingleton<ZVecTextChunkerRegistry>();
+
         services.TryAddScoped<RagCollectionProvider>();
         services.TryAddScoped<ContextPacker>();
         services.TryAddScoped<IRagIngestor, RagIngestor>();
@@ -61,6 +66,41 @@ public static class ZVecRagServiceCollectionExtensions
         services.TryAddScoped<IRagGenerator, RagGenerator>();
         services.TryAddScoped<IRagPipeline, RagPipeline>();
 
+        return services;
+    }
+
+    /// <summary>Registers the default token-boundary chunker.</summary>
+    public static IServiceCollection AddTokenChunker(
+        this IServiceCollection services,
+        int maxTokens = ZVec.Rag.Constants.ZVecRagConstants.DefaultChunkMaxTokens,
+        int overlapTokens = ZVec.Rag.Constants.ZVecRagConstants.DefaultChunkOverlapTokens)
+    {
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IZVecTextChunker, TokenTextChunker>(sp =>
+        {
+            var resolver = sp.GetRequiredService<ZVecTokenizerResolver>();
+            return new TokenTextChunker(resolver.CreateTokenizer(), maxTokens, overlapTokens);
+        }));
+
+        return services;
+    }
+
+    /// <summary>Registers markdown heading-aware chunking.</summary>
+    public static IServiceCollection AddMarkdownChunker(this IServiceCollection services)
+    {
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IZVecTextChunker, MarkdownHeadingChunker>(sp =>
+        {
+            var resolver = sp.GetRequiredService<ZVecTokenizerResolver>();
+            var tokenChunker = new TokenTextChunker(resolver.CreateTokenizer());
+            return new MarkdownHeadingChunker(tokenChunker);
+        }));
+
+        return services;
+    }
+
+    /// <summary>Registers sentence-boundary chunking.</summary>
+    public static IServiceCollection AddSentenceChunker(this IServiceCollection services)
+    {
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IZVecTextChunker, SentenceTextChunker>());
         return services;
     }
 }

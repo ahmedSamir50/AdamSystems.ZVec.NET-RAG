@@ -11,12 +11,9 @@
 - **No Cloud Required**: Runs 100% in-process on Windows, Linux, macOS, Android, and iOS. Zero monthly Azure/Qdrant vector DB bill.
 - **`Microsoft.Extensions.VectorData` Connector**: First-class `IVectorStore` and `IVectorizedSearch<TRecord>` implementation backing ZVec.NET. Works seamlessly with Semantic Kernel, Microsoft Agent Framework, and community RAG tools.
 - **`Microsoft.Extensions.AI` Ecosystem Integration**: Plug-and-play with any `IChatClient` or `IEmbeddingGenerator` (Ollama, Azure OpenAI, ONNX Runtime, LLamaSharp).
-> **Status:** Planned for Phase 2 (Story 2.3 — Citation Tracking & SSE)
-- **Streaming Citations (`IAsyncEnumerable<RagChunk>`)**: Real-time token streaming with precise document & page citation tracking (`SourceDoc`, `Page`, `Offset`, `Score`).
-- **Universal Tokenization**: Universal `Microsoft.ML.Tokenizers` engine (Tiktoken BPE, SentencePiece for LLaMA 3 / Nomic, WordPiece for BERT) with pluggable support for `tryAGI/Tiktoken`.
-> **Status:** Planned for Phase 2 (Story 2.2 — Document Ingestion)
-- **Transparent Document Ingestion**: Core `ZVec.Rag` ships text/markdown readers only. PDF/HTML via optional `ZVec.Rag.Pdf` package. Chunking ACL wraps `Microsoft.Extensions.DataIngestion` preview (`ITextChunker` only; readers are separate).
-> **Status:** Planned for Phase 2 (Story 2.3 — Hybrid Search Bridge)
+- **Streaming Citations (`IAsyncEnumerable<RagChunk>`)**: Real-time token streaming with precise document & page citation tracking (`SourceDoc`, `Page`, `Offset`, `Score`). SSE via `MapRagSseEndpoint` (links `RequestAborted` to cancel generation).
+- **Universal Tokenization**: `Microsoft.ML.Tokenizers` engine (Tiktoken BPE `cl100k_base` default, `o200k_base` when embedder model indicates GPT-4o family). SentencePiece/WordPiece via `TokenizerModelPath` (`FileStream`, not embedded).
+- **Transparent Document Ingestion**: Core `ZVec.Rag` ships text/markdown readers and ZVec-owned `IZVecTextChunker` ACL (`TokenTextChunker`, `MarkdownHeadingChunker`, `SentenceTextChunker`). PDF/HTML via optional `ZVec.Rag.Pdf` package. Bounded `System.Threading.Channels` pipeline (no `Task.Run`).
 - **Embedded Hybrid Search**: In-database dense + FTS (full-text search) retrieval with native Reciprocal Rank Fusion (`ZVecRrfReranker`).
 - **Native AOT & Trimmer Friendly**: `ZVec.Extensions.VectorData` connector is Native AOT-verified (`ZVec.AotTestApp`, Phase 0). Full `ZVec.Rag` pipeline AOT is a **Phase 2 gate** (`ZVec.Rag.AotTestApp`, Story 2.7) — do not claim end-to-end pipeline AOT until that story passes.
 - **Instant Scaffolding**: Get started in 60 seconds with `dotnet new rag`.
@@ -40,10 +37,10 @@
 
 The quickstart demonstrates the **full RAG lifecycle**: Document Ingestion (`IngestTextAsync`) and Real-time SSE Streaming (`MapRagSseEndpoint`).
 
-> **Status:** Planned for Phase 2 (Stories 2.1, 2.2, 2.3 — RAG Pipeline, Ingestion, SSE)
 ```csharp
 using Microsoft.Extensions.AI;
 using ZVec.Rag;
+using ZVec.Rag.Streaming;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -53,20 +50,21 @@ builder.Services.AddZVecRag(opts => {
     opts.Embedder = ollama.Embeddings(model: "nomic-embed-text");
     opts.Chat = ollama.Chat(model: "llama3.2");
     opts.RrfK = 60; // Dense + FTS + RRF rerank (maps to ZVecHybridSearchOptions)
-});
+})
+.AddTokenChunker(maxTokens: 512, overlapTokens: 64)
+.AddMarkdownChunker();
 
 var app = builder.Build();
 
-// 1. Ingest Text / Markdown Document (Auto-chunked by TokenTextChunker)
+// 1. Ingest Text / Markdown Document (auto-chunked by TokenTextChunker or MarkdownHeadingChunker)
 app.MapPost("/ingest", async (string text, string docId, IRagIngestor ingestor) => {
     await ingestor.IngestTextAsync(text, documentId: docId);
     return Results.Ok($"Document {docId} ingested successfully.");
 });
 
-// 2. Real-time Unbuffered SSE Streaming Chat Endpoint
-// MapRagSseEndpoint links HttpContext.RequestAborted to AskAsync so client disconnect cancels generation.
-app.MapRagSseEndpoint("/chat", async (string question, IRagGenerator generator, CancellationToken ct) =>
-    generator.AskAsync(question, streamCitations: true, ct));
+// 2. Real-time unbuffered SSE streaming chat (query string: ?question=...)
+// Links HttpContext.RequestAborted to AskAsync so client disconnect cancels generation.
+app.MapRagSseEndpoint("/chat");
 
 app.Run();
 ```
@@ -75,9 +73,8 @@ app.Run();
 
 ## 📄 Transparent Document Ingestion Architecture
 
-Ingestion in `ZVec.Rag` is divided into pluggable pipeline stages aligned with `Microsoft.Extensions.DataIngestion`:
+Ingestion in `ZVec.Rag` is divided into pluggable pipeline stages (ZVec-owned ACL; no `Microsoft.Extensions.DataIngestion` dependency):
 
-> **Status:** Planned for Phase 2 (Story 2.2 — Document Ingestion)
 ```
 ┌─────────────────────────┐    ┌─────────────────────────┐    ┌─────────────────────────┐    ┌─────────────────────────┐
 │   1. Document Reader    │ -> │    2. Text Chunker      │ -> │  3. Vector Embedder     │ -> │  4. Persistent Store    │
@@ -88,21 +85,20 @@ Ingestion in `ZVec.Rag` is divided into pluggable pipeline stages aligned with `
 
 - **Built-in Defaults**: Out-of-the-box `IngestTextAsync` handles plain text & markdown using token-boundary chunking (`TokenTextChunker`).
 - **Advanced File Formats (PDF / HTML)**: Optional `ZVec.Rag.Pdf` package (`PdfDocumentReader`); not referenced by core `ZVec.Rag` or the AOT harness.
-- **Explicit Chunking Strategies**: Developers can choose `TokenTextChunker` (512 tokens, 50 overlap), `MarkdownHeadingChunker`, or `SentenceTextChunker` based on document structure.
+- **Explicit Chunking Strategies**: `AddTokenChunker` (512 tokens, 64 overlap default), `AddMarkdownChunker`, or `AddSentenceChunker` via DI. Override per ingest with `IngestOptions.Chunker` or `IngestOptions.OnDuplicate` (`Replace`, `Append`, `Skip`).
 
 ---
 
-## 🔤 Tokenizer Strategy: `Microsoft.ML.Tokenizers` & `tryAGI/Tiktoken`
+## 🔤 Tokenizer Strategy: `Microsoft.ML.Tokenizers`
 
-> **Status:** Planned for Phase 2 (Story 2.2 — Document Ingestion, Task 2.2.4)
-- **Primary Tokenizer (`Microsoft.ML.Tokenizers`)**: Uses Microsoft's official high-performance, zero-allocation tokenizer engine. Supports **Tiktoken BPE** (OpenAI `cl100k`/`o200k`), **SentencePiece** (LLaMA 3, Nomic Embed), and **WordPiece** (BERT, MiniLM).
-- **Pluggable Adapter (`tryAGI/Tiktoken`)**: Provides an optional high-throughput BPE adapter interface for developers targeting OpenAI models exclusively.
+- **Primary Tokenizer (`Microsoft.ML.Tokenizers`)**: Tiktoken BPE (`cl100k_base` default, `o200k_base` when embedder model id indicates GPT-4o family). Override via `ZVecRagOptions.TokenizerEncoding`.
+- **SentencePiece/WordPiece**: Load vocab from `ZVecRagOptions.TokenizerModelPath` via `FileStream` (not `EmbeddedResource`).
 
 ---
 
 ## 🌐 Ecosystem Architecture
 
-> **Status:** Planned for Phase 2 (Stories 2.1, 2.2, 2.3, 2.6)
+> **Status:** Security sanitizer (Story 2.6) and pipeline AOT gate (Story 2.7) remain planned.
 ```
   ┌─────────────────────────────────────────────────────────────┐
   │                 Your .NET Application / API                 │

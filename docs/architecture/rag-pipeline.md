@@ -2,7 +2,7 @@
 
 `ZVec.Rag` provides a batteries-included RAG orchestration layer (`IRagPipeline`, `IRagIngestor`, `IRagRetriever`, `IRagGenerator`) built on top of Microsoft AI ecosystem primitives:
 
-> **Status:** Story 2.1 shipped (split interfaces, thin ingest, `ContextPacker`, `AddZVecRag`). Stories 2.2–2.8 (Channels ACL, SSE, evaluation) remain planned.
+> **Status:** Stories 2.1–2.3 shipped (Channels ACL, `OptimizeAsync`, `CitationOrder`, `MapRagSseEndpoint`). Stories 2.4.3–2.8 (Verify snapshots, evaluation, pipeline AOT) remain planned.
 ```text
 ┌─────────────────────────┐    ┌─────────────────────────┐    ┌─────────────────────────┐    ┌─────────────────────────┐
 │   1. Document Reader    │ -> │    2. Text Chunker      │ -> │  3. Vector Embedder     │ -> │  4. Persistent Store    │
@@ -15,9 +15,9 @@
 
 ## 1. Document Ingestion Pipeline Architecture (`IRagIngestor`)
 
-Ingestion is transparently divided into four distinct, pluggable stages aligned with `Microsoft.Extensions.DataIngestion`:
+Ingestion is transparently divided into four distinct, pluggable stages (ZVec-owned ACL; no `Microsoft.Extensions.DataIngestion` dependency in core):
 
-1. **Document Readers (`IRagDocumentReader`)** — Anti-Corruption Layer over `M.E.DataIngestion`:
+1. **Document Readers (`IRagDocumentReader`)** — format parsing ACL:
    - `PlainTextDocumentReader` (Default in core `ZVec.Rag`): Fast UTF-8 stream reader for plain text and Markdown.
    - `PdfDocumentReader`: Optional `ZVec.Rag.Pdf` package — **not** referenced by core or the AOT harness.
    - `HtmlDocumentReader`: Optional future package for DOM stripping.
@@ -28,8 +28,8 @@ Ingestion is transparently divided into four distinct, pluggable stages aligned 
 3. **Deterministic Chunk ID Generator**:
    - Chunk IDs are generated using content-addressable SHA256 hashes: `ChunkId = SHA256(doc_uri | strategy_id | chunk_index)`. This ensures stability across re-ingestion and native content-based deduplication.
 4. **Bounded Channel Dataflow Graph**:
-   - Ingestion executes over bounded `System.Threading.Channels`: Document Parsing (Capacity 1024) $\rightarrow$ Deduplication (Capacity 2048) $\rightarrow$ Batch Embedding (Batch size 32) $\rightarrow$ Batch Vector Insertion (Batch size 100). Supports `IngestionCheckpoint` for interrupt-safe resume.
-   - **Async contract:** synchronous `ITextChunker` `IEnumerable<string>` output is pushed into the channel writer — **not** wrapped in `Task.Run` and **not** enumerated on the ASP.NET request thread for large corpora. Use `ConfigureAwait(false)` on all awaits.
+   - Ingestion executes over bounded `System.Threading.Channels`: Document Parsing (Capacity 1024) $\rightarrow$ Deduplication (Capacity 2048) $\rightarrow$ Batch Embedding (Batch size 32) $\rightarrow$ Batch Vector Insertion (Batch size 100). `IngestionCheckpoint` deferred post-v1.
+   - **Async contract:** synchronous `IZVecTextChunker` `IEnumerable<TextChunk>` output is pushed into the channel writer — **not** wrapped in `Task.Run` and **not** enumerated on the ASP.NET request thread for large corpora. Use `ConfigureAwait(false)` on all awaits.
 
 ---
 
@@ -46,7 +46,7 @@ Ingestion is transparently divided into four distinct, pluggable stages aligned 
 
 ## 3. Anti-Corruption Layer (ACL), Migration & Security
 
-1. **`M.E.DataIngestion` Anti-Corruption Layer**: Split into `IRagDocumentReader` (format parsing) and `IZVecTextChunker` (chunking). Core `ZVec.Rag` ships text/md only; PDF via optional `ZVec.Rag.Pdf`.
+1. **Ingestion Anti-Corruption Layer**: Split into `IRagDocumentReader` (format parsing) and `IZVecTextChunker` (chunking via `Microsoft.ML.Tokenizers`). Core `ZVec.Rag` ships text/md only; PDF via optional `ZVec.Rag.Pdf`. SSE helpers (`MapRagSseEndpoint`) require `FrameworkReference` `Microsoft.AspNetCore.App` on `ZVec.Rag` (isolated in `Streaming/` with trim annotations; Story 2.7 console AOT does not claim SSE).
 2. **Embedder Stamp Manifest (`zvec_index_manifest.json`)**: On index creation, `ZVecIndexManifestManager` writes a manifest recording `ModelId`, `Dimensions`, `QuantizeType`, embedding storage dtype, and timestamp. Writes use atomic `*.tmp` + `File.Replace`. Startup validation throws `ZVecEmbedderMismatchException` on model/quantize mismatch; `ZVecManifestException` (`Missing` / `Corrupt`) when the collection exists but the manifest does not. `ZVec.Rag` init (Task 2.1.4) wraps mismatch as `ZVecRagInitializationException` with remediation: delete storage, use a new `StoragePath`, or run `IRagMigrationManager`.
 3. **Embedding Migration Manager (`IRagMigrationManager`)**: Automates background re-indexing when embedding models or dimensions change, performing shadow collection builds and atomic index swaps.
 4. **Security Threat Model & Prompt Isolation (`IRagSecuritySanitizer`)**: Ingested/retrieved chunks pass through `IRagSecuritySanitizer` before prompt composition. Uses query validation, chunk filtering, and explicit XML context isolation tags (`<retrieved_context>...</retrieved_context>`) to eliminate prompt injection risks.

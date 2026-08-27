@@ -80,6 +80,8 @@ Locked findings from spec_lock / consultant restudies. Process gaps live here to
 | S-AOT-INGEST-ACL | P2 | aot_tokenizer_only | Fixed | 2026-08-26 | Task 2.2.3 DI factory; 2.7.1 full IngestTextAsync |
 | S-SAMPLE03-EPIC5 | P2 | epic53_generic | Fixed | 2026-08-26 | project-plan Epic 5.3 detailed Sample 03 policy |
 | S-CATEGORY-G | P1 | runtime_interop_harness_gap | Fixed | 2026-08-26 | spec-lock.md §7 + skill pushbacks G1–G5 |
+| S-TEXTCHUNKER | P2 | itextchunker_stale_api | Fixed | 2026-08-27 | Task 2.2.3: IZVecTextChunker in-repo; no M.E.DataIngestion PackageReference |
+| S-SSE-FXREF | P2 | sse_framework_reference | Fixed | 2026-08-27 | MapRagSseEndpoint in ZVec.Rag/Streaming with FrameworkReference; trim annotated |
 
 DS-1…DS-3 (mmap/quantize plumbing, mobile wiki, second-evaluation docs) remain in Fixed Gaps (Historical).
 

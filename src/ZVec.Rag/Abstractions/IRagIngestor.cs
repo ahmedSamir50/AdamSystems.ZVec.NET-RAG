@@ -28,4 +28,7 @@ public interface IRagIngestor
         IEnumerable<IngestTextRequest> requests,
         IngestOptions? options = null,
         CancellationToken cancellationToken = default);
+
+    /// <summary>Optimizes the native index and reopens the collection handle.</summary>
+    Task OptimizeAsync(CancellationToken cancellationToken = default);
 }

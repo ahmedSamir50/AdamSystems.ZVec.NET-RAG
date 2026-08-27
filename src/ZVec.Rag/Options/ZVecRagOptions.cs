@@ -45,4 +45,10 @@ public sealed class ZVecRagOptions
 
     /// <summary>Gets or sets the native collection name for RAG chunks.</summary>
     public string CollectionName { get; set; } = Constants.ZVecRagConstants.DefaultCollectionName;
+
+    /// <summary>Gets or sets optional Tiktoken encoding override (e.g. <c>cl100k_base</c>, <c>o200k_base</c>).</summary>
+    public string? TokenizerEncoding { get; set; }
+
+    /// <summary>Gets or sets optional SentencePiece/WordPiece model path loaded via <see cref="FileStream"/>.</summary>
+    public string? TokenizerModelPath { get; set; }
 }

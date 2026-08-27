@@ -1,4 +1,5 @@
 using Microsoft.Extensions.VectorData;
+using ZVec.Extensions.VectorData.Collection;
 using ZVec.Extensions.VectorData.Store;
 using ZVec.Rag.Options;
 using ZVec.Rag.Schema;
@@ -8,7 +9,7 @@ namespace ZVec.Rag.Internal;
 /// <summary>
 /// Scoped holder ensuring a single native collection handle per DI scope (avoids LOCK conflicts).
 /// </summary>
-public sealed class RagCollectionProvider
+public sealed class RagCollectionProvider : IDisposable, IAsyncDisposable
 {
     private readonly ZVecVectorStore _store;
     private readonly ZVecVectorStoreOptions _storeOptions;
@@ -42,5 +43,28 @@ public sealed class RagCollectionProvider
             cancellationToken).ConfigureAwait(false);
 
         return _collection;
+    }
+
+    /// <inheritdoc />
+    public void Dispose()
+    {
+        ReleaseCollectionHandle();
+    }
+
+    /// <inheritdoc />
+    public ValueTask DisposeAsync()
+    {
+        ReleaseCollectionHandle();
+        return ValueTask.CompletedTask;
+    }
+
+    private void ReleaseCollectionHandle()
+    {
+        if (_collection is ZVecVectorizableRecordCollection<ZVecRagRecordV1, string> nativeCollection)
+        {
+            nativeCollection.ReleaseNativeHandle();
+        }
+
+        _collection = null;
     }
 }

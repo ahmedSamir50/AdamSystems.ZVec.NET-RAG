@@ -1,7 +1,7 @@
 namespace ZVec.Rag.Models;
 
 /// <summary>
-/// Optional parameters for document ingestion (Story 2.2 expands duplicate handling).
+/// Optional parameters for document ingestion.
 /// </summary>
 public sealed class IngestOptions
 {
@@ -10,4 +10,10 @@ public sealed class IngestOptions
 
     /// <summary>Gets or sets an optional 1-based page number.</summary>
     public int? Page { get; set; }
+
+    /// <summary>Gets or sets duplicate handling mode (default <see cref="DuplicateMode.Replace"/>).</summary>
+    public DuplicateMode OnDuplicate { get; set; } = DuplicateMode.Replace;
+
+    /// <summary>Gets or sets an optional chunker override for this ingest operation.</summary>
+    public Abstractions.IZVecTextChunker? Chunker { get; set; }
 }

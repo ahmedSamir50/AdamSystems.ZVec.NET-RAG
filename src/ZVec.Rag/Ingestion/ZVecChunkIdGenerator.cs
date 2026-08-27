@@ -26,6 +26,6 @@ public static class ZVecChunkIdGenerator
         return Convert.ToHexString(hash).ToLowerInvariant();
     }
 
-    /// <summary>Returns the Story 2.1 default chunking strategy id.</summary>
-    public static string DefaultStrategyId => ZVecRagConstants.WholeTextStrategyId;
+    /// <summary>Returns the default token chunker strategy id.</summary>
+    public static string DefaultStrategyId => ZVecRagConstants.TokenChunkerStrategyId;
 }

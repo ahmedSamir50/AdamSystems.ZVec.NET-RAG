@@ -27,6 +27,9 @@ public sealed class FakeChatClient : IChatClient
     /// <summary>Gets the number of streaming calls observed.</summary>
     public int StreamingCallCount { get; private set; }
 
+    /// <summary>Gets the number of tokens yielded in the current or last streaming call.</summary>
+    public int TokensYielded { get; private set; }
+
     /// <summary>Gets whether the last streaming call received a canceled token.</summary>
     public bool LastStreamingCallWasCanceled { get; private set; }
 
@@ -57,6 +60,7 @@ public sealed class FakeChatClient : IChatClient
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         StreamingCallCount++;
+        TokensYielded = 0;
 
         for (int i = 0; i < _tokens.Count; i++)
         {
@@ -72,6 +76,7 @@ public sealed class FakeChatClient : IChatClient
             }
 
             bool isLast = i == _tokens.Count - 1;
+            TokensYielded++;
             yield return new ChatResponseUpdate(ChatRole.Assistant, _tokens[i])
             {
                 FinishReason = isLast ? ChatFinishReason.Stop : null

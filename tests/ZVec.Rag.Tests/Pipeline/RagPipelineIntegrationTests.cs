@@ -1,8 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
-using ZVec.Extensions.VectorData.Manifest;
 using ZVec.Extensions.VectorData.Store;
 using ZVec.Rag.Abstractions;
-using ZVec.Rag.Exceptions;
+using ZVec.Rag.Ingestion;
 using ZVec.Rag.Options;
 using ZVec.Rag.Schema;
 using ZVec.Rag.Testing;
@@ -14,29 +13,11 @@ namespace ZVec.Rag.Tests.Pipeline;
 /// </summary>
 public sealed class RagPipelineIntegrationTests
 {
-    private static string CreateTempStoragePath()
-        => Path.Combine(Path.GetTempPath(), "ZVecTests", Guid.NewGuid().ToString("N"));
-
-    private static ServiceProvider CreateServiceProvider(string storagePath, string modelId = "test-model-v1")
-    {
-        var services = new ServiceCollection();
-        services.AddZVecRag(opts =>
-        {
-            opts.StoragePath = storagePath;
-            opts.Embedder = new DeterministicEmbedder(ZVecRagRecordV1.DefaultDimensions);
-            opts.Chat = new FakeChatClient("Answer", " token");
-            opts.VectorStore.ModelId = modelId;
-            opts.RetrieveTopK = 3;
-        });
-
-        return services.BuildServiceProvider();
-    }
-
     [Fact]
     public async Task IngestTextAsync_PersistsChunk_WithDeterministicChunkId()
     {
-        string storagePath = CreateTempStoragePath();
-        await using var provider = CreateServiceProvider(storagePath);
+        string storagePath = RagTestHarness.CreateTempStoragePath();
+        await using var provider = RagTestHarness.CreateServiceProvider(storagePath);
         using var scope = provider.CreateScope();
         var ingestor = scope.ServiceProvider.GetRequiredService<IRagIngestor>();
 
@@ -48,9 +29,9 @@ public sealed class RagPipelineIntegrationTests
         Assert.Equal(1, result.ChunksIngested);
         Assert.Single(result.ChunkIds);
 
-        string expectedId = ZVec.Rag.Ingestion.ZVecChunkIdGenerator.Compute(
+        string expectedId = ZVecChunkIdGenerator.Compute(
             "doc-001",
-            ZVec.Rag.Ingestion.ZVecChunkIdGenerator.DefaultStrategyId,
+            ZVecChunkIdGenerator.DefaultStrategyId,
             0);
         Assert.Equal(expectedId, result.ChunkIds[0]);
     }
@@ -58,8 +39,8 @@ public sealed class RagPipelineIntegrationTests
     [Fact]
     public async Task RetrieveAsync_ReturnsIngestedCitation_AfterHybridSearch()
     {
-        string storagePath = CreateTempStoragePath();
-        await using var provider = CreateServiceProvider(storagePath);
+        string storagePath = RagTestHarness.CreateTempStoragePath();
+        await using var provider = RagTestHarness.CreateServiceProvider(storagePath);
         using var scope = provider.CreateScope();
         var ingestor = scope.ServiceProvider.GetRequiredService<IRagIngestor>();
         var retriever = scope.ServiceProvider.GetRequiredService<IRagRetriever>();
@@ -80,8 +61,8 @@ public sealed class RagPipelineIntegrationTests
     [Fact]
     public async Task AskAsync_StreamsFakeChatTokens_WithCitations()
     {
-        string storagePath = CreateTempStoragePath();
-        await using var provider = CreateServiceProvider(storagePath);
+        string storagePath = RagTestHarness.CreateTempStoragePath();
+        await using var provider = RagTestHarness.CreateServiceProvider(storagePath);
         using var scope = provider.CreateScope();
         var pipeline = scope.ServiceProvider.GetRequiredService<IRagPipeline>();
 
@@ -107,8 +88,8 @@ public sealed class RagPipelineIntegrationTests
     [Fact]
     public async Task IngestTextAsync_ThrowsOperationCanceledException_WhenTokenCanceled()
     {
-        string storagePath = CreateTempStoragePath();
-        await using var provider = CreateServiceProvider(storagePath);
+        string storagePath = RagTestHarness.CreateTempStoragePath();
+        await using var provider = RagTestHarness.CreateServiceProvider(storagePath);
         using var scope = provider.CreateScope();
         var ingestor = scope.ServiceProvider.GetRequiredService<IRagIngestor>();
         using var cts = new CancellationTokenSource();
@@ -121,29 +102,29 @@ public sealed class RagPipelineIntegrationTests
     [Fact]
     public async Task SecondPipelineOpen_ThrowsZVecRagInitializationException_WhenModelIdMismatch()
     {
-        string storagePath = CreateTempStoragePath();
-        await using (var provider = CreateServiceProvider(storagePath, "model-a"))
+        string storagePath = RagTestHarness.CreateTempStoragePath();
+        await using (var provider = RagTestHarness.CreateServiceProvider(storagePath, modelId: "model-a"))
         {
             using var scope = provider.CreateScope();
             var ingestor = scope.ServiceProvider.GetRequiredService<IRagIngestor>();
             await ingestor.IngestTextAsync("seed", "doc", cancellationToken: TestContext.Current.CancellationToken);
         }
 
-        await using var mismatchProvider = CreateServiceProvider(storagePath, "model-b");
+        await using var mismatchProvider = RagTestHarness.CreateServiceProvider(storagePath, modelId: "model-b");
         using var mismatchScope = mismatchProvider.CreateScope();
         var retriever = mismatchScope.ServiceProvider.GetRequiredService<IRagRetriever>();
 
-        var ex = await Assert.ThrowsAsync<ZVecRagInitializationException>(async () =>
+        var ex = await Assert.ThrowsAsync<ZVec.Rag.Exceptions.ZVecRagInitializationException>(async () =>
             await retriever.RetrieveAsync("seed", cancellationToken: TestContext.Current.CancellationToken));
 
-        Assert.IsType<ZVecEmbedderMismatchException>(ex.InnerException);
+        Assert.IsType<ZVec.Extensions.VectorData.Manifest.ZVecEmbedderMismatchException>(ex.InnerException);
         Assert.Contains("IRagMigrationManager", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
     public void AddZVecRag_RegistersScopedPipeline_AndSingletonStore()
     {
-        string storagePath = CreateTempStoragePath();
+        string storagePath = RagTestHarness.CreateTempStoragePath();
         var services = new ServiceCollection();
         services.AddZVecRag(opts =>
         {
@@ -152,7 +133,8 @@ public sealed class RagPipelineIntegrationTests
             opts.Chat = new FakeChatClient("x");
             opts.VectorStore.EnableMmap = false;
             opts.VectorStore.MaxConcurrentNativeCalls = 2;
-        });
+        })
+        .AddTokenChunker();
 
         using var provider = services.BuildServiceProvider();
         using var scope1 = provider.CreateScope();
