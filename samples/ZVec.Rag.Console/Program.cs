@@ -14,8 +14,8 @@ public static class Program
 {
     public static async Task Main()
     {
-        System.Console.WriteLine("=== ZVec.NET-RAG Local RAG Sample ===");
-        System.Console.WriteLine();
+        Console.WriteLine("=== ZVec.NET-RAG Local RAG Sample ===");
+        Console.WriteLine();
 
         // 1. Initialize the local embedded vector store.
         var storagePath = Path.Combine(Path.GetTempPath(), "ZVecRagSample", Guid.NewGuid().ToString("N"));
@@ -26,8 +26,8 @@ public static class Program
         var store = new ZVecVectorStore(factory, options);
         var collection = store.GetCollection<string, RagDocumentChunk>("documents");
         await collection.EnsureCollectionExistsAsync(CancellationToken.None);
-        System.Console.WriteLine($"Store initialized at: {storagePath}");
-        System.Console.WriteLine();
+        Console.WriteLine($"Store initialized at: {storagePath}");
+        Console.WriteLine();
 
         // 2. Ingest sample document chunks (mocked embeddings — deterministic per chunk).
         var chunks = new[]
@@ -63,14 +63,14 @@ public static class Program
         };
 
         await collection.UpsertAsync(chunks, CancellationToken.None);
-        System.Console.WriteLine($"Indexed {chunks.Length} document chunks.");
-        System.Console.WriteLine();
+        Console.WriteLine($"Indexed {chunks.Length} document chunks.");
+        Console.WriteLine();
 
         // 3. Run a vectorized search (mocked query embedding).
         var query = "How does RAG combine retrieval and generation?";
         var queryVector = MockEmbedding("rag retrieval generation grounded");
-        System.Console.WriteLine($"Query: {query}");
-        System.Console.WriteLine("Top results:");
+        Console.WriteLine($"Query: {query}");
+        Console.WriteLine("Top results:");
 
         var topResults = new List<VectorSearchResult<RagDocumentChunk>>();
         await foreach (var result in collection.SearchAsync(queryVector, top: 2, cancellationToken: CancellationToken.None))
@@ -81,13 +81,13 @@ public static class Program
         for (int i = 0; i < topResults.Count; i++)
         {
             var r = topResults[i];
-            System.Console.WriteLine($"  {i + 1}. [score={r.Score:F4}] {r.Record.Content}");
-            System.Console.WriteLine($"     source: {r.Record.Source}");
+            Console.WriteLine($"  {i + 1}. [score={r.Score:F4}] {r.Record.Content}");
+            Console.WriteLine($"     source: {r.Record.Source}");
         }
 
         // 4. Demonstrate filtered search (hybrid: vector + metadata filter).
-        System.Console.WriteLine();
-        System.Console.WriteLine("Filtered search (source = rag-pipeline.md):");
+        Console.WriteLine();
+        Console.WriteLine("Filtered search (source = rag-pipeline.md):");
         System.Linq.Expressions.Expression<Func<RagDocumentChunk, bool>> filter = x => x.Source == "rag-pipeline.md";
         var filteredResults = new List<VectorSearchResult<RagDocumentChunk>>();
         var filteredOptions = new VectorSearchOptions<RagDocumentChunk> { Filter = filter };
@@ -102,15 +102,15 @@ public static class Program
 
         foreach (var r in filteredResults)
         {
-            System.Console.WriteLine($"  [score={r.Score:F4}] {r.Record.Content}");
+            Console.WriteLine($"  [score={r.Score:F4}] {r.Record.Content}");
         }
 
         // 5. Cleanup.
         await collection.EnsureCollectionDeletedAsync(CancellationToken.None);
         try { Directory.Delete(storagePath, recursive: true); } catch { }
 
-        System.Console.WriteLine();
-        System.Console.WriteLine("=== Sample complete ===");
+        Console.WriteLine();
+        Console.WriteLine("=== Sample complete ===");
     }
 
     /// <summary>

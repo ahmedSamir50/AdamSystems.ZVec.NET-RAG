@@ -49,8 +49,8 @@ public sealed class ZVecRagRecordV1
     public string Text { get; set; } = string.Empty;
 
     /// <summary>Dense embedding vector.</summary>
-    [VectorStoreVector(ZVecRagRecordV1.DefaultDimensions)]
-    [ZVecVector(ZVecRagRecordV1.DefaultDimensions)]
+    [VectorStoreVector(DefaultDimensions)]
+    [ZVecVector(DefaultDimensions)]
     public ReadOnlyMemory<float> DenseVector { get; set; }
 
     /// <summary>Default embedding dimension for RAG collections.</summary>

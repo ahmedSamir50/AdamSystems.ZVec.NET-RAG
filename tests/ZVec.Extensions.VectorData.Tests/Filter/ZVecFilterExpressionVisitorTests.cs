@@ -192,8 +192,8 @@ public sealed class ZVecFilterExpressionVisitorTests
     {
         Expression<Func<FilterTestRecord, bool>> filter = x => x.Category.EndsWith("ics");
         var ex = Assert.Throws<ZVecFilterTranslationException>(() => ZVecFilterExpressionVisitor.Translate(filter));
-        Assert.Equal(ZVec.Extensions.VectorData.Constants.ZVecErrorMessages.UnsupportedEndsWithMethod("Category"), ex.Message);
-        Assert.Equal(ZVec.Extensions.VectorData.Constants.ZVecFilterErrorCode.UnsupportedEndsWith, ex.ErrorCode);
+        Assert.Equal(VectorData.Constants.ZVecErrorMessages.UnsupportedEndsWithMethod("Category"), ex.Message);
+        Assert.Equal(VectorData.Constants.ZVecFilterErrorCode.UnsupportedEndsWith, ex.ErrorCode);
     }
 
     [Fact]
@@ -201,8 +201,8 @@ public sealed class ZVecFilterExpressionVisitorTests
     {
         Expression<Func<FilterTestRecord, bool>> filter = x => System.Text.RegularExpressions.Regex.IsMatch(x.Category, "^Elec");
         var ex = Assert.Throws<ZVecFilterTranslationException>(() => ZVecFilterExpressionVisitor.Translate(filter));
-        Assert.Equal(ZVec.Extensions.VectorData.Constants.ZVecErrorMessages.UnsupportedRegexMethod("Category"), ex.Message);
-        Assert.Equal(ZVec.Extensions.VectorData.Constants.ZVecFilterErrorCode.UnsupportedRegex, ex.ErrorCode);
+        Assert.Equal(VectorData.Constants.ZVecErrorMessages.UnsupportedRegexMethod("Category"), ex.Message);
+        Assert.Equal(VectorData.Constants.ZVecFilterErrorCode.UnsupportedRegex, ex.ErrorCode);
     }
 
     [Fact]
@@ -210,8 +210,8 @@ public sealed class ZVecFilterExpressionVisitorTests
     {
         Expression<Func<FilterTestRecord, bool>> filter = x => x.Category.Contains("Elec");
         var ex = Assert.Throws<ZVecFilterTranslationException>(() => ZVecFilterExpressionVisitor.Translate(filter));
-        Assert.Equal(ZVec.Extensions.VectorData.Constants.ZVecErrorMessages.UnsupportedStringContainsMethod("Category"), ex.Message);
-        Assert.Equal(ZVec.Extensions.VectorData.Constants.ZVecFilterErrorCode.UnsupportedStringContains, ex.ErrorCode);
+        Assert.Equal(VectorData.Constants.ZVecErrorMessages.UnsupportedStringContainsMethod("Category"), ex.Message);
+        Assert.Equal(VectorData.Constants.ZVecFilterErrorCode.UnsupportedStringContains, ex.ErrorCode);
     }
 
     // -------------------------------------------------------------------------
@@ -437,7 +437,7 @@ public sealed class ZVecFilterExpressionVisitorTests
         var ex = Assert.Throws<ZVecFilterTranslationException>(() => ZVecFilterExpressionVisitor.Translate(filter));
 
         Assert.Contains("nested", ex.Message, StringComparison.OrdinalIgnoreCase);
-        Assert.Equal(ZVec.Extensions.VectorData.Constants.ZVecFilterErrorCode.UnsupportedExpression, ex.ErrorCode);
+        Assert.Equal(VectorData.Constants.ZVecFilterErrorCode.UnsupportedExpression, ex.ErrorCode);
     }
 
     [Fact]
@@ -447,7 +447,7 @@ public sealed class ZVecFilterExpressionVisitorTests
         Expression<Func<FilterTestRecord, bool>> filter = x => x.Price > UserDefinedConversionHolder.Value;
         var ex = Assert.Throws<ZVecFilterTranslationException>(() => ZVecFilterExpressionVisitor.Translate(filter));
 
-        Assert.Equal(ZVec.Extensions.VectorData.Constants.ZVecFilterErrorCode.UnsupportedUserDefinedConversion, ex.ErrorCode);
+        Assert.Equal(VectorData.Constants.ZVecFilterErrorCode.UnsupportedUserDefinedConversion, ex.ErrorCode);
     }
 
     [Fact]
