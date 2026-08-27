@@ -118,4 +118,33 @@ public static class ZVecErrorMessages
     /// <summary>Formats error message when static expression evaluation fails under AOT.</summary>
     public static string CannotStaticallyEvaluateExpressionUnderAot(string expressionText) =>
         $"Cannot statically evaluate expression '{expressionText}' under AOT without dynamic compilation.";
+
+    /// <summary>Formats error when embedder stamp manifest is missing on an existing collection.</summary>
+    public static string ManifestMissing(string collectionPath) =>
+        $"Embedder stamp manifest is missing for collection at '{collectionPath}'. " +
+        "The native index exists but zvec_index_manifest.json was not found. " +
+        "Remediation: delete the collection directory and re-ingest, or run IRagMigrationManager.";
+
+    /// <summary>Formats error when embedder stamp manifest cannot be parsed.</summary>
+    public static string ManifestCorrupt(string collectionPath) =>
+        $"Embedder stamp manifest at '{collectionPath}' is corrupt or unreadable. " +
+        "Remediation: delete the collection directory and re-ingest, or run IRagMigrationManager.";
+
+    /// <summary>Formats error when manifest stamp fields do not match configured embedder/schema.</summary>
+    public static string EmbedderStampMismatch(
+        string collectionPath,
+        string expectedModelId,
+        string actualModelId,
+        int expectedDimensions,
+        int actualDimensions,
+        string expectedQuantizeType,
+        string actualQuantizeType,
+        string expectedStorageDataType,
+        string actualStorageDataType) =>
+        $"Embedder stamp mismatch for collection at '{collectionPath}'. " +
+        $"ModelId: expected '{expectedModelId}', actual '{actualModelId}'. " +
+        $"Dimensions: expected {expectedDimensions}, actual {actualDimensions}. " +
+        $"QuantizeType: expected '{expectedQuantizeType}', actual '{actualQuantizeType}'. " +
+        $"StorageDataType: expected '{expectedStorageDataType}', actual '{actualStorageDataType}'. " +
+        "Remediation: delete the collection storage, use a different StoragePath, or run IRagMigrationManager.";
 }

@@ -35,6 +35,7 @@ jobs:
           ./tests/ZVec.Extensions.VectorData.Tests/bin/Release/net8.0/ZVec.Extensions.VectorData.Tests
           ./tests/ZVec.Extensions.VectorData.ConformanceTests/bin/Release/net8.0/ZVec.Extensions.VectorData.ConformanceTests
           ./tests/ZVec.Extensions.VectorData.SourceGenerator.Tests/bin/Release/net8.0/ZVec.Extensions.VectorData.SourceGenerator.Tests
+          ./tests/ZVec.Rag.Tests/bin/Release/net8.0/ZVec.Rag.Tests
 
       - name: Check Class Line Count Limit
         run: |

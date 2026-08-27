@@ -332,28 +332,30 @@ That's it. No Azure. No Python. No Qdrant. Connector Native AOT verified (Phase 
   - Support `==`, `!=`, `<`, `<=`, `>`, `>=`, `&&`, `||`, `!`, `ContainAny` *(All 12 operators + explicit rejections for unsupported LINQ; 42 unit tests.)*
   - Cover the 80% case in v1; document unsupported patterns
 - [ ] 1.7 Hybrid search bridge: M.E.VectorData "hybrid" search → ZVec multi-query + `ZVecRrfReranker` *(Partial — dense + FTS + RRF works; tunable `ZVecHybridSearchOptions.RrfK` added; FTS field selection now honors `[ZVecFullTextSearch]`.)*
-- [x] 1.8 DI extensions: `services.AddZVecVectorStore(...)` (works alongside existing `AddZVec()`)
+- [x] 1.8 DI extensions: `services.AddZVecVectorStore(...)` (works alongside existing `AddZVec()`) — **not** score normalization (see implementation-plan Story 1.8).
 - [ ] 1.9 Conformance test suite (run against Microsoft's VectorData contract tests) *(Partial — custom 13-test conformance suite; Microsoft's official suite not integrated.)*
-- [x] 1.10 AOT/trim annotations + CI AOT publish test
+- [x] 1.10 AOT/trim annotations + CI AOT publish test — **not** iOS MonoAOT finalizer audit (see implementation-plan Story 1.10; Task 1.10.1 `ZVec.IosTestApp` deferred).
 - [x] 1.11 Documentation: how to migrate from M.E.VectorData.InMemory to ZVec *(Added `docs/guides/migration-from-inmemory.md`.)* — **not** the embedder stamp story (see implementation-plan Story 1.11).
 
 ### Epic 2 — `ZVec.Rag` integration layer
 
-- [ ] 2.1 `IRagPipeline` orchestrator (thin wrapper)
-- [ ] 2.2 `IRagIngestor` — delegates to `M.E.DataIngestion` for chunking (PDF/Word/MD/HTML)
-- [ ] 2.3 `IRagEmbedder` — delegates to `M.E.AI IEmbeddingGenerator<string, Embedding<float>>`
-- [ ] 2.4 `IRagRetriever` — hybrid search via `ZVec.Extensions.VectorData`
-- [ ] 2.5 `IReranker` pluggable hook (default = identity; future: cross-encoder, LLM rerank)
-- [ ] 2.6 `IRagGenerator` — delegates to `M.E.AI IChatClient`, streaming
-- [ ] 2.7 `RagChunk` record (`Text`, `Citations`, `IsFinal`, `Usage`)
-- [ ] 2.8 `Citation` record (`SourceDoc`, `Page`, `Offset`, `Score`, `ChunkId`)
-- [ ] 2.9 Citation tracking: chunk IDs round-trip through embedding/retrieval/generation
-- [ ] 2.10 Near-duplicate dedup (lift from existing samples pattern)
-- [ ] 2.11 `IAsyncEnumerable<RagChunk>` streaming with cancellation
-- [ ] 2.12 SSE endpoint helper (lift from `samples/AspNet` `/rag/ask/stream` pattern)
-- [ ] 2.13 Test fakes: `DeterministicEmbedder` (hash-based vectors), `FakeChatClient`, `InMemoryRagPipeline`
-- [ ] 2.14 Verify-based snapshot testing for RAG responses
-- [ ] 2.15 DI extensions: `services.AddZVecRag(...)`
+> **Story ID map:** Project-plan Epic 2 checkboxes **2.1–2.15** are a legacy breakdown. The locked execution plan uses **implementation-plan Stories 2.1–2.8**. Same-numbered items are **not** the same work unless labeled below.
+
+- [ ] 2.1 `IRagPipeline` orchestrator (thin wrapper) — **maps to implementation-plan Story 2.1** (split interfaces + facade + `ContextPacker` + `AddZVecRag`)
+- [ ] 2.2 `IRagIngestor` — text/markdown chunking in core via `M.E.DataIngestion` ACL (**implementation-plan Story 2.2**; PDF/HTML via optional `ZVec.Rag.Pdf`, not core)
+- [ ] 2.3 ~~`IRagEmbedder`~~ **REJECTED** — use `Microsoft.Extensions.AI` `IEmbeddingGenerator<string, Embedding<float>>` directly (no custom embedder interface)
+- [ ] 2.4 `IRagRetriever` — hybrid search via `ZVec.Extensions.VectorData` (**Story 2.1** retriever slice)
+- [ ] 2.5 `IReranker` pluggable hook — default `ZVecRrfReranker`; cross-encoder deferred (**D-2**, Story 2.3.2)
+- [ ] 2.6 `IRagGenerator` — delegates to `M.E.AI IChatClient`, streaming (**Story 2.1** generator slice)
+- [ ] 2.7 `RagChunk` record — **Story 2.1** (minimal) + **Story 2.3.2** (full `CitationOrder`)
+- [ ] 2.8 `Citation` record — **Story 2.1** (minimal) + **Story 2.3.2** (score fields)
+- [ ] 2.9 Citation tracking — **Story 2.1** + **Story 2.2.5**
+- [ ] 2.10 Near-duplicate dedup — **Story 2.2.2**
+- [ ] 2.11 `IAsyncEnumerable<RagChunk>` streaming — **Story 2.1**
+- [ ] 2.12 SSE endpoint helper — **Story 2.3.3**
+- [ ] 2.13 Test fakes: `DeterministicEmbedder`, `FakeChatClient` — **Story 2.4** (no `InMemoryRagPipeline`)
+- [ ] 2.14 Verify-based snapshot testing — **Story 2.4.3**
+- [ ] 2.15 DI extensions: `services.AddZVecRag(...)` — **Story 2.1.4**
 
 ### Epic 3 — Local LLM recipes
 

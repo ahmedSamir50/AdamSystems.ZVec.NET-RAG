@@ -53,6 +53,7 @@ finally
 |---|---|---|
 | **Unit tests** | `tests/ZVec.Extensions.VectorData.Tests` | Filter visitor operators, error codes, CRUD, hybrid search, score normalization, optimize/reopen recovery |
 | **Conformance tests** | `tests/ZVec.Extensions.VectorData.ConformanceTests` | M.E.VectorData contract: lifecycle, CRUD, search, hybrid FTS, zero-vector search, high-dimension vectors, concurrent read/write stress |
+| **RAG pipeline** | `tests/ZVec.Rag.Tests` | IRag*, ContextPacker, `DeterministicEmbedder`, `FakeChatClient`, real ZVec round-trip |
 | **AOT smoke (connector)** | `tests/ZVec.AotTestApp` | Native AOT publish verification for `ZVec.Extensions.VectorData` (Phase 0 complete) |
 | **AOT smoke (pipeline)** | `tests/ZVec.Rag.AotTestApp` *(planned, Story 2.7)* | Full `ZVec.Rag` pipeline AOT gate (M.E.AI + Tiktoken + plain-text `IngestTextAsync` via DI chunker + Channels) |
 
@@ -62,6 +63,7 @@ xUnit v3 test projects use executable test assemblies. Run locally:
 dotnet build ZVec.NET-RAG.slnx -c Release
 ./tests/ZVec.Extensions.VectorData.Tests/bin/Release/net8.0/ZVec.Extensions.VectorData.Tests
 ./tests/ZVec.Extensions.VectorData.ConformanceTests/bin/Release/net8.0/ZVec.Extensions.VectorData.ConformanceTests
+./tests/ZVec.Rag.Tests/bin/Release/net8.0/ZVec.Rag.Tests
 ```
 
 ---

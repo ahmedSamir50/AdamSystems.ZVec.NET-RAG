@@ -16,21 +16,26 @@ public sealed partial class ZVecVectorizableRecordCollection<TRecord, TKey>
     where TKey : notnull
 {
     /// <summary>
-    /// Normalizes a native ZVec score into a similarity score where higher = better match.
-    /// Switches on the configured <see cref="ZVecMetricType"/> for the collection.
+    /// Normalizes a native dense-query distance into a VectorData similarity score.
     /// </summary>
-    private float NormalizeScore(float nativeScore)
+    private float NormalizeDenseScore(float nativeDistance)
+    {
+        ZVecMetricType metric = ResolveDenseMetricType();
+        return ZVecScoreNormalizer.ToSimilarity(nativeDistance, metric);
+    }
+
+    /// <summary>
+    /// Resolves the metric type for the primary dense vector index.
+    /// </summary>
+    private ZVecMetricType ResolveDenseMetricType()
     {
         var indexParam = _typeModel?.Vectors.FirstOrDefault()?.IndexParam;
-        ZVecMetricType metric = (indexParam as ZVecHnswIndexParam)?.MetricType ?? ZVecMetricType.Cosine;
-
-        return metric switch
+        if (indexParam is ZVecHnswIndexParam hnsw)
         {
-            ZVecMetricType.Cosine => 1.0f - nativeScore,
-            ZVecMetricType.L2 => 1.0f / (1.0f + nativeScore),
-            ZVecMetricType.Ip => nativeScore,
-            _ => 1.0f - nativeScore
-        };
+            return hnsw.MetricType;
+        }
+
+        return ZVecMetricType.Cosine;
     }
 
     [RequiresUnreferencedCode("Source generated mappers should be used for Native AOT. Reflection fallback may be trimmed.")]

@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.VectorData;
+using ZVec.Extensions.VectorData.Constants;
 using ZVec.NET;
 using ZVec.NET.Mapping;
 
@@ -78,7 +79,8 @@ public static class Program
             // Test 4: ZVecVectorStore instantiation + collection retrieval under AOT
             var options = new ZVecVectorStoreOptions
             {
-                StoragePath = Path.Combine(Path.GetTempPath(), "ZVecAotTests", Guid.NewGuid().ToString("N"))
+                StoragePath = Path.Combine(Path.GetTempPath(), "ZVecAotTests", Guid.NewGuid().ToString("N")),
+                ModelId = "aot-embedder-stamp-v1"
             };
             Directory.CreateDirectory(options.StoragePath);
 
@@ -110,7 +112,15 @@ public static class Program
             if (searchResults.Count == 0) throw new InvalidOperationException("Search returned no results under AOT.");
             Console.WriteLine($"[AOT Test 7] Vectorized search returned {searchResults.Count} result(s). Top score: {searchResults[0].Score}");
 
-            // Test 8: Reference non-SG record type to surface trim warnings during publish
+            // Test 8: Embedder stamp manifest written on first collection create under AOT
+            string manifestPath = Path.Combine(options.StoragePath, "aot_test_collection", ZVecManifestFileNames.IndexManifest);
+            if (!File.Exists(manifestPath))
+            {
+                throw new InvalidOperationException("Embedder stamp manifest was not written under AOT.");
+            }
+            Console.WriteLine($"[AOT Test 8] Embedder stamp manifest written: {manifestPath}");
+
+            // Test 9: Reference non-SG record type to surface trim warnings during publish
             var fallbackRecord = new ReflectionFallbackRecord
             {
                 Id = "fallback",
@@ -118,7 +128,7 @@ public static class Program
                 Vector = new float[] { 0.1f, 0.2f, 0.3f, 0.4f }
             };
             _ = fallbackRecord.Title;
-            Console.WriteLine($"[AOT Test 8] ReflectionFallbackRecord referenced: {fallbackRecord.Id}");
+            Console.WriteLine($"[AOT Test 9] ReflectionFallbackRecord referenced: {fallbackRecord.Id}");
 
             // Cleanup
             collection.EnsureCollectionDeletedAsync(CancellationToken.None).GetAwaiter().GetResult();

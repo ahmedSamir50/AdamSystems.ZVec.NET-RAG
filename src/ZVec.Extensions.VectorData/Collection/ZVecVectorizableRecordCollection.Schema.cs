@@ -4,6 +4,7 @@ using System.Reflection;
 using Microsoft.Extensions.VectorData;
 using ZVec.Extensions.VectorData.Attributes;
 using ZVec.Extensions.VectorData.Constants;
+using ZVec.Extensions.VectorData.Manifest;
 using ZVec.Extensions.VectorData.Mapping;
 using ZVec.Extensions.VectorData.Store;
 using ZVec.NET;
@@ -184,9 +185,16 @@ public sealed partial class ZVecVectorizableRecordCollection<TRecord, TKey>
         }
 
         Directory.CreateDirectory(_options.EffectiveCollectionBasePath);
-        return _factory.OpenOrCreate(
+        bool collectionPreExisted = Directory.Exists(CollectionPath) &&
+            Directory.EnumerateFileSystemEntries(CollectionPath).Any();
+        var schema = BuildCollectionSchema();
+        var nativeCollection = _factory.OpenOrCreate(
             CollectionPath,
-            BuildCollectionSchema(),
+            schema,
             _options.CreateZVecCollectionOptions());
+
+        ZVecIndexManifestManager.EnsureManifest(CollectionPath, schema, _options, collectionPreExisted);
+
+        return nativeCollection;
     }
 }

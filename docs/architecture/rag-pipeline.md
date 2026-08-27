@@ -2,7 +2,7 @@
 
 `ZVec.Rag` provides a batteries-included RAG orchestration layer (`IRagPipeline`, `IRagIngestor`, `IRagRetriever`, `IRagGenerator`) built on top of Microsoft AI ecosystem primitives:
 
-> **Status:** Planned for Phase 2 (Stories 2.1 – 2.8 — RAG Pipeline, Ingestion, Context Packing, Evaluation, SSE)
+> **Status:** Story 2.1 shipped (split interfaces, thin ingest, `ContextPacker`, `AddZVecRag`). Stories 2.2–2.8 (Channels ACL, SSE, evaluation) remain planned.
 ```text
 ┌─────────────────────────┐    ┌─────────────────────────┐    ┌─────────────────────────┐    ┌─────────────────────────┐
 │   1. Document Reader    │ -> │    2. Text Chunker      │ -> │  3. Vector Embedder     │ -> │  4. Persistent Store    │

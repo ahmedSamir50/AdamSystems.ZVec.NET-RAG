@@ -63,6 +63,12 @@ public sealed class ZVecVectorStoreOptions
     public int? MemoryLimitMb { get; set; }
 
     /// <summary>
+    /// Gets or sets the embedder model identifier recorded in the index manifest sidecar.
+    /// Used to detect silent corruption when switching embedding models without re-ingest.
+    /// </summary>
+    public string ModelId { get; set; } = string.Empty;
+
+    /// <summary>
     /// Gets or sets the default HNSW/Flat vector index quantization applied to dense vectors
     /// when no per-property override exists. Defaults to <see cref="ZVecQuantizeType.Undefined"/> (FP32 storage).
     /// </summary>

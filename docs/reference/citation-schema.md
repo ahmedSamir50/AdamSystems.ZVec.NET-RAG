@@ -20,34 +20,55 @@ Every collection initialized by `ZVec.Rag` automatically uses `ZVecRagSchemaV1`:
 ```csharp
 public sealed class ZVecRagRecordV1
 {
+    [VectorStoreKey]
     [ZVecId]
-    public string ChunkId { get; set; } = string.Empty; // Format: "{SourceDoc}:{ChunkIndex:D6}"
+    public string ChunkId { get; set; } = string.Empty; // SHA256(source_uri | strategy_id | chunk_index)
 
+    [VectorStoreData(IsIndexed = true)]
     [ZVecField(IsFilterable = true)]
     public string SourceDoc { get; set; } = string.Empty; // Document GUID / stable identifier
 
+    [VectorStoreData]
     [ZVecField]
     public string SourceUri { get; set; } = string.Empty; // Display URI / file path / URL
 
+    [VectorStoreData(IsIndexed = true)]
     [ZVecField(IsFilterable = true)]
     public string SourceHash { get; set; } = string.Empty; // SHA-256 content hash for deduplication
 
-    [ZVecField(IsFilterable = true)]
-    public int? Page { get; set; } // Page number (null for Markdown/TXT)
+    [VectorStoreData(IsIndexed = true)]
+    [ZVecField]
+    public int Page { get; set; } = -1; // -1 = not applicable (maps to null in Citation)
 
+    [VectorStoreData]
     [ZVecField]
     public long Offset { get; set; } // Character offset in extracted text
 
+    [VectorStoreData]
     [ZVecField]
     public int ChunkIndex { get; set; } // 0-indexed chunk sequence number in document
 
+    [VectorStoreData(IsFullTextIndexed = true)]
     [ZVecField]
-    public string Text { get; set; } = string.Empty; // Chunk text content
+    public string Text { get; set; } = string.Empty; // Chunk text content (FTS field)
 
+    [VectorStoreVector(768)]
     [ZVecVector(768)]
     public ReadOnlyMemory<float> DenseVector { get; set; } // Dense vector embedding
 }
 ```
+
+### ChunkId Generation (D-4)
+
+`ChunkId` is a **content-addressable** SHA-256 hex digest:
+
+`ChunkId = SHA256(source_uri | strategy_id | chunk_index)`
+
+- `source_uri`: document URI or stable `documentId` passed to ingest
+- `strategy_id`: chunking strategy identifier (Story 2.1 default: `"whole-text-v1"`)
+- `chunk_index`: 0-based chunk sequence within the document
+
+Human-readable display labels (e.g. `{SourceDoc}:{ChunkIndex:D6}`) are **not** used as storage keys.
 
 ---
 

@@ -1,7 +1,6 @@
 # RAG Pipeline Interface Segregation (ISP)
 
-> **Status:** Planned for Phase 2 (Story 2.1 — IRagIngestor, IRagRetriever, IRagGenerator Split Interfaces & RagPipeline Facade).
-> The interface segregation design described here is the target architecture for Phase 2.
+> **Status:** Story 2.1 shipped — `IRagIngestor`, `IRagRetriever`, `IRagGenerator`, `RagPipeline`, `AddZVecRag`. Story 2.2 expands ingestion ACL and bounded Channels.
 
 The `ZVec.Rag` framework enforces strict **Interface Segregation Principle (ISP)** compliance to eliminate God interfaces and allow application components to depend strictly on the capabilities they require.
 
@@ -15,7 +14,8 @@ Rather than bundling document ingestion, context retrieval, and LLM text generat
                   ┌──────────────────────┐
                   │    IRagIngestor      │
                   │ (IngestTextAsync,    │
-                  │  IngestDocumentAsync)│
+                  │  IngestDocumentAsync,│
+                  │  IngestBatchAsync)   │
                   └──────────┬───────────┘
                              │
      ┌───────────────────────┼───────────────────────┐
@@ -48,8 +48,15 @@ public interface IRagIngestor
         string contentType, 
         IngestOptions? options = null, 
         CancellationToken ct = default);
+
+    ValueTask<IngestionResult> IngestBatchAsync(
+        IEnumerable<IngestTextRequest> requests,
+        IngestOptions? options = null,
+        CancellationToken ct = default);
 }
 ```
+
+> **Story 2.1 ships** `Citation`, `RagChunk`, and minimal `CitationOrder.ScoreDescending`. Full `CitationOrder` enum expansion is **Story 2.3.2**.
 
 ### 2. `IRagRetriever` — Hybrid Vector & FTS Search
 Responsible for querying the vector store using dense vector similarity, full-text search (FTS), and native Reciprocal Rank Fusion (RRF).

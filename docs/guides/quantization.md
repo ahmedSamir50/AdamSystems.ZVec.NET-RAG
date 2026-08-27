@@ -13,6 +13,7 @@
 ```csharp
 builder.Services.AddZVecVectorStore(opts =>
 {
+    opts.ModelId = "nomic-embed-text";
     opts.DefaultQuantizeType = ZVecQuantizeType.Int8; // store-level HNSW default
 });
 

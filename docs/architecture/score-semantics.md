@@ -28,14 +28,10 @@ s_{\text{cosine}} = 1.0 - d_{\text{cosine}}
 $$
 
 ```csharp
-// Unmarshalling hit in ZVecVectorizableRecordCollection:
-float normalizedScore = metricType switch
-{
-    ZVecMetricType.Cosine => 1.0f - zvecDistance,
-    ZVecMetricType.L2 => 1.0f / (1.0f + zvecDistance),
-    ZVecMetricType.InnerProduct => zvecRawScore,
-    _ => 1.0f - zvecDistance
-};
+// Dense vector search (ZVecScoreNormalizer.ToSimilarity):
+float similarity = ZVecScoreNormalizer.ToSimilarity(nativeDistance, metricType);
+
+// Hybrid RRF search: doc.Score is fused rank score — returned as-is (not re-normalized).
 ```
 
 ---
@@ -47,7 +43,7 @@ flowchart TD
     ZVecHit["ZVec Query Hit (Raw Distance)"] --> MetricCheck{"Metric Type?"}
     MetricCheck -- Cosine --> CosineNorm["Score = 1.0 - Distance"]
     MetricCheck -- L2 --> L2Norm["Score = 1.0 / (1.0 + Distance)"]
-    MetricCheck -- Inner Product --> IPNorm["Score = Raw Score"]
+    MetricCheck -- Ip --> IPNorm["Score = Raw Score"]
     CosineNorm --> VectorDataScore["VectorSearchResults.Score (Higher = Better)"]
     L2Norm --> VectorDataScore
     IPNorm --> VectorDataScore

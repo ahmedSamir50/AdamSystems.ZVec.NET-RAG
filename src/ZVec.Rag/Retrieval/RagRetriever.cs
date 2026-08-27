@@ -1,0 +1,107 @@
+using Microsoft.Extensions.AI;
+using Microsoft.Extensions.VectorData;
+using ZVec.Extensions.VectorData.Hybrid;
+using ZVec.Rag.Abstractions;
+using ZVec.Rag.Constants;
+using ZVec.Rag.Internal;
+using ZVec.Rag.Models;
+using ZVec.Rag.Options;
+using ZVec.Rag.Schema;
+
+namespace ZVec.Rag.Retrieval;
+
+/// <summary>
+/// Hybrid dense + FTS retrieval over the RAG chunk collection.
+/// </summary>
+public sealed class RagRetriever : IRagRetriever
+{
+    private readonly RagCollectionProvider _collectionProvider;
+    private readonly ZVecRagOptions _ragOptions;
+
+    /// <summary>Initializes a new instance.</summary>
+    public RagRetriever(RagCollectionProvider collectionProvider, ZVecRagOptions ragOptions)
+    {
+        _collectionProvider = collectionProvider ?? throw new ArgumentNullException(nameof(collectionProvider));
+        _ragOptions = ragOptions ?? throw new ArgumentNullException(nameof(ragOptions));
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<Citation>> RetrieveAsync(
+        string query,
+        int? topK = null,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(query))
+        {
+            throw new ArgumentException(ZVecRagErrorMessages.NullOrEmptyQuestion(), nameof(query));
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var embedder = _ragOptions.Embedder
+            ?? throw new InvalidOperationException(ZVecRagErrorMessages.EmbedderNotConfigured());
+
+        var collection = await _collectionProvider.GetCollectionAsync(cancellationToken).ConfigureAwait(false);
+
+        if (collection is not IKeywordHybridSearchable<ZVecRagRecordV1> hybrid)
+        {
+            throw new InvalidOperationException("RAG collection does not support hybrid search.");
+        }
+
+        GeneratedEmbeddings<Embedding<float>> queryEmbeddings = await embedder.GenerateAsync(
+            [query],
+            options: null,
+            cancellationToken).ConfigureAwait(false);
+
+        ReadOnlyMemory<float> queryVector = queryEmbeddings[0].Vector;
+        int effectiveTop = topK ?? _ragOptions.RetrieveTopK;
+        string[] keywords = TokenizeKeywords(query);
+
+        var hybridOptions = new ZVecHybridSearchOptions<ZVecRagRecordV1> { RrfK = _ragOptions.RrfK };
+
+        var citations = new List<Citation>();
+        await foreach (var result in hybrid.HybridSearchAsync(
+            queryVector,
+            keywords,
+            effectiveTop,
+            hybridOptions,
+            cancellationToken).ConfigureAwait(false))
+        {
+            citations.Add(MapToCitation(result.Record, (float)(result.Score ?? 0d)));
+        }
+
+        return SortCitations(citations, _ragOptions.CitationOrder);
+    }
+
+    internal static IReadOnlyList<Citation> SortCitations(IReadOnlyList<Citation> citations, CitationOrder order)
+    {
+        return order switch
+        {
+            CitationOrder.ScoreDescending => citations.OrderByDescending(c => c.RankScore).ToList(),
+            _ => citations.OrderByDescending(c => c.RankScore).ToList()
+        };
+    }
+
+    private static Citation MapToCitation(ZVecRagRecordV1 record, float rankScore)
+    {
+        return new Citation(
+            record.SourceDoc,
+            record.SourceUri,
+            record.SourceHash,
+            record.Page < 0 ? null : record.Page,
+            record.Offset,
+            record.ChunkIndex,
+            record.ChunkId,
+            record.Text,
+            RankScore: rankScore,
+            DenseScore: rankScore,
+            FtsScore: 0f);
+    }
+
+    private static string[] TokenizeKeywords(string query)
+    {
+        return query.Split(
+            [' ', '\t', '\r', '\n'],
+            StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+    }
+}

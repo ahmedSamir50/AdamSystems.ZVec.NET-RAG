@@ -1,6 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.VectorData;
+using ZVec.Extensions.VectorData.DependencyInjection;
 using ZVec.NET;
 using ZVec.Extensions.VectorData.Store;
 
@@ -72,6 +74,9 @@ public static class ZVecVectorStoreServiceCollectionExtensions
 
         services.TryAdd(descriptor);
         services.TryAdd(abstractDescriptor);
+
+        services.TryAddEnumerable(
+            ServiceDescriptor.Singleton<IHostedService, ZVecFactoryShutdownRegistration>());
 
         return services;
     }

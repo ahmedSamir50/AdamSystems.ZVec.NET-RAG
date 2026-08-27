@@ -52,7 +52,7 @@ builder.Services.AddZVecRag(opts => {
     opts.StoragePath = "./rag.zvec";
     opts.Embedder = ollama.Embeddings(model: "nomic-embed-text");
     opts.Chat = ollama.Chat(model: "llama3.2");
-    opts.HybridSearch = new HybridSearchOptions { RrfK = 60 }; // Dense + FTS + RRF rerank
+    opts.RrfK = 60; // Dense + FTS + RRF rerank (maps to ZVecHybridSearchOptions)
 });
 
 var app = builder.Build();

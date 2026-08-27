@@ -307,7 +307,7 @@ public sealed partial class ZVecVectorizableRecordCollection<TRecord, TKey> :
         {
             foreach (var doc in docs)
             {
-                float similarityScore = NormalizeScore(doc.Score);
+                float similarityScore = NormalizeDenseScore(doc.Score);
                 if (similarityScore >= scoreThreshold)
                 {
                     var record = MapFromDoc(doc);
@@ -386,11 +386,12 @@ public sealed partial class ZVecVectorizableRecordCollection<TRecord, TKey> :
         {
             foreach (var doc in docs)
             {
-                float similarityScore = NormalizeScore(doc.Score);
-                if (similarityScore >= scoreThreshold)
+                // RRF fusion scores are already higher-is-better rank fusion values — do not re-normalize.
+                float rrfScore = doc.Score;
+                if (rrfScore >= scoreThreshold)
                 {
                     var record = MapFromDoc(doc);
-                    yield return new VectorSearchResult<TRecord>(record, similarityScore);
+                    yield return new VectorSearchResult<TRecord>(record, rrfScore);
                 }
             }
         }

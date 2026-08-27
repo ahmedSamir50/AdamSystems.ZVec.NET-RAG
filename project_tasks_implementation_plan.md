@@ -194,9 +194,10 @@ ZVec.NET-RAG.slnx
 
 #### Epic 1.5: Core Connector & Interop Risk Hardening
 
-- [ ] **Story 1.8: VectorData Score Normalization (Distance $\rightarrow$ Similarity)** (Owner: `zvec-vectordata-expert`, Reviewer: `zvec-code-reviewer-expert`)
-  - **Task 1.8.1 (TDD)**: Write unit tests in `ZVecScoreNormalizationTests.cs` asserting Cosine distance conversion (`VectorData.Score = 1.0f - ZVecDistance`), L2 distance conversion, and Inner Product passthrough.
-  - **Task 1.8.2**: Implement score conversion helper in `ZVecVectorizableRecordCollection` so all returned `VectorSearchResults<TRecord>.Score` values are normalized similarity (higher = better).
+- [x] **Story 1.8: VectorData Score Normalization (Distance $\rightarrow$ Similarity)** (Owner: `zvec-vectordata-expert`, Reviewer: `zvec-code-reviewer-expert`) ✅
+  > **Note:** This is **score normalization** (Cosine/L2/Ip distance → similarity). Project-plan Epic 1 **1.8** checkbox = DI extensions (`AddZVecVectorStore`) — already done. Do not conflate the two.
+  - [x] **Task 1.8.1 (TDD)**: Write unit tests in `ZVecScoreNormalizationTests.cs` and `ZVecScoreNormalizerTests.cs` asserting Cosine, L2, and Ip conversion.
+  - [x] **Task 1.8.2**: Implement `ZVecScoreNormalizer`; dense `SearchAsync` uses normalized similarity; hybrid RRF scores returned as-is.
   - **Acceptance Criteria**: 100% path coverage; higher similarity vectors strictly return higher score values.
 
 - [x] **Story 1.9: Filter AST Visitor Expansion (`Enumerable.Contains` $\rightarrow$ `ContainAny`) — DUPLICATE OF STORY 1.5 (closed)** (Owner: `zvec-vectordata-expert`, Reviewer: `zvec-code-reviewer-expert`) ✅
@@ -205,14 +206,15 @@ ZVec.NET-RAG.slnx
   - **Acceptance Criteria**: `Tags.Contains("tag")` LINQ expressions translate to valid `ZVecFilterBuilder.ContainAny` AST.
 
 - [ ] **Story 1.10: iOS MonoAOT & SafeHandle Finalizer Interop Audit** (Owner: `zvec-native-aot-expert`, Reviewer: `zvec-code-reviewer-expert`)
-  - **Task 1.10.1**: Create `tests/ZVec.IosTestApp` harness executing P/Invoke calls and `zvec_collection_close` under MonoAOT linking (`<MtouchLink>Full</MtouchLink>`).
-  - **Task 1.10.2**: Run finalizer thread safety audit creating 1,000 collection handles, forcing GC, and verifying 0 deadlocks or pointer crashes. Hook `IZvecFactory.Shutdown()` to `IHostApplicationLifetime.ApplicationStopping`.
-  - **Acceptance Criteria**: 100% successful execution without deadlocks on finalizer thread.
+  > **Note:** This is **iOS MonoAOT / SafeHandle finalizer** audit. Project-plan Epic 1 **1.10** checkbox = AOT/trim CI (`ZVec.AotTestApp`) — already done. Do not conflate the two.
+  - **Task 1.10.1 (DEFERRED — owner: `zvec-native-aot-expert`)**: Create `tests/ZVec.IosTestApp` harness executing P/Invoke calls and `zvec_collection_close` under MonoAOT linking (`<MtouchLink>Full</MtouchLink>`). **Deferred:** requires Mac + iOS simulator; not runnable on Windows dev loop. Portable finalizer stress delivered in Task 1.10.2 via `ZVec.Extensions.VectorData.Tests`.
+  - [x] **Task 1.10.2**: Run finalizer thread safety audit creating 1,000 collection handles, forcing GC, and verifying 0 deadlocks or pointer crashes (`ZVecFactoryShutdownTests`). Hook `IZvecFactory.Shutdown()` to `IHostApplicationLifetime.ApplicationStopping` via `AddZVecVectorStore`.
+  - **Acceptance Criteria**: Portable harness passes without deadlocks; iOS physical gate remains deferred until Task 1.10.1.
 
-- [ ] **Story 1.11: Embedder Stamp Manifest & Index Schema Locking** (Owner: `zvec-vectordata-expert`, Reviewer: `zvec-architect-strategy-expert`)
+- [x] **Story 1.11: Embedder Stamp Manifest & Index Schema Locking** (Owner: `zvec-vectordata-expert`, Reviewer: `zvec-architect-strategy-expert`) ✅
   > **Note:** This is the **embedder stamp** story. Project-plan Epic 1.11 checkbox = InMemory migration wiki (done). Do not conflate the two.
-  - **Task 1.11.1 (TDD)**: Write unit tests verifying creation and validation of `zvec_index_manifest.json` (`ModelId`, `Dimensions`, `QuantizeType`, embedding storage dtype, `CreatedUtc`).
-  - **Task 1.11.2**: Implement `ZVecIndexManifestManager` to write manifest on initial collection creation and throw `ZVecEmbedderMismatchException` on startup when `ModelId`, `Dimensions`, or `QuantizeType`/storage dtype mismatch. Message must include expected vs actual values and collection storage path. Quantize/schema changes require delete + re-ingest or `IRagMigrationManager` (no in-place HNSW requantize). **Atomic writes:** write to `zvec_index_manifest.json.tmp`, then `File.Replace` to final path. If the native collection exists but the manifest is missing or corrupt, throw `ZVecManifestException` with reason `Missing` or `Corrupt` (advise re-ingest) — not a model-mismatch error.
+  - [x] **Task 1.11.1 (TDD)**: Write unit tests verifying creation and validation of `zvec_index_manifest.json` (`ModelId`, `Dimensions`, `QuantizeType`, embedding storage dtype, `CreatedUtc`).
+  - [x] **Task 1.11.2**: Implement `ZVecIndexManifestManager` to write manifest on initial collection creation and throw `ZVecEmbedderMismatchException` on startup when `ModelId`, `Dimensions`, or `QuantizeType`/storage dtype mismatch. Message must include expected vs actual values and collection storage path. Quantize/schema changes require delete + re-ingest or `IRagMigrationManager` (no in-place HNSW requantize). **Atomic writes:** write to `zvec_index_manifest.json.tmp`, then `File.Replace` to final path. If the native collection exists but the manifest is missing or corrupt, throw `ZVecManifestException` with reason `Missing` or `Corrupt` (advise re-ingest) — not a model-mismatch error.
   - **Acceptance Criteria**: Prevents silent index corruption when changing embedding models or quantization settings.
 
 - [x] **Story 1.12: VectorStore Contract Conformance Test Suite** (Owner: `zvec-vectordata-expert`, Reviewer: `zvec-code-reviewer-expert`) ✅
@@ -226,11 +228,11 @@ ZVec.NET-RAG.slnx
 
 #### Epic 2: `ZVec.Rag` Core Pipeline, Citations & Streaming
 
-- [ ] **Story 2.1: `IRagIngestor`, `IRagRetriever`, `IRagGenerator` Split Interfaces & `RagPipeline` Facade** (Owner: `zvec-rag-pipeline-expert`)
-  - **Task 2.1.1 (TDD)**: Write unit tests covering `IRagIngestor`, `IRagRetriever`, and `IRagGenerator` interfaces independently using `DeterministicEmbedder` and `FakeChatClient`.
-  - **Task 2.1.2**: Implement `IRagIngestor` (`IngestTextAsync`, `IngestDocumentAsync`, `IngestBatchAsync`), `IRagRetriever` (`RetrieveAsync`), and `IRagGenerator` (`AskAsync`). Implement `RagPipeline : IRagPipeline` as a lightweight composite facade delegating to each sub-component (strictly adhering to SOLID ISP). **Explicitly reject decorator middleware** (`*RagDecorator`); token budgeting lives in `ContextPacker` inside `IRagGenerator`.
-  - **Task 2.1.3**: Add `IList<ChatMessage>` multi-turn conversation history support to `AskAsync` and implement `ContextPacker` token budgeting (`MaxContextTokens`, default 4096; `GenerationReserveTokens`, default 512; chat-template overhead; optional `ContextPackingStrategy.LostInTheMiddle`) via `Microsoft.ML.Tokenizers`. **Contract:** prompt packing order is independent of `CitationOrder` — LITM only permutes the `<retrieved_context>` block; each `Citation` retains `ChunkId`, `ChunkIndex`, and `RankScore`; LLM markers use `ChunkId`, not 1-based prompt positions. Unit test: LITM K=5 permutation does not alter citation identity fields; UI list sorted by `CitationOrder` is independent of prompt string order.
-  - **Task 2.1.4**: Expose nested `ZVec` and `ZVecVectorStore` options in `ZVecRagOptions` (`MaxConcurrentNativeCalls = Environment.ProcessorCount`, `LogLevel`). On pipeline init, wrap `ZVecEmbedderMismatchException` as `ZVecRagInitializationException` with explicit remediation: delete storage at `{path}`, use a different `StoragePath`, or run `IRagMigrationManager`. Add XML documentation and execution sequence diagrams.
+- [x] **Story 2.1: `IRagIngestor`, `IRagRetriever`, `IRagGenerator` Split Interfaces & `RagPipeline` Facade** (Owner: `zvec-rag-pipeline-expert`)
+  - [x] **Task 2.1.1 (TDD)**: Write unit tests covering `IRagIngestor`, `IRagRetriever`, and `IRagGenerator` interfaces independently using `DeterministicEmbedder` and `FakeChatClient`.
+  - [x] **Task 2.1.2**: Implement `IRagIngestor` (`IngestTextAsync`, `IngestDocumentAsync`, `IngestBatchAsync`), `IRagRetriever` (`RetrieveAsync`), and `IRagGenerator` (`AskAsync`). Implement `RagPipeline : IRagPipeline` as a lightweight composite facade delegating to each sub-component (strictly adhering to SOLID ISP). **Explicitly reject decorator middleware** (`*RagDecorator`); token budgeting lives in `ContextPacker` inside `IRagGenerator`.
+  - [x] **Task 2.1.3**: Add `IList<ChatMessage>` multi-turn conversation history support to `AskAsync` and implement `ContextPacker` token budgeting (`MaxContextTokens`, default 4096; `GenerationReserveTokens`, default 512; chat-template overhead; optional `ContextPackingStrategy.LostInTheMiddle`) via `Microsoft.ML.Tokenizers`. **Contract:** prompt packing order is independent of `CitationOrder` — LITM only permutes the `<retrieved_context>` block; each `Citation` retains `ChunkId`, `ChunkIndex`, and `RankScore`; LLM markers use `ChunkId`, not 1-based prompt positions. Unit test: LITM K=5 permutation does not alter citation identity fields; UI list sorted by `CitationOrder` is independent of prompt string order.
+  - [x] **Task 2.1.4**: Expose nested `ZVec` and `ZVecVectorStore` options in `ZVecRagOptions` (`MaxConcurrentNativeCalls = Environment.ProcessorCount`, `LogLevel`). On pipeline init, wrap `ZVecEmbedderMismatchException` as `ZVecRagInitializationException` with explicit remediation: delete storage at `{path}`, use a different `StoragePath`, or run `IRagMigrationManager`. Add XML documentation and execution sequence diagrams.
 - [ ] **Story 2.2: Document Ingestion, Deduplication & Tokenizer Alignment** (Owner: `zvec-rag-pipeline-expert`)
   - **Task 2.2.1 (TDD)**: Write unit tests for `RagIngestor` covering plain text and Markdown chunking (`TokenTextChunker`, `MarkdownHeadingChunker`, `SentenceTextChunker`), cancellation mid-ingest, and channel backpressure with a synchronous fake chunker yielding 10k chunks. **No** PDF/HTML in core tests (those live in `ZVec.Rag.Pdf`). **Reject** `Task.Run` wrapper — chunker output must flow through bounded `System.Threading.Channels`.
   - **Task 2.2.2**: Implement `IngestOptions` with `OnDuplicate = DuplicateMode.Replace | Append | Skip`. For `Replace`, delete existing document chunks (`SourceDoc == documentId`) before inserting new chunks.
@@ -242,8 +244,8 @@ ZVec.NET-RAG.slnx
   - **Task 2.3.2**: Implement `RagChunk` record (`Text`, `Citations`, `IsFinal`, `Usage`) and `Citation` record (`SourceDoc`, `SourceUri`, `SourceHash`, `Page`, `Offset`, `ChunkIndex`, `ChunkId`, `RankScore`, `DenseScore`, `FtsScore`). Default hybrid search reranking to `ZVecRrfReranker`. Expand `CitationOrder` enum (`ScoreDescending`, `ChunkOrderAscending`, `SourceDocThenChunkOrder`, `PageAscending`, `None`). `RagChunk.Citations` is always sorted by `CitationOrder` for UI — independent of `ContextPacker` prompt permutation (see Task 2.1.3). **Deferred (D-2):** `ICrossEncoderReranker` / `LlmReranker` ONNX cross-encoder reranking is post-v1.1; default hybrid fusion remains `ZVecRrfReranker` until explicitly tasked.
   - **Task 2.3.3**: Implement ASP.NET Core SSE endpoint helper `app.MapRagSseEndpoint(...)` using `Response.BodyWriter.FlushAsync()` for real-time unbuffered web streaming. **Must** pass `HttpContext.RequestAborted` (linked) as the `CancellationToken` to `generator.AskAsync(...)` so client disconnect cancels LLM generation. Integration test with `WebApplicationFactory`: start SSE stream, disconnect mid-stream, assert `FakeChatClient` received cancellation and no further tokens were requested.
 - [ ] **Story 2.4: Standalone `ZVec.Rag.Testing` Package & CI Fakes** (Owner: `zvec-rag-pipeline-expert`, `zvec-architect-strategy-expert`)
-  - **Task 2.4.1 (TDD)**: Create `src/ZVec.Rag.Testing/ZVec.Rag.Testing.csproj` NuGet package containing `DeterministicEmbedder` (random hash for pipeline unit tests), `SemanticTestEmbedder` (LSH for semantic ordering tests), and `FakeChatClient`.
-  - **Task 2.4.2**: Implement `FakeChatClient` supporting both non-streaming (`GetResponseAsync`) and streaming (`GetStreamingResponseAsync`) execution paths with configurable token sequences and sentinel final chunks.
+  - [x] **Task 2.4.1 (TDD)**: Create `src/ZVec.Rag.Testing/ZVec.Rag.Testing.csproj` NuGet package containing `DeterministicEmbedder` (random hash for pipeline unit tests), `SemanticTestEmbedder` (LSH for semantic ordering tests), and `FakeChatClient`.
+  - [x] **Task 2.4.2**: Implement `FakeChatClient` supporting both non-streaming (`GetResponseAsync`) and streaming (`GetStreamingResponseAsync`) execution paths with configurable token sequences and sentinel final chunks.
   - **Task 2.4.3**: Add snapshot test suite using `Verify.Xunit` with named snapshots (`Verify(snapshotName: "cl100k-nomic-v1")`) for prompt formatting and citation outputs.
 - [ ] **Story 2.5: Multi-Package README Governance & Cross-Navigation** (Owner: `zvec-architect-strategy-expert`, `zvec-code-reviewer-expert`)
   - **Task 2.5.1**: Create dedicated package `README.md` files in `src/ZVec.Extensions.VectorData/`, `src/ZVec.Rag/`, `src/ZVec.Rag.Testing/`, `src/ZVec.Rag.LLamaSharp/`, `src/ZVec.Rag.ONNX/`, `src/ZVec.Rag.Template/`.
@@ -304,6 +306,6 @@ ZVec.NET-RAG.slnx
 | **VectorData Conformance** | Contract Conformance | M.E.VectorData Conformance | 100% contract compliance |
 | **Source Generator** | CodeGen Unit Test | Roslyn Test Kit | 0 runtime reflection |
 | **Native AOT & Trim** | Static & Publish Audit | `ZVec.AotTestApp` (connector) + `ZVec.Rag.AotTestApp` (Phase 2 pipeline) | 0 warnings (`IL2026`, `IL3050`) |
-| **RAG Pipeline** | Deterministic / Snapshot | Verify.Xunit + Fakes | <100ms CI execution |
+| **RAG Pipeline** | Unit / Integration | `tests/ZVec.Rag.Tests` + `ZVec.Rag.Testing` fakes | 20 tests; real ZVec ingest/retrieve/ask |
 | **Memory Hot Path** | Benchmark & Allocations | BenchmarkDotNet | <7 KB per 10k vector query |
 | **Documentation** | Wiki Build & Link Check | MkDocs Material | 100% synced wiki pages |

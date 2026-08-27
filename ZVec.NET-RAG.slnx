@@ -3,12 +3,15 @@
     <Project Path="src/ZVec.Extensions.VectorData.Analyzers/ZVec.Extensions.VectorData.Analyzers.csproj" />
     <Project Path="src/ZVec.Extensions.VectorData.SourceGenerator/ZVec.Extensions.VectorData.SourceGenerator.csproj" />
     <Project Path="src/ZVec.Extensions.VectorData/ZVec.Extensions.VectorData.csproj" />
+    <Project Path="src/ZVec.Rag/ZVec.Rag.csproj" />
+    <Project Path="src/ZVec.Rag.Testing/ZVec.Rag.Testing.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/ZVec.AotTestApp/ZVec.AotTestApp.csproj" />
     <Project Path="tests/ZVec.Extensions.VectorData.ConformanceTests/ZVec.Extensions.VectorData.ConformanceTests.csproj" />
     <Project Path="tests/ZVec.Extensions.VectorData.SourceGenerator.Tests/ZVec.Extensions.VectorData.SourceGenerator.Tests.csproj" />
     <Project Path="tests/ZVec.Extensions.VectorData.Tests/ZVec.Extensions.VectorData.Tests.csproj" />
+    <Project Path="tests/ZVec.Rag.Tests/ZVec.Rag.Tests.csproj" />
   </Folder>
   <Folder Name="/samples/">
     <Project Path="samples/ZVec.Rag.Console/ZVec.Rag.Console.csproj" />
