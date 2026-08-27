@@ -56,6 +56,48 @@ jobs:
             exit 1
           fi
 
+      - name: Plan Alignment Check
+        run: python3 .agents/gaps/plan_alignment_check.py
+
+      - name: Pack Shipping NuGet Packages
+        run: |
+          dotnet pack src/ZVec.Extensions.VectorData/ZVec.Extensions.VectorData.csproj -c Release --no-build
+          dotnet pack src/ZVec.Rag/ZVec.Rag.csproj -c Release --no-build
+          dotnet pack src/ZVec.Rag.Testing/ZVec.Rag.Testing.csproj -c Release --no-build
+
+  rag-aot-smoke:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            rid: linux-x64
+          - os: windows-latest
+            rid: win-x64
+          - os: macos-latest
+            rid: osx-x64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Publish RAG AOT Harness
+        run: dotnet publish tests/ZVec.Rag.AotTestApp/ZVec.Rag.AotTestApp.csproj -c Release -r ${{ matrix.rid }} /p:PublishAot=true
+
+      - name: Run RAG AOT Harness
+        shell: bash
+        run: |
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            ./tests/ZVec.Rag.AotTestApp/bin/Release/net8.0/${{ matrix.rid }}/publish/ZVec.Rag.AotTestApp.exe
+          else
+            ./tests/ZVec.Rag.AotTestApp/bin/Release/net8.0/${{ matrix.rid }}/publish/ZVec.Rag.AotTestApp
+          fi
+
   aot-smoke:
     strategy:
       fail-fast: false

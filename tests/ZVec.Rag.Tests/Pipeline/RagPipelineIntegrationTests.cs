@@ -57,6 +57,37 @@ public sealed class RagPipelineIntegrationTests
     }
 
     [Fact]
+    public async Task AskAsync_IncludesConversationHistory_InChatMessages()
+    {
+        string storagePath = RagTestHarness.CreateTempStoragePath();
+        var chat = new FakeChatClient("Answer", " token");
+        await using var provider = RagTestHarness.CreateServiceProvider(storagePath, chatClient: chat);
+        using var scope = provider.CreateScope();
+        var pipeline = scope.ServiceProvider.GetRequiredService<IRagPipeline>();
+
+        await pipeline.IngestTextAsync(
+            "ZVec stores vectors locally.",
+            "history-doc",
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        var history = new List<Microsoft.Extensions.AI.ChatMessage>
+        {
+            new(Microsoft.Extensions.AI.ChatRole.User, "Earlier question"),
+            new(Microsoft.Extensions.AI.ChatRole.Assistant, "Earlier answer")
+        };
+
+        await foreach (var _ in pipeline.AskAsync(
+            "What stores vectors?",
+            history,
+            cancellationToken: TestContext.Current.CancellationToken))
+        {
+        }
+
+        Assert.Contains(chat.LastStreamingMessages, m => m.Role == Microsoft.Extensions.AI.ChatRole.User && m.Text == "Earlier question");
+        Assert.Contains(chat.LastStreamingMessages, m => m.Role == Microsoft.Extensions.AI.ChatRole.Assistant && m.Text == "Earlier answer");
+    }
+
+    [Fact]
     public async Task AskAsync_StreamsFakeChatTokens_WithCitations()
     {
         string storagePath = RagTestHarness.CreateTempStoragePath();

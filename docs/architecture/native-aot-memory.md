@@ -21,7 +21,7 @@ This prevents managed heap array allocations (`float[]`) and ensures zero GC pre
 > **Implementation Status Banner — Story 1.10 & Connector AOT CI (Phase 0)**:
 > - **Story 1.10**: `ZVecFilterExpressionVisitor` uses an AOT-safe recursive AST evaluator eliminating `Expression.Compile().DynamicInvoke()`.
 > - **Connector AOT CI (not Story 1.11 embedder stamp):** Local dev-loop smoke testing (`win-x64`, `linux-x64`) and GitHub Actions quality gate (`.github/workflows/quality-gate.yml`) run AOT publish smoke on the **3 desktop RIDs** (`linux-x64`, `win-x64`, `osx-x64`) with trim-warning verification for non-source-generated record types. Mobile RIDs (`linux-arm64`, `osx-arm64`, `ios-arm64`, `iossimulator-arm64`, `android-*`) are covered by the upstream `ZVec.NET` package CI, not this repo's connector CI.
-> - **Story 1.11 (embedder stamp manifest)** is a separate upcoming connector story — see `project_tasks_implementation_plan.md`. Do not conflate with Epic 1.11 (InMemory migration wiki).
+> - **Story 1.11 (embedder stamp manifest)** is implemented in the connector (`ZVecIndexManifestManager`); Epic 1.11 in the project plan is the InMemory migration wiki — see `docs/guides/migration-from-inmemory.md`.
 
 ---
 

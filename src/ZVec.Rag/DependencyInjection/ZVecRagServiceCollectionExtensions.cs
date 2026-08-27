@@ -6,6 +6,7 @@ using ZVec.Rag.Ingestion;
 using ZVec.Rag.Internal;
 using ZVec.Rag.Options;
 using ZVec.Rag.Retrieval;
+using ZVec.Rag.Security;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
@@ -56,6 +57,7 @@ public static class ZVecRagServiceCollectionExtensions
         services.TryAddSingleton<ZVecTokenizerResolver>();
         services.TryAddSingleton<IRagDocumentReader, PlainTextDocumentReader>();
         services.TryAddSingleton<ZVecTextChunkerRegistry>();
+        services.TryAddSingleton<IRagSecuritySanitizer, DefaultRagSecuritySanitizer>();
 
         services.TryAddScoped<RagCollectionProvider>();
         services.TryAddScoped<ContextPacker>();

@@ -29,6 +29,8 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <PackageReference Include="Verify" />
+    <PackageReference Include="Verify.XunitV3" />
     <PackageReference Include="Microsoft.ML.Tokenizers.Data.Cl100kBase" />
   </ItemGroup>
 

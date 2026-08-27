@@ -2,13 +2,14 @@
 
 `ZVec.Rag` provides a batteries-included RAG orchestration layer (`IRagPipeline`, `IRagIngestor`, `IRagRetriever`, `IRagGenerator`) built on top of Microsoft AI ecosystem primitives:
 
-> **Status:** Stories 2.1–2.3 shipped (Channels ACL, `OptimizeAsync`, `CitationOrder`, `MapRagSseEndpoint`). Stories 2.4.3–2.8 (Verify snapshots, evaluation, pipeline AOT) remain planned.
-```text
-┌─────────────────────────┐    ┌─────────────────────────┐    ┌─────────────────────────┐    ┌─────────────────────────┐
-│   1. Document Reader    │ -> │    2. Text Chunker      │ -> │  3. Vector Embedder     │ -> │  4. Persistent Store    │
-│  (MD / TXT in core;     │    │ (Token / Markdown AST / │    │ (IEmbeddingGenerator<   │    │(ZVec.VectorData +       │
-│   PDF via ZVec.Rag.Pdf) │    │  Sentence / Sliding)    │    │    string, Embedding>)  │    │     ZVec FTS Index)     │
-└─────────────────────────┘    └─────────────────────────┘    └─────────────────────────┘    └─────────────────────────┘
+> **Status:** Stories 2.1–2.3 and 2.6 shipped (Channels ACL, `OptimizeAsync`, `CitationOrder`, `MapRagSseEndpoint`, `IRagSecuritySanitizer`). Stories 2.4.3–2.8 (Verify snapshots, evaluation, pipeline AOT gate closure) remain planned.
+```mermaid
+flowchart LR
+  reader["1. Document Reader\nMD / TXT in core\nPDF via ZVec.Rag.Pdf"]
+  chunker["2. Text Chunker\nToken / Markdown AST / Sentence / Sliding"]
+  embedder["3. Vector Embedder\nIEmbeddingGenerator string Embedding"]
+  store["4. Persistent Store\nZVec.VectorData + ZVec FTS Index"]
+  reader --> chunker --> embedder --> store
 ```
 
 ---
@@ -49,7 +50,7 @@ Ingestion is transparently divided into four distinct, pluggable stages (ZVec-ow
 1. **Ingestion Anti-Corruption Layer**: Split into `IRagDocumentReader` (format parsing) and `IZVecTextChunker` (chunking via `Microsoft.ML.Tokenizers`). Core `ZVec.Rag` ships text/md only; PDF via optional `ZVec.Rag.Pdf`. SSE helpers (`MapRagSseEndpoint`) require `FrameworkReference` `Microsoft.AspNetCore.App` on `ZVec.Rag` (isolated in `Streaming/` with trim annotations; Story 2.7 console AOT does not claim SSE).
 2. **Embedder Stamp Manifest (`zvec_index_manifest.json`)**: On index creation, `ZVecIndexManifestManager` writes a manifest recording `ModelId`, `Dimensions`, `QuantizeType`, embedding storage dtype, and timestamp. Writes use atomic `*.tmp` + `File.Replace`. Startup validation throws `ZVecEmbedderMismatchException` on model/quantize mismatch; `ZVecManifestException` (`Missing` / `Corrupt`) when the collection exists but the manifest does not. `ZVec.Rag` init (Task 2.1.4) wraps mismatch as `ZVecRagInitializationException` with remediation: delete storage, use a new `StoragePath`, or run `IRagMigrationManager`.
 3. **Embedding Migration Manager (`IRagMigrationManager`)**: Automates background re-indexing when embedding models or dimensions change, performing shadow collection builds and atomic index swaps.
-4. **Security Threat Model & Prompt Isolation (`IRagSecuritySanitizer`)**: Ingested/retrieved chunks pass through `IRagSecuritySanitizer` before prompt composition. Uses query validation, chunk filtering, and explicit XML context isolation tags (`<retrieved_context>...</retrieved_context>`) to eliminate prompt injection risks.
+4. **Security Threat Model & Prompt Isolation (`IRagSecuritySanitizer`, Story 2.6)**: Retrieved chunks are sanitized at retrieve/pack time (delimiter/chunk-marker escape). `RagGenerator` places trusted policy in `ChatRole.System` only; `<retrieved_context>` lives in a separate `ChatRole.User` message. Does not eliminate all prompt injection — see `security-threat-model.md`.
 
 ---
 

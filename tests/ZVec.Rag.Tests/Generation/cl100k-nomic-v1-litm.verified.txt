@@ -1,0 +1,12 @@
+<retrieved_context>
+[chunk id="litm-chunk-0"]
+Litm chunk body 0.
+[chunk id="litm-chunk-2"]
+Litm chunk body 2.
+[chunk id="litm-chunk-4"]
+Litm chunk body 4.
+[chunk id="litm-chunk-3"]
+Litm chunk body 3.
+[chunk id="litm-chunk-1"]
+Litm chunk body 1.
+</retrieved_context>

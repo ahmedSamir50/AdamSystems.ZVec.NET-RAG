@@ -49,6 +49,14 @@ public sealed class IngestionChannelPumpTests
             channel.Writer,
             cts.Token);
 
+        // Channel should reach capacity before the consumer drains it (backpressure).
+        for (int i = 0; i < 50 && channel.Reader.Count < ZVecRagConstants.ParseChannelCapacity; i++)
+        {
+            await Task.Delay(1, cts.Token);
+        }
+
+        Assert.Equal(ZVecRagConstants.ParseChannelCapacity, channel.Reader.Count);
+
         int readCount = 0;
         while (!pumpTask.IsCompleted)
         {

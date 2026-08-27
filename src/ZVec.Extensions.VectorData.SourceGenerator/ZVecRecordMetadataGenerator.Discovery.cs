@@ -70,6 +70,8 @@ public sealed partial class ZVecRecordMetadataGenerator
         int vectorDimensions = 0;
         bool isFullTextIndexed = false;
         bool isIndexed = false;
+        string? indexKind = null;
+        string? distanceFunctionValue = null;
 
         foreach (var named in attribute.NamedArguments)
         {
@@ -86,6 +88,15 @@ public sealed partial class ZVecRecordMetadataGenerator
             else if (named.Key == GeneratorMetadataNames.IsIndexedArgument && named.Value.Value is bool indexed)
             {
                 isIndexed = indexed;
+            }
+            else if (named.Key == GeneratorMetadataNames.IndexKindArgument && named.Value.Value != null)
+            {
+                indexKind = named.Value.Value.ToString();
+            }
+            else if (named.Key == GeneratorMetadataNames.DistanceFunctionArgument &&
+                     named.Value.Value is string distanceFunction)
+            {
+                distanceFunctionValue = distanceFunction;
             }
         }
 
@@ -119,7 +130,9 @@ public sealed partial class ZVecRecordMetadataGenerator
             property.Type.SpecialType,
             vectorDimensions,
             isFullTextIndexed,
-            isIndexed);
+            isIndexed,
+            indexKind,
+            distanceFunctionValue);
     }
 
     private readonly struct PropertyModel
@@ -131,7 +144,9 @@ public sealed partial class ZVecRecordMetadataGenerator
             SpecialType specialType,
             int vectorDimensions,
             bool isFullTextIndexed,
-            bool isIndexed)
+            bool isIndexed,
+            string? indexKind,
+            string? distanceFunctionValue)
         {
             Name = name;
             StorageName = storageName;
@@ -140,6 +155,8 @@ public sealed partial class ZVecRecordMetadataGenerator
             VectorDimensions = vectorDimensions;
             IsFullTextIndexed = isFullTextIndexed;
             IsIndexed = isIndexed;
+            IndexKind = indexKind;
+            DistanceFunctionValue = distanceFunctionValue;
         }
 
         public string Name { get; }
@@ -149,6 +166,8 @@ public sealed partial class ZVecRecordMetadataGenerator
         public int VectorDimensions { get; }
         public bool IsFullTextIndexed { get; }
         public bool IsIndexed { get; }
+        public string? IndexKind { get; }
+        public string? DistanceFunctionValue { get; }
     }
 
     private readonly struct RecordModel

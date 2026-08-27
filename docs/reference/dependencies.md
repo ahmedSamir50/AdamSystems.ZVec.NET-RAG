@@ -5,8 +5,8 @@ This document tracks upstream Microsoft ecosystem packages, community signals, a
 ---
 
 > [!NOTE]
-> **Implementation Status Banner — Story 2.4 Complete**:
-> Roslyn SDK is pinned to `Microsoft.CodeAnalysis.CSharp` `4.12.0` (matching .NET 9 SDK wave) and `Microsoft.Extensions.VectorData.Abstractions` `10.9.0` in CPM.
+> **Implementation Status Banner — Story 2.4 (partial)**:
+> `DeterministicEmbedder` and `FakeChatClient` ship in `ZVec.Rag.Testing`. `SemanticTestEmbedder` / `IRagEvaluator` remain Story 2.8. Roslyn SDK is pinned to `Microsoft.CodeAnalysis.CSharp` `4.12.0` (matching .NET 9 SDK wave) and `Microsoft.Extensions.VectorData.Abstractions` `10.9.0` in CPM.
 
 ---
 

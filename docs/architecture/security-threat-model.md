@@ -1,8 +1,7 @@
 # RAG Security Threat Model & Prompt Injection Sanitizer
 
-> **Status:** Planned for Phase 2 (Story 2.6 — Threat Model & Security Prompt Injection Filter).
-> The `IRagSecuritySanitizer` interface and `DefaultRagSecuritySanitizer` implementation
-> described in this document are not yet implemented. This document specifies the design.
+> **Status:** Shipped in Story 2.6 — `IRagSecuritySanitizer`, `DefaultRagSecuritySanitizer`, and prompt isolation in `RagGenerator` (retrieved context in `ChatRole.User`, trusted policy in `ChatRole.System` only).
+> Residual risk: homoglyphs, split-across-chunks attacks, and multilingual jailbreaks are **mitigated, not eliminated**.
 
 ## Overview
 
@@ -36,7 +35,7 @@ sequenceDiagram
 
     Attacker->>FileSystem: Injects hidden instruction in PDF text
     FileSystem->>Ingestor: Ingest & Chunk Document
-    Ingestor->>Sanitizer: SanitizeChunk(chunkText)
+    Ingestor->>Sanitizer: SanitizeChunk(chunkText) at retrieve/pack
     Sanitizer-->>Ingestor: Cleaned Text Chunk (Directives Escaped)
     Ingestor->>VectorDB: Upsert Vector + Chunk
     Note over VectorDB,LLM: Query Execution Stage

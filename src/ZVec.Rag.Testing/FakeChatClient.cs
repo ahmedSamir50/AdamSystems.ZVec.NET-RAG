@@ -33,6 +33,9 @@ public sealed class FakeChatClient : IChatClient
     /// <summary>Gets whether the last streaming call received a canceled token.</summary>
     public bool LastStreamingCallWasCanceled { get; private set; }
 
+    /// <summary>Gets messages from the last streaming call.</summary>
+    public IReadOnlyList<ChatMessage> LastStreamingMessages { get; private set; } = Array.Empty<ChatMessage>();
+
     /// <inheritdoc />
     public ChatClientMetadata Metadata { get; } = new("fake-chat-client");
 
@@ -61,6 +64,7 @@ public sealed class FakeChatClient : IChatClient
     {
         StreamingCallCount++;
         TokensYielded = 0;
+        LastStreamingMessages = messages.ToList();
 
         for (int i = 0; i < _tokens.Count; i++)
         {
@@ -72,7 +76,15 @@ public sealed class FakeChatClient : IChatClient
 
             if (_delayPerToken > TimeSpan.Zero)
             {
-                await Task.Delay(_delayPerToken, cancellationToken).ConfigureAwait(false);
+                try
+                {
+                    await Task.Delay(_delayPerToken, cancellationToken).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException)
+                {
+                    LastStreamingCallWasCanceled = true;
+                    throw;
+                }
             }
 
             bool isLast = i == _tokens.Count - 1;

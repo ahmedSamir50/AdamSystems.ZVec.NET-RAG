@@ -31,7 +31,7 @@ public sealed class SampleGeneratorRecord
 /// correctly exposes all annotated properties with the expected attribute metadata.
 /// This complements the Roslyn SG tests in SourceGenerator.Tests that validate generator output.
 /// </summary>
-public sealed class ZVecRecordMetadataGeneratorTests
+public sealed class SampleGeneratorRecordAttributeTests
 {
     [Fact]
     public void SampleGeneratorRecord_HasAllExpectedVectorStoreAttributes()

@@ -583,7 +583,7 @@ public sealed class ZVecFilterExpressionVisitorTests
     /// Verifies that comparing a property to null translates to an IS NULL check.
     /// </summary>
     [Fact]
-    public void Translate_IsNullComparison_ReturnsIsNotNullFilterString()
+    public void Translate_IsNullComparison_ReturnsIsNullFilterString()
     {
         Expression<Func<FilterTestRecord, bool>> filter = x => x.Category == null;
         var result = ZVecFilterExpressionVisitor.Translate(filter);

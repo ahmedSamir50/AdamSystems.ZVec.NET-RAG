@@ -23,17 +23,34 @@ public sealed partial class ZVecVectorizableRecordCollection<TRecord, TKey>
     }
 
     /// <summary>
-    /// Resolves the metric type for the primary dense vector index.
+    /// Resolves the metric type for the primary dense vector index from the reflection type model
+    /// or the source-generated / definition schema (cached after first resolution).
     /// </summary>
     private ZVecMetricType ResolveDenseMetricType()
     {
-        var indexParam = _typeModel?.Vectors.FirstOrDefault()?.IndexParam;
-        if (indexParam is ZVecHnswIndexParam hnsw)
+        if (_typeModel?.Vectors.FirstOrDefault()?.IndexParam is ZVecHnswIndexParam hnswFromModel)
         {
-            return hnsw.MetricType;
+            return hnswFromModel.MetricType;
+        }
+
+        if (TryGetCachedDenseIndexParam() is ZVecHnswIndexParam hnswFromSchema)
+        {
+            return hnswFromSchema.MetricType;
         }
 
         return ZVecMetricType.Cosine;
+    }
+
+    private ZVecIndexParam? TryGetCachedDenseIndexParam()
+    {
+        if (_cachedDenseIndexParam != null)
+        {
+            return _cachedDenseIndexParam;
+        }
+
+        var schema = BuildCollectionSchema();
+        _cachedDenseIndexParam = schema.Vectors.FirstOrDefault(v => v.Dimension > 0)?.IndexParam;
+        return _cachedDenseIndexParam;
     }
 
     [RequiresUnreferencedCode("Source generated mappers should be used for Native AOT. Reflection fallback may be trimmed.")]

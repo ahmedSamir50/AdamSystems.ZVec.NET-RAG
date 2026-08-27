@@ -49,6 +49,9 @@ jobs:
           fi
           exit $exit_code
 
+      - name: Plan Alignment Check
+        run: python3 .agents/gaps/plan_alignment_check.py
+
       - name: Upload Gap Report
         if: always()
         uses: actions/upload-artifact@v4

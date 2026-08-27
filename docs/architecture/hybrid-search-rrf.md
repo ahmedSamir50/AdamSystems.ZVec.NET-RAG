@@ -30,7 +30,7 @@ var options = new ZVecHybridSearchOptions<MyRecord>
 await foreach (var hit in hybrid.HybridSearchAsync(
     queryVector, keywords: new[] { "vector database" }, top: 10, options, ct))
 {
-    // Score is normalized: Cosine => 1.0f - distance
+    // Score is raw RRF rank fusion (1/(k+rank)); not cosine-normalized dense distance
     Console.WriteLine($"{hit.Record.Id} score={hit.Score}");
 }
 ```

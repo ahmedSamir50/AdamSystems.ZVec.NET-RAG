@@ -1,0 +1,8 @@
+<retrieved_context>
+[chunk id="nomic-chunk-aaa"]
+Nomic embed text teaches local-first RAG.
+[chunk id="nomic-chunk-bbb"]
+ZVec stores vectors with hybrid FTS.
+[chunk id="nomic-chunk-ccc"]
+Microsoft.Extensions.AI supplies IChatClient.
+</retrieved_context>

@@ -45,6 +45,17 @@ public sealed class ZVecVectorIndexResolverTests
     }
 
     [Fact]
+    public void ResolveMetricType_ReturnsL2_WhenDistanceFunctionIsEuclidean()
+    {
+        var vectorProperty = new VectorStoreVectorProperty("Embedding", typeof(ReadOnlyMemory<float>), 4)
+        {
+            DistanceFunction = DistanceFunction.EuclideanDistance
+        };
+
+        Assert.Equal(ZVecMetricType.L2, ZVecVectorIndexResolver.ResolveMetricType(vectorProperty));
+    }
+
+    [Fact]
     public void ApplyStoreVectorOptions_SetsHnswQuantizeType_WhenDefaultConfigured()
     {
         var schema = new ZVecCollectionSchema

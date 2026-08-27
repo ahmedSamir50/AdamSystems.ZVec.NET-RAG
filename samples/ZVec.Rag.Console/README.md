@@ -27,13 +27,15 @@ dotnet run --project samples/ZVec.Rag.Console/ZVec.Rag.Console.csproj
 
 ## Architecture
 
-```
-Program.Main
-  ├── Initialize ZVecVectorStore (local disk)
-  ├── Upsert 4 RagDocumentChunk records (mocked embeddings)
-  ├── Vectorized search (top 2)
-  ├── Filtered vector search (hybrid: vector + LINQ filter)
-  └── Cleanup
+```mermaid
+flowchart TD
+  main["Program.Main"]
+  init["Initialize ZVecVectorStore local disk"]
+  upsert["Upsert 4 RagDocumentChunk records mocked embeddings"]
+  search["Vectorized search top 2"]
+  filter["Filtered vector search hybrid vector + LINQ filter"]
+  cleanup["Cleanup"]
+  main --> init --> upsert --> search --> filter --> cleanup
 ```
 
 ## Record schema

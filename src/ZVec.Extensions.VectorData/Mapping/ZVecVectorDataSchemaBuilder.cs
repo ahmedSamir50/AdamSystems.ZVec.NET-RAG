@@ -33,12 +33,11 @@ public static class ZVecVectorDataSchemaBuilder
             switch (property)
             {
                 case VectorStoreVectorProperty vectorProperty:
-                    var quantizeType = ZVecVectorIndexResolver.ResolveQuantizeType(vectorProperty, options);
                     builder.AddVector(
                         ResolveStorageName(vectorProperty, vectorProperty.Name),
                         ZVecVectorIndexResolver.ResolveVectorDataType(vectorProperty.EmbeddingType),
                         vectorProperty.Dimensions,
-                        ZVecVectorIndexResolver.CreateHnswIndexParam(quantizeType));
+                        ZVecVectorIndexResolver.CreateHnswIndexParam(vectorProperty, options));
                     break;
 
                 case VectorStoreDataProperty dataProperty:

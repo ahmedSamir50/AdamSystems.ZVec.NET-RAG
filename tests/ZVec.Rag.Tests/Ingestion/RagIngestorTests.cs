@@ -49,6 +49,33 @@ public sealed class RagIngestorTests
     }
 
     [Fact]
+    public async Task IngestTextAsync_OnDuplicateAppend_ContinuesChunkIndexFromMaxPlusOne()
+    {
+        string storagePath = RagTestHarness.CreateTempStoragePath();
+        await using var provider = RagTestHarness.CreateServiceProvider(storagePath);
+        using var scope = provider.CreateScope();
+        var ingestor = scope.ServiceProvider.GetRequiredService<IRagIngestor>();
+
+        var first = await ingestor.IngestTextAsync("first batch", "doc-append", cancellationToken: TestContext.Current.CancellationToken);
+        Assert.Equal(1, first.ChunksIngested);
+
+        var appended = await ingestor.IngestTextAsync(
+            "second batch",
+            "doc-append",
+            new IngestOptions { OnDuplicate = DuplicateMode.Append },
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(1, appended.ChunksIngested);
+        Assert.NotEqual(first.ChunkIds[0], appended.ChunkIds[0]);
+
+        string expectedSecondId = ZVecChunkIdGenerator.Compute(
+            "doc-append",
+            ZVecChunkIdGenerator.DefaultStrategyId,
+            1);
+        Assert.Equal(expectedSecondId, appended.ChunkIds[0]);
+    }
+
+    [Fact]
     public async Task IngestTextAsync_OnDuplicateSkip_ReturnsZeroChunks()
     {
         string storagePath = RagTestHarness.CreateTempStoragePath();

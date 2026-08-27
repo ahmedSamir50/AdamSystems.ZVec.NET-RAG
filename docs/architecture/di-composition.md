@@ -8,20 +8,32 @@ This document details the Dependency Injection (DI) composition hierarchy, regis
 
 `AddZVecRag` serves as the top-level composition entry point. It configures and registers `ZVec.Extensions.VectorData` (`AddZVecVectorStore`) and `ZVec.NET` engine services (`AddZVec`) idempotently if they have not already been pre-registered.
 
-```
-AddZVecRag(opts => { ... })
-  ├── Idempotently calls AddZVecVectorStore(opts.VectorStore)
-  │     └── Idempotently calls AddZVec(opts.ZVec)
-  │           └── Registers IZvecFactory (Singleton)
-  │     └── Registers IVectorStore (Singleton)
-  │     └── Registers IVectorStoreRecordCollection<TKey, TRecord> (Singleton)
-  ├── Registers ZVecTokenizerResolver, PlainTextDocumentReader, ZVecTextChunkerRegistry (Singleton)
-  ├── Optional: AddTokenChunker / AddMarkdownChunker / AddSentenceChunker (Singleton enumerable IZVecTextChunker)
-  ├── Registers RagCollectionProvider (Scoped — releases native handle on scope dispose)
-  ├── Registers IRagIngestor (Scoped)
-  ├── Registers IRagRetriever (Scoped)
-  ├── Registers IRagGenerator (Scoped)
-  └── Registers IRagPipeline (Scoped, Composite Facade)
+```mermaid
+flowchart TD
+  addRag["AddZVecRag opts"]
+  addVS["AddZVecVectorStore Singleton\nidempotent"]
+  addZvec["AddZVec Singleton\nidempotent"]
+  factory["IZvecFactory Singleton"]
+  ivectorstore["IVectorStore Singleton"]
+  recordCollection["IVectorStoreRecordCollection TKey TRecord Singleton"]
+  singletons["ZVecTokenizerResolver PlainTextDocumentReader ZVecTextChunkerRegistry Singleton"]
+  chunkers["AddTokenChunker AddMarkdownChunker AddSentenceChunker Singleton IZVecTextChunker"]
+  collectionProvider["RagCollectionProvider Scoped\nreleases native handle on scope dispose"]
+  ingestor["IRagIngestor Scoped"]
+  retriever["IRagRetriever Scoped"]
+  generator["IRagGenerator Scoped"]
+  pipeline["IRagPipeline Scoped Composite Facade"]
+  addRag --> addVS
+  addVS --> addZvec --> factory
+  addVS --> ivectorstore
+  addVS --> recordCollection
+  addRag --> singletons
+  addRag --> chunkers
+  addRag --> collectionProvider
+  addRag --> ingestor
+  addRag --> retriever
+  addRag --> generator
+  addRag --> pipeline
 ```
 
 ### Chunker registration

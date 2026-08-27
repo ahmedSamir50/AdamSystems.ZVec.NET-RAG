@@ -44,6 +44,7 @@ public sealed partial class ZVecVectorizableRecordCollection<TRecord, TKey> :
     private readonly ZVecVectorStoreOptions _options;
     private readonly ZVecTypeModel? _typeModel;
     private readonly IZVecRecordMapper<TRecord>? _mapper;
+    private ZVecIndexParam? _cachedDenseIndexParam;
     private IZvecCollection? _nativeCollection;
     private readonly object _initLock = new();
 

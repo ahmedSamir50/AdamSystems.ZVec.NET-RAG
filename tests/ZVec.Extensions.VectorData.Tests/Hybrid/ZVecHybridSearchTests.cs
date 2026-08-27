@@ -32,6 +32,28 @@ public sealed class SampleHybridRecord
 }
 
 /// <summary>
+/// Hybrid record with two FTS-indexed string fields for AdditionalProperty override tests.
+/// </summary>
+public sealed class DualFieldHybridRecord
+{
+    [ZVecId]
+    [VectorStoreKey]
+    public string Id { get; set; } = string.Empty;
+
+    [ZVecField]
+    [VectorStoreData(IsIndexed = true, IsFullTextIndexed = true)]
+    public string Headline { get; set; } = string.Empty;
+
+    [ZVecField]
+    [VectorStoreData(IsIndexed = true, IsFullTextIndexed = true)]
+    public string Body { get; set; } = string.Empty;
+
+    [ZVecVector(768)]
+    [VectorStoreVector(768)]
+    public ReadOnlyMemory<float> Vector { get; set; }
+}
+
+/// <summary>
 /// TDD Unit tests verifying IKeywordHybridSearchable implementation in ZVecVectorizableRecordCollection.
 /// All tests use isolated temp directories and round-trip real data — no stubs.
 /// </summary>
@@ -245,21 +267,18 @@ public sealed class ZVecHybridSearchTests
 
             await collection.UpsertAsync(new[]
             {
-                new SampleHybridRecord { Id = "doc1", Content = "hybrid keyword ranking", Vector = CreateVector(1.0f) }
+                new SampleHybridRecord { Id = "doc1", Content = "hybrid keyword alpha", Vector = CreateVector(1.0f) },
+                new SampleHybridRecord { Id = "doc2", Content = "hybrid keyword beta", Vector = CreateVector(0.9f) },
+                new SampleHybridRecord { Id = "doc3", Content = "hybrid keyword gamma", Vector = CreateVector(0.8f) }
             }, TestContext.Current.CancellationToken);
 
-            var hybridOptions = new ZVecHybridSearchOptions<SampleHybridRecord> { RrfK = 42 };
+            var resultsK60 = await RunHybridSearchAsync(collection, 60);
+            var resultsK10 = await RunHybridSearchAsync(collection, 10);
 
-            var results = new List<VectorSearchResult<SampleHybridRecord>>();
-            IKeywordHybridSearchable<SampleHybridRecord> hybrid = collection;
-            await foreach (var res in hybrid.HybridSearchAsync(
-                CreateVector(0.9f), new[] { "keyword" }, 5, hybridOptions, TestContext.Current.CancellationToken))
-            {
-                results.Add(res);
-            }
-
-            Assert.NotEmpty(results);
-            Assert.Equal("doc1", results[0].Record.Id);
+            Assert.NotEmpty(resultsK60);
+            Assert.NotEmpty(resultsK10);
+            Assert.Equal(resultsK60[0].Record.Id, resultsK10[0].Record.Id);
+            Assert.NotEqual(resultsK60[0].Score, resultsK10[0].Score);
 
             await collection.EnsureCollectionDeletedAsync(TestContext.Current.CancellationToken);
         }
@@ -284,29 +303,38 @@ public sealed class ZVecHybridSearchTests
             factory.Initialize();
 
             string colName = "hybrid_fts_override_" + Guid.NewGuid().ToString("N")[..8];
-            var collection = new ZVecVectorizableRecordCollection<SampleHybridRecord, string>(factory, options, colName);
+            var collection = new ZVecVectorizableRecordCollection<DualFieldHybridRecord, string>(factory, options, colName);
             await collection.EnsureCollectionExistsAsync(TestContext.Current.CancellationToken);
 
             await collection.UpsertAsync(new[]
             {
-                new SampleHybridRecord { Id = "doc1", Content = "override keyword match", Category = "a", Vector = CreateVector(1.0f) }
+                new DualFieldHybridRecord
+                {
+                    Id = "headline-hit",
+                    Headline = "override keyword in headline",
+                    Body = "unrelated body text",
+                    Vector = CreateVector(0.5f)
+                },
+                new DualFieldHybridRecord
+                {
+                    Id = "body-hit",
+                    Headline = "unrelated headline",
+                    Body = "override keyword in body",
+                    Vector = CreateVector(1.0f)
+                }
             }, TestContext.Current.CancellationToken);
 
-            var hybridOptions = new HybridSearchOptions<SampleHybridRecord>
-            {
-                AdditionalProperty = record => record.Content
-            };
+            var defaultFieldResults = await RunHybridSearchOnDualFieldAsync(collection, keywords: new[] { "override" }, additionalProperty: null);
+            Assert.NotEmpty(defaultFieldResults);
+            Assert.Equal("headline-hit", defaultFieldResults[0].Record.Id);
 
-            var results = new List<VectorSearchResult<SampleHybridRecord>>();
-            IKeywordHybridSearchable<SampleHybridRecord> hybrid = collection;
-            await foreach (var res in hybrid.HybridSearchAsync(
-                CreateVector(0.9f), new[] { "override" }, 5, hybridOptions, TestContext.Current.CancellationToken))
-            {
-                results.Add(res);
-            }
+            var overrideResults = await RunHybridSearchOnDualFieldAsync(
+                collection,
+                keywords: new[] { "override" },
+                additionalProperty: record => record.Body);
 
-            Assert.NotEmpty(results);
-            Assert.Equal("doc1", results[0].Record.Id);
+            Assert.NotEmpty(overrideResults);
+            Assert.Equal("body-hit", overrideResults[0].Record.Id);
 
             await collection.EnsureCollectionDeletedAsync(TestContext.Current.CancellationToken);
         }
@@ -317,6 +345,42 @@ public sealed class ZVecHybridSearchTests
                 try { Directory.Delete(storagePath, recursive: true); } catch { }
             }
         }
+    }
+
+    private static async Task<List<VectorSearchResult<SampleHybridRecord>>> RunHybridSearchAsync(
+        ZVecVectorizableRecordCollection<SampleHybridRecord, string> collection,
+        int rrfK)
+    {
+        var hybridOptions = new ZVecHybridSearchOptions<SampleHybridRecord> { RrfK = rrfK };
+        var results = new List<VectorSearchResult<SampleHybridRecord>>();
+        IKeywordHybridSearchable<SampleHybridRecord> hybrid = collection;
+        await foreach (var res in hybrid.HybridSearchAsync(
+            CreateVector(0.95f), new[] { "keyword" }, 5, hybridOptions, TestContext.Current.CancellationToken))
+        {
+            results.Add(res);
+        }
+
+        return results;
+    }
+
+    private static async Task<List<VectorSearchResult<DualFieldHybridRecord>>> RunHybridSearchOnDualFieldAsync(
+        ZVecVectorizableRecordCollection<DualFieldHybridRecord, string> collection,
+        string[] keywords,
+        System.Linq.Expressions.Expression<Func<DualFieldHybridRecord, object?>>? additionalProperty)
+    {
+        HybridSearchOptions<DualFieldHybridRecord> hybridOptions = additionalProperty == null
+            ? new HybridSearchOptions<DualFieldHybridRecord>()
+            : new HybridSearchOptions<DualFieldHybridRecord> { AdditionalProperty = additionalProperty };
+
+        var results = new List<VectorSearchResult<DualFieldHybridRecord>>();
+        IKeywordHybridSearchable<DualFieldHybridRecord> hybrid = collection;
+        await foreach (var res in hybrid.HybridSearchAsync(
+            CreateVector(0.9f), keywords, 5, hybridOptions, TestContext.Current.CancellationToken))
+        {
+            results.Add(res);
+        }
+
+        return results;
     }
 
     private static float[] CreateVector(float firstComponent)

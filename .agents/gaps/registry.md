@@ -54,7 +54,7 @@ These are **not** "do not block forever." They block **WRITE of the epic they be
 | D-2 | P2 | cross_encoder_reranking_deferred | Explicitly deferred in Task 2.3.2 (post-v1.1); default `ZVecRrfReranker` |
 | D-3 | P2 | no_embedding_migration_strategy | IRagMigrationManager specified |
 | D-4 | P2 | citation_chunk_id_undefined | Specified: SHA256(doc_uri \| strategy_id \| chunk_index) |
-| D-5 | P2 | security_sanitizer_interface_only | Still interface-only — blocks Story 2.6 WRITE until implementation starts under that story |
+| D-5 | P2 | security_sanitizer_interface_only | Story 2.6 shipped: `IRagSecuritySanitizer` + `DefaultRagSecuritySanitizer` + prompt isolation |
 | D-6 | P2 | batch_ingestion_topology_undefined | Bounded-channel dataflow graph specified; Task 2.2.3 forbids Task.Run |
 
 ## Spec Gaps (S-*)
@@ -80,10 +80,18 @@ Locked findings from spec_lock / consultant restudies. Process gaps live here to
 | S-AOT-INGEST-ACL | P2 | aot_tokenizer_only | Fixed | 2026-08-26 | Task 2.2.3 DI factory; 2.7.1 full IngestTextAsync |
 | S-SAMPLE03-EPIC5 | P2 | epic53_generic | Fixed | 2026-08-26 | project-plan Epic 5.3 detailed Sample 03 policy |
 | S-CATEGORY-G | P1 | runtime_interop_harness_gap | Fixed | 2026-08-26 | spec-lock.md §7 + skill pushbacks G1–G5 |
-| S-TEXTCHUNKER | P2 | itextchunker_stale_api | Fixed | 2026-08-27 | Task 2.2.3: IZVecTextChunker in-repo; no M.E.DataIngestion PackageReference |
+| S-TEXTCHUNKER | P2 | itextchunker_stale_api | Fixed | 2026-08-27 | Re-verified 2026-08-27: all three plan files use in-repo `IZVecTextChunker`; no `M.E.DataIngestion` PackageReference |
+| S-README-OVERCLAIM | P1 | readme_nonexistent_packages | Fixed | 2026-08-27 | README lists only shipped packages; Template/LLamaSharp/ONNX marked Planned |
+| S-EPIC34-MAP | P1 | epic_3_4_unlabeled | Fixed | 2026-08-27 | Story ID map labels added to both plan files |
+| S-WIKI-HYBRID-API | P1 | wiki_invented_hybrid_api | Fixed | 2026-08-27 | score-semantics.md + hybrid-search-rrf.md aligned to `IKeywordHybridSearchable` / raw RRF |
+| S-SG-METRIC-COSINE | P1 | sg_dense_metric_cosine_fallback | Fixed | 2026-08-27 | `ResolveDenseMetricType` reads SG schema; L2 integration test |
+| S-SPEC-REPORT | P1 | no_spec_lock_artifact | Fixed | 2026-08-27 | `.agents/gaps/reports/2026-08-27-spec-lock.md` + `latest.md` |
+| S-PLAN-ALIGN-CI | P2 | ci_no_plan_alignment | Fixed | 2026-08-27 | `plan_alignment_check.py` in gap-detection + quality-gate |
+| S-RAG-AOT-HARNESS | P2 | pipeline_aot_harness_missing | Fixed | 2026-08-27 | `tests/ZVec.Rag.AotTestApp` + `rag-aot-smoke` CI job (Story 2.7.1) |
 | S-SSE-FXREF | P2 | sse_framework_reference | Fixed | 2026-08-27 | MapRagSseEndpoint in ZVec.Rag/Streaming with FrameworkReference; trim annotated |
 | S-INGEST-CALLER-ENUM | P2 | ingest_caller_continuation_docs | Fixed | 2026-08-27 | rag-pipeline.md async contract aligned with Channels + ForceYielding open; not Task.Run |
 | NC-CA-CONNECTOR | P2 | connector_configure_await_hygiene | Fixed | 2026-08-27 | CAF on ZVecVectorizableRecordCollection CRUD/search awaits + ListCollectionNames Yield |
+| S-EPIC34-MAP-DRIFT | P1 | epic34_map_notes_false | Fixed | 2026-08-27 | Implementation-plan map notes corrected; plan_alignment_check.py asserts inversion |
 
 DS-1…DS-3 (mmap/quantize plumbing, mobile wiki, second-evaluation docs) remain in Fixed Gaps (Historical).
 

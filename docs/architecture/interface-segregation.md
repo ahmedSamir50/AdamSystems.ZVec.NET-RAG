@@ -1,6 +1,6 @@
 # RAG Pipeline Interface Segregation (ISP)
 
-> **Status:** Stories 2.1–2.3 shipped — ISP facades, Channels ingestion ACL, `OptimizeAsync`, full `CitationOrder`, `MapRagSseEndpoint`. Story 2.6 (sanitizer) and 2.7 (pipeline AOT) remain planned.
+> **Status:** Stories 2.1–2.3 shipped — ISP facades, Channels ingestion ACL, `OptimizeAsync`, full `CitationOrder`, `MapRagSseEndpoint`. Story 2.6 (sanitizer) shipped. Story 2.7 (pipeline AOT) remains planned.
 
 The `ZVec.Rag` framework enforces strict **Interface Segregation Principle (ISP)** compliance to eliminate God interfaces and allow application components to depend strictly on the capabilities they require.
 
@@ -10,21 +10,15 @@ The `ZVec.Rag` framework enforces strict **Interface Segregation Principle (ISP)
 
 Rather than bundling document ingestion, context retrieval, and LLM text generation into a single monolithic type, `ZVec.Rag` decomposes pipeline capabilities into three single-responsibility interfaces and one composite facade:
 
-```
-                  ┌──────────────────────┐
-                  │    IRagIngestor      │
-                  │ (IngestTextAsync,    │
-                  │  IngestDocumentAsync,│
-                  │  IngestBatchAsync,   │
-                  │  OptimizeAsync)      │
-                  └──────────┬───────────┘
-                             │
-     ┌───────────────────────┼───────────────────────┐
-     │                       │                       │
-┌────▼─────────────────┐  ┌──▼──────────────────┐  ┌─▼────────────────────┐
-│    IRagRetriever     │  │    IRagGenerator    │  │    IRagPipeline      │
-│ (RetrieveAsync)      │  │ (AskAsync)          │  │ (Composite Facade)   │
-└──────────────────────┘  └─────────────────────┘  └──────────────────────┘
+```mermaid
+flowchart TB
+  ingestor["IRagIngestor\nIngestTextAsync\nIngestDocumentAsync\nIngestBatchAsync\nOptimizeAsync"]
+  retriever["IRagRetriever\nRetrieveAsync"]
+  generator["IRagGenerator\nAskAsync"]
+  pipeline["IRagPipeline\nComposite Facade"]
+  ingestor --> retriever
+  ingestor --> generator
+  ingestor --> pipeline
 ```
 
 ---

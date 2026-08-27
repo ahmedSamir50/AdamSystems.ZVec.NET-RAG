@@ -114,90 +114,63 @@ The vector DB itself is built and shipped. ZVec.NET v1.0.0-beta.5 (Aug 2026) pro
 
 ### 4.1 The critical wedge (don't drift from this)
 
-```
-                YOU BUILD (Path B v1)
-                ─────────────────────
-                ┌─────────────────────────────────────────────────────┐
-                │  ZVec.Extensions.VectorData  (v1 CENTERPIECE)       │
-                │  ───────────────────────────────────────────────    │
-                │  • IVectorStore backed by IZvecFactory              │
-                │  • IVectorizedSearch<TRecord> → IZvecCollection<T>  │
-                │  • IVectorizableRecordCollection<TRecord, TKey>     │
-                │  • Filter expression translator                     │
-                │    (M.E.VectorData filter → ZVecFilterBuilder AST)  │
-                │  • Source-generated record schemas                  │
-                │    ([VectorStoreRecord] → [ZVecVector], [ZVecField])│
-                │  • DI: services.AddZVecVectorStore(...)              │
-                └─────────────────────────────────────────────────────┘
-                                │
-                ┌─────────────────────────────────────────────────────┐
-                │  ZVec.Rag  (thin integration layer)                 │
-                │  ───────────────────────────────────────────────    │
-                │  • IRagPipeline orchestrator                        │
-                │    (thin wrapper — delegates to M.E.AI + DataIngest)│
-                │  • Ingestion: PDF/Word/MD/HTML → chunks             │
-                │    (delegates to M.E.DataIngestion)                 │
-                │  • Embedding: chunks → vectors                      │
-                │    (delegates to M.E.AI IEmbeddingGenerator)        │
-                │  • Storage: vectors → ZVec.NET                      │
-                │    (via ZVec.Extensions.VectorData)                 │
-                │  • Retrieval: query → top-K chunks (hybrid search)  │
-                │  • Optional re-ranking hook (pluggable IReranker)   │
-                │  • Generation: query + chunks → streaming answer    │
-                │    (M.E.AI IChatClient)                             │
-                │  • Citation tracking (chunk IDs → source + page)    │
-                │  • Streaming IAsyncEnumerable<RagChunk>             │
-                │  • Test fakes (deterministic embedder, fake chat)   │
-                │  • DI: services.AddZVecRag(...)                     │
-                └─────────────────────────────────────────────────────┘
-                                │
-                ┌─────────────────────────────────────────────────────┐
-                │  ZVec.Rag.Template  (distribution)                  │
-                │  ───────────────────────────────────────────────    │
-                │  • dotnet new rag (Console / AspNet / Maui variants)│
-                │  • Options: --llm ollama|azure|openai|llamasharp    │
-                │  • Options: --embedder ollama|azure|onnx|llamasharp │
-                └─────────────────────────────────────────────────────┘
-                                │
-                ┌─────────────────────────────────────────────────────┐
-                │  Sample apps  (the viral demo — factored from       │
-                │  existing samples, not greenfield)                  │
-                │  ───────────────────────────────────────────────    │
-                │  • "RAG your docs in 60 seconds" (Console)          │
-                │  • "Local-first PDF chat" (ASP.NET Core + SSE)      │
-                │  • "Offline phone RAG" (MAUI Blazor Hybrid)         │
-                │  • "Air-gapped enterprise RAG" (AspNet + LLamaSharp)│
-                │  • "Multimodal RAG" (CLIP ONNX — from demos repo)   │
-                └─────────────────────────────────────────────────────┘
-
-                YOU INTEGRATE WITH (don't reimplement)
-                ──────────────────────────────────────
-                ┌─────────────────────────────────────────────────────┐
-                │  Microsoft.Extensions.AI          (GA May 2025)      │
-                │  • IChatClient                                      │
-                │  • IEmbeddingGenerator<string, Embedding<float>>    │
-                │  Microsoft.Extensions.VectorData  (GA May 2025)      │
-                │  • IVectorStore, IVectorizedSearch<T>                │
-                │  Microsoft.Extensions.DataIngestion (Preview Dec 25)│
-                │  • Chunking strategies (token, semantic-similarity) │
-                │  • Embedding generation pipeline                    │
-                │  Microsoft Agent Framework        (GA April 2026)    │
-                │  • Orchestration patterns (optional, not required)  │
-                └─────────────────────────────────────────────────────┘
-
-                YOU ALREADY OWN (existing asset — Apache-2.0)
-                ────────────────────────────────────────────
-                ┌─────────────────────────────────────────────────────┐
-                │  ZVec.NET  (1.0.0-beta.5, +zvec.0.6.0)              │
-                │  • IZvecFactory / IZvecCollection<T>                │
-                │  • AddZVec(), AddZVecCollection<T>()                │
-                │  • [ZVecVector], [ZVecField], [ZVecId], [ZVecIgnore]│
-                │  • Hybrid search + RRF/weighted rerankers (in-DB)   │
-                │  • FTS, HNSW/Flat/IVF/Vamana/DiskANN indexes         │
-                │  • SafeZvecHandle lifecycle, ZVecHealthCheck         │
-                │  • 9 HARD native RIDs (Win/Linux/macOS/Android/iOS) │
-                │  • net8.0 / net9.0 / net10.0                        │
-                └─────────────────────────────────────────────────────┘
+```mermaid
+flowchart TB
+  subgraph youBuild ["YOU BUILD Path B v1"]
+    subgraph vectorData ["ZVec.Extensions.VectorData v1 CENTERPIECE"]
+      vd1["IVectorStore backed by IZvecFactory"]
+      vd2["IVectorizedSearch TRecord to IZvecCollection T"]
+      vd3["IVectorizableRecordCollection TRecord TKey"]
+      vd4["Filter expression translator\nM.E.VectorData filter to ZVecFilterBuilder AST"]
+      vd5["Source-generated record schemas\nVectorStoreRecord to ZVecVector ZVecField"]
+      vd6["DI services.AddZVecVectorStore"]
+    end
+    subgraph zvecRag ["ZVec.Rag thin integration layer"]
+      rag1["IRagPipeline orchestrator\nthin wrapper delegates to M.E.AI + DataIngestion"]
+      rag2["Ingestion PDF/Word/MD/HTML to chunks\ndelegates to M.E.DataIngestion"]
+      rag3["Embedding chunks to vectors\ndelegates to M.E.AI IEmbeddingGenerator"]
+      rag4["Storage vectors to ZVec.NET\nvia ZVec.Extensions.VectorData"]
+      rag5["Retrieval query to top-K chunks hybrid search"]
+      rag6["Optional re-ranking hook pluggable IReranker"]
+      rag7["Generation query + chunks to streaming answer\nM.E.AI IChatClient"]
+      rag8["Citation tracking chunk IDs to source + page"]
+      rag9["Streaming IAsyncEnumerable RagChunk"]
+      rag10["Test fakes deterministic embedder fake chat"]
+      rag11["DI services.AddZVecRag"]
+    end
+    subgraph template ["ZVec.Rag.Template distribution"]
+      tpl1["dotnet new rag Console AspNet Maui variants"]
+      tpl2["Options --llm ollama azure openai llamasharp"]
+      tpl3["Options --embedder ollama azure onnx llamasharp"]
+    end
+    subgraph samples ["Sample apps viral demo factored from existing"]
+      sam1["RAG your docs in 60 seconds Console"]
+      sam2["Local-first PDF chat ASP.NET Core + SSE"]
+      sam3["Offline phone RAG MAUI Blazor Hybrid"]
+      sam4["Air-gapped enterprise RAG AspNet + LLamaSharp"]
+      sam5["Multimodal RAG CLIP ONNX from demos repo"]
+    end
+    vectorData --> zvecRag --> template --> samples
+  end
+  subgraph integrate ["YOU INTEGRATE WITH don't reimplement"]
+    int1["Microsoft.Extensions.AI GA May 2025\nIChatClient\nIEmbeddingGenerator string Embedding float"]
+    int2["Microsoft.Extensions.VectorData GA May 2025\nIVectorStore IVectorizedSearch T"]
+    int3["Microsoft.Extensions.DataIngestion Preview Dec 25\nChunking strategies token semantic-similarity\nEmbedding generation pipeline"]
+    int4["Microsoft Agent Framework GA April 2026\nOrchestration patterns optional not required"]
+  end
+  subgraph owned ["YOU ALREADY OWN existing asset Apache-2.0"]
+    own1["ZVec.NET 1.0.0-beta.5 +zvec.0.6.0\nIZvecFactory IZvecCollection T"]
+    own2["AddZVec AddZVecCollection T"]
+    own3["ZVecVector ZVecField ZVecId ZVecIgnore"]
+    own4["Hybrid search + RRF/weighted rerankers in-DB"]
+    own5["FTS HNSW Flat IVF Vamana DiskANN indexes"]
+    own6["SafeZvecHandle lifecycle ZVecHealthCheck"]
+    own7["9 HARD native RIDs Win/Linux/macOS/Android/iOS"]
+    own8["net8.0 net9.0 net10.0"]
+  end
+  samples --> integrate
+  zvecRag --> integrate
+  vectorData --> owned
 ```
 
 ### 4.2 The cardinal rule
@@ -213,6 +186,74 @@ The vector DB itself is built and shipped. ZVec.NET v1.0.0-beta.5 (Aug 2026) pro
 > 4. The **MAUI / offline / local-first story** (no competitor occupies this)
 
 ### 4.3 Package layout
+
+```mermaid
+flowchart TB
+  subgraph vdPkg ["ZVec.Extensions.VectorData v1 centerpiece the bridge"]
+    vdP1["VectorStore IZvecFactory"]
+    vdP2["VectorizedSearch delegates to IZvecCollection.Query"]
+    vdP3["VectorizableRecordCollection Insert Upsert Delete Fetch"]
+    vdP4["Score Semantics 1.0 - dist"]
+    vdP5["Filter translator Contains to ContainAny"]
+    vdP6["Source-generated schemas VectorStoreRecord POCO"]
+    vdP7["Hybrid search bridge ZVecRrfReranker"]
+    vdP8["DI AddZVecVectorStore EnableMmap ReadOnly MemoryLimitMb"]
+    vdP9["ZVecVectorIndexResolver FP16 FP32 HNSW QuantizeType"]
+    vdP10["Conformance test suite Microsoft contract"]
+    vdP11["AOT trim annotations public API"]
+  end
+  subgraph ragPkg ["ZVec.Rag v1 integration layer the starter"]
+    ragP1["IRagIngestor IRagRetriever IRagGenerator ISP"]
+    ragP2["IRagPipeline composite no decorator middleware"]
+    ragP3["Ingestion text/md core IRagDocumentReader IZVecTextChunker PDF optional"]
+    ragP4["Embedder Stamp Manifest zvec_index_manifest.json"]
+    ragP5["Storage OptimizeAndReopenAsync lock initLock"]
+    ragP6["Retrieval hybrid dense FTS ZVecRrfReranker"]
+    ragP7["Security Sanitizer IRagSecuritySanitizer"]
+    ragP8["ContextPacker MaxContextTokens LITM reorder"]
+    ragP9["IReranker hook default ZVecRrfReranker"]
+    ragP10["Generation IChatClient multi-turn streaming"]
+    ragP11["Citation tracking chunk IDs source page offset scores"]
+    ragP12["RagChunk IAsyncEnumerable streaming"]
+    ragP13["DI AddZVecRag"]
+    ragP14["Optional ZVec.Rag.Ollama recipe"]
+  end
+  subgraph testingPkg ["ZVec.Rag.Testing v1 testing standalone"]
+    testP1["DeterministicEmbedder hash pipeline tests"]
+    testP2["SemanticTestEmbedder LSH semantic rank"]
+    testP3["FakeChatClient streaming non-streaming"]
+    testP4["IRagEvaluator DeterministicEvaluator Recall MRR nDCG"]
+  end
+  subgraph pdfPkg ["ZVec.Rag.Pdf v1 optional not core AOT"]
+    pdfP1["PdfDocumentReader Sample 02 enterprise PDF"]
+  end
+  subgraph llamaPkg ["ZVec.Rag.LLamaSharp v1.1 Desktop only"]
+    llamaP1["LLamaSharpChatClient IChatClient"]
+    llamaP2["LLamaSharpEmbedder IEmbeddingGenerator"]
+    llamaP3["Fully local RAG zero network Win Linux macOS"]
+  end
+  subgraph onnxPkg ["ZVec.Rag.ONNX v1.1 ONNX runtime recipe"]
+    onnxP1["OnnxEmbedder CLIP MiniLM EmbeddingGemma"]
+    onnxP2["ImagePreprocessor SixLabors NCHW CLIP"]
+    onnxP3["Multimodal RAG SourceKind metadata not ZVecModality SG"]
+  end
+  subgraph templatePkg ["ZVec.Rag.Template v1 distribution"]
+    tplP1["dotnet new rag Console"]
+    tplP2["dotnet new rag-aspnet ASP.NET SSE"]
+    tplP3["dotnet new rag-maui MAUI Blazor offline"]
+    tplP4["Options --llm --embedder --storage"]
+    tplP5["Published ZVec.Rag.Template NuGet"]
+  end
+  subgraph samplesPkg ["ZVec.Rag.Samples v1 viral demo factored"]
+    sampP1["01-rag-your-docs Console 60-second"]
+    sampP2["02-local-first-pdf-chat AspNet SSE"]
+    sampP3["03-offline-phone-rag MAUI Blazor"]
+    sampP4["04-airgapped-enterprise-rag LLamaSharp"]
+    sampP5["05-multimodal-rag CLIP ONNX"]
+    sampP6["06-aspire-dashboard Aspire Docker PDDM"]
+  end
+  vdPkg --> ragPkg
+```
 
 ```
 ZVec.Extensions.VectorData         (v1 centerpiece — the bridge)
@@ -342,7 +383,7 @@ That's it. No Azure. No Python. No Qdrant. Connector Native AOT verified (Phase 
 > **Story ID map:** Project-plan Epic 2 checkboxes **2.1–2.15** are a legacy breakdown. The locked execution plan uses **implementation-plan Stories 2.1–2.8**. Same-numbered items are **not** the same work unless labeled below.
 
 - [ ] 2.1 `IRagPipeline` orchestrator (thin wrapper) — **maps to implementation-plan Story 2.1** (split interfaces + facade + `ContextPacker` + `AddZVecRag`)
-- [ ] 2.2 `IRagIngestor` — text/markdown chunking in core via `M.E.DataIngestion` ACL (**implementation-plan Story 2.2**; PDF/HTML via optional `ZVec.Rag.Pdf`, not core)
+- [ ] 2.2 `IRagIngestor` — text/markdown chunking in core via in-repo `IZVecTextChunker` ACL (**implementation-plan Story 2.2**; PDF/HTML via optional `ZVec.Rag.Pdf`, not core)
 - [ ] 2.3 ~~`IRagEmbedder`~~ **REJECTED** — use `Microsoft.Extensions.AI` `IEmbeddingGenerator<string, Embedding<float>>` directly (no custom embedder interface)
 - [ ] 2.4 `IRagRetriever` — hybrid search via `ZVec.Extensions.VectorData` (**Story 2.1** retriever slice)
 - [ ] 2.5 `IReranker` pluggable hook — default `ZVecRrfReranker`; cross-encoder deferred (**D-2**, Story 2.3.2)
@@ -359,6 +400,8 @@ That's it. No Azure. No Python. No Qdrant. Connector Native AOT verified (Phase 
 
 ### Epic 3 — Local LLM recipes
 
+> **Story ID map:** Matches **implementation-plan Epic 4** (LLM recipe packages). Implementation-plan Epic 3 is the `dotnet new rag` template — not this epic.
+
 - [ ] 3.1 `ZVec.Rag.Ollama` recipe (pre-wired Ollama via M.E.AI's `OpenAIClient.GetEmbeddingGenerator(...)`)
 - [ ] 3.2 `ZVec.Rag.LLamaSharp` (LLamaSharpChatClient + LLamaSharpEmbedder as M.E.AI adapters)
 - [ ] 3.3 `ZVec.Rag.ONNX` (OnnxEmbedder for CLIP / MiniLM / EmbeddingGemma — lift from `demos/01-clip-onnx`)
@@ -366,6 +409,8 @@ That's it. No Azure. No Python. No Qdrant. Connector Native AOT verified (Phase 
 - [ ] 3.5 Recipe: multimodal RAG (CLIP ONNX + ZVec, see `demos/01-clip-onnx`)
 
 ### Epic 4 — `dotnet new rag` template
+
+> **Story ID map:** Matches **implementation-plan Epic 3** (template + samples). Implementation-plan Epic 4 is LLM recipe adapters — not this epic.
 
 - [ ] 4.1 `dotnet new rag` (Console variant, ~50 LOC)
 - [ ] 4.2 `dotnet new rag-aspnet` (ASP.NET Core + SSE streaming)

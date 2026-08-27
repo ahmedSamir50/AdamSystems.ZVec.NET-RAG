@@ -151,10 +151,26 @@ public static class {{model.ClassName}}{{GeneratorMetadataNames.GeneratedMapperS
         if (model.VectorProp.HasValue)
         {
             var vector = model.VectorProp.Value;
-            lines.AppendLine($"        builder.AddVector(\"{vector.StorageName}\", ZVecVectorIndexResolver.ResolveVectorDataType(null), {vector.VectorDimensions}, ZVecVectorIndexResolver.CreateHnswIndexParam());");
+            string hnswExpr = BuildHnswIndexParamExpression(vector);
+            lines.AppendLine($"        builder.AddVector(\"{vector.StorageName}\", ZVecVectorIndexResolver.ResolveVectorDataType(null), {vector.VectorDimensions}, {hnswExpr});");
         }
 
         return lines.ToString().TrimEnd();
+    }
+
+    private static string BuildHnswIndexParamExpression(PropertyModel vector)
+    {
+        if (GeneratorVectorMetricResolver.TryResolveQuantizeIndexKind(vector.IndexKind, out string quantizeExpression))
+        {
+            return quantizeExpression;
+        }
+
+        return GeneratorVectorMetricResolver.ResolveMetricKind(vector.DistanceFunctionValue, vector.IndexKind) switch
+        {
+            GeneratorVectorMetricKind.L2 => GeneratorMetadataNames.HnswIndexParamL2Expression,
+            GeneratorVectorMetricKind.InnerProduct => GeneratorMetadataNames.HnswIndexParamInnerProductExpression,
+            _ => GeneratorMetadataNames.HnswIndexParamExpression
+        };
     }
 
     private static string BuildToDocBody(RecordModel model)

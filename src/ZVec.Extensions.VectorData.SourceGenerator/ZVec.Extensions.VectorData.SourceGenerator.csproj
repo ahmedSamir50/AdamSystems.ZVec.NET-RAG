@@ -15,6 +15,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" PrivateAssets="all" />
     <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Extensions.VectorData.Abstractions" PrivateAssets="all" />
   </ItemGroup>
 
   <!-- CLI /p:PublishAot=true must not flow into netstandard2.0 Roslyn components during consumer AOT publish. -->

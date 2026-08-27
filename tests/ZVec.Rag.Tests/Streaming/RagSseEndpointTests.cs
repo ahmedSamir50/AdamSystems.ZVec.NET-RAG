@@ -32,16 +32,20 @@ public sealed class RagSseEndpointTests : IAsyncDisposable
     {
         await SeedIngestAsync();
         using var client = _host.CreateClient();
-        using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
         using var request = new HttpRequestMessage(HttpMethod.Get, "/chat?question=stream+cancel");
-        using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cts.Token);
-        using var stream = await response.Content.ReadAsStreamAsync(cts.Token);
+        using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, TestContext.Current.CancellationToken);
 
-        await stream.ReadAsync(new byte[1], cts.Token);
-        await cts.CancelAsync();
+        await using var stream = await response.Content.ReadAsStreamAsync(TestContext.Current.CancellationToken);
+        var buffer = new byte[64];
+        int bytesRead = await stream.ReadAsync(buffer, TestContext.Current.CancellationToken);
+        Assert.True(bytesRead > 0, "SSE stream must start before simulating client disconnect.");
 
-        Assert.True(_host.ChatClient.LastStreamingCallWasCanceled || _host.ChatClient.TokensYielded < 4);
-        Assert.True(_host.ChatClient.TokensYielded < 4);
+        response.Dispose();
+
+        await Task.Delay(500, TestContext.Current.CancellationToken);
+
+        Assert.True(_host.ChatClient.LastStreamingCallWasCanceled, "Client disconnect must cancel LLM streaming via RequestAborted.");
+        Assert.True(_host.ChatClient.TokensYielded < 4, "Canceled stream must not yield all configured tokens.");
     }
 
     private async Task SeedIngestAsync()

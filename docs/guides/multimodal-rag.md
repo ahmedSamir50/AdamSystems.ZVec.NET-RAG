@@ -8,14 +8,15 @@ This guide describes how to implement multimodal Retrieval-Augmented Generation 
 
 CLIP (Contrastive Language-Image Pre-Training) maps both text prompts and images into a shared multi-dimensional vector space.
 
-```
-┌─────────────────────────┐
-│       Text Query        │ -> CLIP Text Encoder  ─┐
-└─────────────────────────┘                        │
-                                                   ├─> Shared Vector Space (ZVec Vector Store)
-┌─────────────────────────┐                        │
-│       Image File        │ -> CLIP Vision Encoder ┘
-└─────────────────────────┘
+```mermaid
+flowchart LR
+  textQuery["Text Query"]
+  textEncoder["CLIP Text Encoder"]
+  imageFile["Image File"]
+  visionEncoder["CLIP Vision Encoder"]
+  sharedSpace["Shared Vector Space\nZVec Vector Store"]
+  textQuery --> textEncoder --> sharedSpace
+  imageFile --> visionEncoder --> sharedSpace
 ```
 
 ---

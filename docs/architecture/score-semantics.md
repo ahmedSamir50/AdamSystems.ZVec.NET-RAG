@@ -52,7 +52,7 @@ flowchart TD
 
 ---
 
-## Reranker Score Safety
+## Hybrid Search Score Semantics
 
 When executing **Hybrid Search** (combining Dense vectors with Full-Text Search lexical queries):
 
@@ -60,10 +60,20 @@ When executing **Hybrid Search** (combining Dense vectors with Full-Text Search 
 - **`ZVecWeightedReranker`:** Requires scores to be on identical scales. Do not mix un-normalized distance metrics with BM25 lexical scores.
 
 ```csharp
-// Recommended hybrid search configuration in ZVec.Rag:
-var searchOptions = new VectorSearchOptions
+// Hybrid search via IKeywordHybridSearchable (ZVec.Extensions.VectorData):
+IKeywordHybridSearchable<MyRecord> hybrid = collection;
+var options = new ZVecHybridSearchOptions<MyRecord>
 {
-    VectorSearchType = VectorSearchType.Hybrid,
-    Reranker = ZVecRrfReranker.Default // Rank-based fusion avoids metric scale corruption
+    RrfK = 60,
+    Filter = r => r.Category == "books"
 };
+
+await foreach (var hit in hybrid.HybridSearchAsync(
+    queryVector, keywords: new[] { "vector database" }, top: 10, options, ct))
+{
+    // hit.Score is raw RRF rank fusion — not cosine-normalized dense distance
+    Console.WriteLine($"{hit.Record.Id} rrf={hit.Score}");
+}
 ```
+
+RAG hybrid retrieval sets `Citation.RankScore` from this fused RRF value; `Citation.DenseScore` and `Citation.FtsScore` are separate fields (Story 2.3.2).

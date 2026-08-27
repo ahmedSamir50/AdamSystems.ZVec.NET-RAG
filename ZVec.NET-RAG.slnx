@@ -8,6 +8,7 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/ZVec.AotTestApp/ZVec.AotTestApp.csproj" />
+    <Project Path="tests/ZVec.Rag.AotTestApp/ZVec.Rag.AotTestApp.csproj" />
     <Project Path="tests/ZVec.Extensions.VectorData.ConformanceTests/ZVec.Extensions.VectorData.ConformanceTests.csproj" />
     <Project Path="tests/ZVec.Extensions.VectorData.SourceGenerator.Tests/ZVec.Extensions.VectorData.SourceGenerator.Tests.csproj" />
     <Project Path="tests/ZVec.Extensions.VectorData.Tests/ZVec.Extensions.VectorData.Tests.csproj" />

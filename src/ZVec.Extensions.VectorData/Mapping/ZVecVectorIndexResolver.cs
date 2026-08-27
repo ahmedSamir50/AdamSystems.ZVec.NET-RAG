@@ -27,12 +27,32 @@ public static class ZVecVectorIndexResolver
     }
 
     /// <summary>
-    /// Creates a default HNSW index parameter with the supplied quantization mode.
+    /// Creates a default HNSW index parameter with the supplied quantization mode and metric.
     /// </summary>
     /// <param name="quantizeType">Quantization applied at index build/query time.</param>
+    /// <param name="metricType">Dense vector distance metric.</param>
     /// <returns>A configured <see cref="ZVecHnswIndexParam"/> instance.</returns>
-    public static ZVecHnswIndexParam CreateHnswIndexParam(ZVecQuantizeType quantizeType = ZVecQuantizeType.Undefined) =>
-        new() { QuantizeType = quantizeType };
+    public static ZVecHnswIndexParam CreateHnswIndexParam(
+        ZVecQuantizeType quantizeType = ZVecQuantizeType.Undefined,
+        ZVecMetricType metricType = ZVecMetricType.Cosine) =>
+        new() { QuantizeType = quantizeType, MetricType = metricType };
+
+    /// <summary>
+    /// Resolves the dense vector metric from a VectorData vector property's <c>DistanceFunction</c>
+    /// or legacy <c>IndexKind</c> metric name when supplied.
+    /// </summary>
+    public static ZVecMetricType ResolveMetricType(VectorStoreVectorProperty vectorProperty) =>
+        ZVecVectorDistanceFunctionMapper.ToMetricType(vectorProperty);
+
+    /// <summary>
+    /// Builds HNSW index parameters from VectorData vector metadata and store options.
+    /// </summary>
+    public static ZVecHnswIndexParam CreateHnswIndexParam(
+        VectorStoreVectorProperty vectorProperty,
+        ZVecVectorStoreOptions options) =>
+        CreateHnswIndexParam(
+            ResolveQuantizeType(vectorProperty, options),
+            ResolveMetricType(vectorProperty));
 
     /// <summary>
     /// Applies store-level vector index defaults (e.g. <see cref="ZVecVectorStoreOptions.DefaultQuantizeType"/>)

@@ -15,6 +15,15 @@ public sealed class CitationOrderTests
     ];
 
     [Fact]
+    public void SortCitations_ScoreDescending_OrdersByRankScoreDescending()
+    {
+        var sorted = RagRetriever.SortCitations(Sample, CitationOrder.ScoreDescending);
+        Assert.Equal(0.9f, sorted[0].RankScore);
+        Assert.Equal(0.5f, sorted[^1].RankScore);
+        Assert.True(sorted[0].RankScore >= sorted[1].RankScore);
+    }
+
+    [Fact]
     public void SortCitations_ChunkOrderAscending_SortsByChunkIndex()
     {
         var sorted = RagRetriever.SortCitations(Sample, CitationOrder.ChunkOrderAscending);

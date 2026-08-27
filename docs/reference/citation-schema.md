@@ -25,7 +25,7 @@ public sealed class ZVecRagRecordV1
     public string ChunkId { get; set; } = string.Empty; // SHA256(source_uri | strategy_id | chunk_index)
 
     [VectorStoreData(IsIndexed = true)]
-    [ZVecField(IsFilterable = true)]
+    [ZVecField]
     public string SourceDoc { get; set; } = string.Empty; // Document GUID / stable identifier
 
     [VectorStoreData]
@@ -33,7 +33,7 @@ public sealed class ZVecRagRecordV1
     public string SourceUri { get; set; } = string.Empty; // Display URI / file path / URL
 
     [VectorStoreData(IsIndexed = true)]
-    [ZVecField(IsFilterable = true)]
+    [ZVecField]
     public string SourceHash { get; set; } = string.Empty; // SHA-256 content hash for deduplication
 
     [VectorStoreData(IsIndexed = true)]
@@ -65,7 +65,7 @@ public sealed class ZVecRagRecordV1
 `ChunkId = SHA256(source_uri | strategy_id | chunk_index)`
 
 - `source_uri`: document URI or stable `documentId` passed to ingest
-- `strategy_id`: chunking strategy identifier (Story 2.1 default: `"whole-text-v1"`)
+- `strategy_id`: chunking strategy identifier (Story 2.1 default ingest: `"token-v1"` via `TokenTextChunker`; whole-text path uses `"whole-text-v1"`)
 - `chunk_index`: 0-based chunk sequence within the document
 
 Human-readable display labels (e.g. `{SourceDoc}:{ChunkIndex:D6}`) are **not** used as storage keys.

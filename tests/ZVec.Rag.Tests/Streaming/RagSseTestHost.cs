@@ -15,7 +15,7 @@ namespace ZVec.Rag.Tests.Streaming;
 public sealed class RagSseTestHost : IAsyncDisposable
 {
   /// <summary>Gets the fake chat client wired into the host.</summary>
-    public FakeChatClient ChatClient { get; } = new(["token1", "token2", "token3", "token4"], TimeSpan.FromMilliseconds(50));
+    public FakeChatClient ChatClient { get; } = new(["token1", "token2", "token3", "token4"], TimeSpan.FromMilliseconds(200));
 
     /// <summary>Gets isolated storage for this host instance.</summary>
     public string StoragePath { get; } = RagTestHarness.CreateTempStoragePath();

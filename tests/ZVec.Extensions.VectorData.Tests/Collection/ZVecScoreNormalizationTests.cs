@@ -93,6 +93,68 @@ public sealed class ZVecScoreNormalizationTests
     }
 
     /// <summary>
+    /// Source-generated schema with <c>IndexKind = L2</c> must normalize dense scores with the L2
+    /// formula through the SG search path (not the Cosine fallback when <c>_typeModel</c> is null).
+    /// </summary>
+    [Fact]
+    public async Task SearchAsync_L2Metric_SourceGeneratedRecord_UsesL2SimilarityFormula()
+    {
+        string storagePath = CreateTempStoragePath();
+        Directory.CreateDirectory(storagePath);
+        try
+        {
+            var options = new ZVecVectorStoreOptions { StoragePath = storagePath };
+            IZvecFactory factory = new ZVecFactory();
+            factory.Initialize();
+
+            string colName = "l2_score_" + Guid.NewGuid().ToString("N")[..8];
+            var collection = new ZVecVectorizableRecordCollection<L2ScoreTestRecord, string>(factory, options, colName);
+
+            var schemaFactory = ZVec.Extensions.VectorData.Mapping.ZVecCollectionSchemaRegistry.Get<L2ScoreTestRecord>();
+            Assert.NotNull(schemaFactory);
+            var schema = schemaFactory!(colName);
+            var indexParam = schema.Vectors.First(v => v.Dimension > 0).IndexParam;
+            var hnswParam = Assert.IsType<ZVecHnswIndexParam>(indexParam);
+            Assert.Equal(ZVecMetricType.L2, hnswParam.MetricType);
+
+            await collection.EnsureCollectionExistsAsync(TestContext.Current.CancellationToken);
+
+            var docVector = new float[768];
+            docVector[1] = 1.0f;
+
+            await collection.UpsertAsync(new[]
+            {
+                new L2ScoreTestRecord { Id = "orthogonal", Title = "orthogonal doc", Vector = docVector }
+            }, TestContext.Current.CancellationToken);
+
+            var queryVector = new float[768];
+            queryVector[0] = 1.0f;
+
+            VectorSearchResult<L2ScoreTestRecord>? hit = null;
+            await foreach (var r in collection.SearchAsync(queryVector, 1, cancellationToken: TestContext.Current.CancellationToken))
+            {
+                hit = r;
+                break;
+            }
+
+            Assert.NotNull(hit);
+            Assert.NotNull(hit.Score);
+            float score = (float)hit.Score.Value;
+            const float nativeSquaredL2Distance = 2.0f;
+            float expectedL2 = ZVecScoreNormalizer.ToSimilarity(nativeSquaredL2Distance, ZVecMetricType.L2);
+            Assert.Equal(expectedL2, score, precision: 5);
+            Assert.True(score > 0.3f, "L2 similarity must be > 0.3 for orthogonal unit vectors; Cosine fallback would yield ~0.");
+        }
+        finally
+        {
+            if (Directory.Exists(storagePath))
+            {
+                try { Directory.Delete(storagePath, recursive: true); } catch { }
+            }
+        }
+    }
+
+    /// <summary>
     /// SCORE ORDERING: OrderByDescending(Score) must return best matches first.
     /// This is the core contract for downstream RAG rankers.
     /// </summary>
@@ -144,4 +206,20 @@ public sealed class ZVecScoreNormalizationTests
             }
         }
     }
+}
+
+/// <summary>L2 metric record for source-generated schema score normalization tests.</summary>
+public sealed class L2ScoreTestRecord
+{
+    [ZVecId]
+    [VectorStoreKey]
+    public string Id { get; set; } = string.Empty;
+
+    [ZVecField]
+    [VectorStoreData]
+    public string Title { get; set; } = string.Empty;
+
+    [ZVecVector(768)]
+    [VectorStoreVector(768, DistanceFunction = DistanceFunction.EuclideanDistance)]
+    public ReadOnlyMemory<float> Vector { get; set; }
 }

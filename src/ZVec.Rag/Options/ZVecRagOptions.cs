@@ -2,6 +2,7 @@ using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
 using ZVec.Extensions.VectorData.Store;
 using ZVec.Rag.Models;
+using ZVec.Rag.Security;
 
 namespace ZVec.Rag.Options;
 
@@ -51,4 +52,7 @@ public sealed class ZVecRagOptions
 
     /// <summary>Gets or sets optional SentencePiece/WordPiece model path loaded via <see cref="FileStream"/>.</summary>
     public string? TokenizerModelPath { get; set; }
+
+    /// <summary>Gets or sets the security sanitizer applied at retrieve/pack time (not ingest by default).</summary>
+    public IRagSecuritySanitizer? SecuritySanitizer { get; set; }
 }

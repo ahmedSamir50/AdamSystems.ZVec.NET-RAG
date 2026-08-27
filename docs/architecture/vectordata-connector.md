@@ -6,37 +6,19 @@
 
 ## 1. Component Map
 
-```text
-┌─────────────────────────────────────────────────────────────┐
-│                    Application Layer                        │
-│          (Microsoft.Extensions.VectorData Consumers)        │
-└──────────────────────────────┬──────────────────────────────┘
-                               │
-                               ▼
-┌─────────────────────────────────────────────────────────────┐
-│                   ZVecVectorStore                           │
-│        Implements IVectorStore backed by IZvecFactory       │
-└──────────────────────────────┬──────────────────────────────┘
-                               │
-                               ▼
-┌─────────────────────────────────────────────────────────────┐
-│         ZVecVectorizableRecordCollection<TRecord, TKey>     │
-│   Implements IVectorStoreRecordCollection<TKey, TRecord>    │
-└──────────────┬───────────────────────────────┬──────────────┘
-               │                               │
-               ▼                               ▼
-┌──────────────────────────────┐┌─────────────────────────────┐
-│ ZVecFilterExpressionVisitor  ││ ZVecRecordMetadataGenerator │
-│ Filter AST Translation Engine││ Roslyn SG Zero-Reflection   │
-└──────────────────────────────┘└─────────────────────────────┘
-               │                               │
-               └───────────────┬───────────────┘
-                               ▼
-               ┌───────────────────────────────┐
-               │ ZVec.Extensions.VectorData.   │
-               │ Analyzers (ZVEC001 / ZVEC002) │
-               │ Compile-time AOT diagnostics  │
-               └───────────────────────────────┘
+```mermaid
+flowchart TB
+  appLayer["Application Layer\nMicrosoft.Extensions.VectorData Consumers"]
+  vectorStore["ZVecVectorStore\nIVectorStore backed by IZvecFactory"]
+  collection["ZVecVectorizableRecordCollection TRecord TKey\nIVectorStoreRecordCollection TKey TRecord"]
+  filterVisitor["ZVecFilterExpressionVisitor\nFilter AST Translation Engine"]
+  sourceGen["ZVecRecordMetadataGenerator\nRoslyn SG Zero-Reflection"]
+  analyzers["ZVec.Extensions.VectorData.Analyzers\nZVEC001 / ZVEC002\nCompile-time AOT diagnostics"]
+  appLayer --> vectorStore --> collection
+  collection --> filterVisitor
+  collection --> sourceGen
+  filterVisitor --> analyzers
+  sourceGen --> analyzers
 ```
 
 ---
@@ -185,6 +167,16 @@ Consumer projects (tests, `ZVec.AotTestApp`, samples) must reference the source 
 | `== null` / `!= null` | `IsNull` / `IsNotNull` | `x.Category == null` |
 
 ### Contains Pattern Disambiguation
+
+```mermaid
+flowchart LR
+  collContains["collection.Contains value"]
+  extContains["externalList.Contains field"]
+  containAny["CONTAIN_ANY\nTags CONTAIN_ANY Sale"]
+  inOp["IN\nCategory IN A B"]
+  collContains --> containAny
+  extContains --> inOp
+```
 
 ```text
 x.CollectionProperty.Contains(value)  -->  Tags CONTAIN_ANY ("Sale")

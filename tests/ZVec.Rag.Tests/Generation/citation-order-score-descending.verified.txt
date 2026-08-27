@@ -1,0 +1,26 @@
+﻿[
+  {
+    "SourceDoc": "doc-0",
+    "ChunkIndex": 0,
+    "ChunkId": "cite-chunk-0",
+    "RankScore": 0.9,
+    "DenseScore": 0.9,
+    "FtsScore": 0.1
+  },
+  {
+    "SourceDoc": "doc-1",
+    "ChunkIndex": 1,
+    "ChunkId": "cite-chunk-1",
+    "RankScore": 0.8,
+    "DenseScore": 0.8,
+    "FtsScore": 0.1
+  },
+  {
+    "SourceDoc": "doc-2",
+    "ChunkIndex": 2,
+    "ChunkId": "cite-chunk-2",
+    "RankScore": 0.7,
+    "DenseScore": 0.7,
+    "FtsScore": 0.1
+  }
+]
