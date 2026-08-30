@@ -10,8 +10,8 @@ namespace ZVec.Rag.Tests.Ingestion;
 /// </summary>
 public sealed class TokenTextChunkerTests
 {
-  private static TokenTextChunker CreateChunker(int maxTokens = 8, int overlap = 2)
-        => new TokenTextChunker(TiktokenTokenizer.CreateForEncoding(ZVecRagConstants.Cl100kBaseEncoding), maxTokens, overlap);
+    private static TokenTextChunker CreateChunker(int maxTokens = 8, int overlap = 2)
+          => new TokenTextChunker(TiktokenTokenizer.CreateForEncoding(ZVecRagConstants.Cl100kBaseEncoding), maxTokens, overlap);
 
     [Fact]
     public void Chunk_ShortText_ReturnsSingleChunk()

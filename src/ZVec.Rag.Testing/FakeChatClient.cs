@@ -10,6 +10,7 @@ public sealed class FakeChatClient : IChatClient
 {
     private readonly IReadOnlyList<string> _tokens;
     private readonly TimeSpan _delayPerToken;
+    private readonly Func<IReadOnlyList<ChatMessage>, string>? _responseFactory;
 
     /// <summary>Initializes a new instance with a token sequence.</summary>
     public FakeChatClient(params string[] tokens)
@@ -24,6 +25,14 @@ public sealed class FakeChatClient : IChatClient
         _delayPerToken = delayPerToken;
     }
 
+    /// <summary>Initializes a new instance with a custom non-streaming response factory.</summary>
+    public FakeChatClient(Func<IReadOnlyList<ChatMessage>, string> responseFactory)
+    {
+        _responseFactory = responseFactory ?? throw new ArgumentNullException(nameof(responseFactory));
+        _tokens = Array.Empty<string>();
+        _delayPerToken = TimeSpan.Zero;
+    }
+
     /// <summary>Gets the number of streaming calls observed.</summary>
     public int StreamingCallCount { get; private set; }
 
@@ -35,6 +44,9 @@ public sealed class FakeChatClient : IChatClient
 
     /// <summary>Gets messages from the last streaming call.</summary>
     public IReadOnlyList<ChatMessage> LastStreamingMessages { get; private set; } = Array.Empty<ChatMessage>();
+
+    /// <summary>Gets messages from the last non-streaming call.</summary>
+    public IReadOnlyList<ChatMessage> LastResponseMessages { get; private set; } = Array.Empty<ChatMessage>();
 
     /// <inheritdoc />
     public ChatClientMetadata Metadata { get; } = new("fake-chat-client");
@@ -52,7 +64,10 @@ public sealed class FakeChatClient : IChatClient
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        string combined = string.Concat(_tokens);
+        LastResponseMessages = messages.ToList();
+        string combined = _responseFactory != null
+            ? _responseFactory(LastResponseMessages)
+            : string.Concat(_tokens);
         return Task.FromResult(new ChatResponse(new ChatMessage(ChatRole.Assistant, combined)));
     }
 

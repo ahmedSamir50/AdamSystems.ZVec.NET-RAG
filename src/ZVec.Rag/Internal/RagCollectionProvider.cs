@@ -1,6 +1,7 @@
 using Microsoft.Extensions.VectorData;
 using ZVec.Extensions.VectorData.Collection;
 using ZVec.Extensions.VectorData.Store;
+using ZVec.Rag.Constants;
 using ZVec.Rag.Options;
 using ZVec.Rag.Schema;
 
@@ -15,6 +16,7 @@ public sealed class RagCollectionProvider : IDisposable, IAsyncDisposable
     private readonly ZVecVectorStoreOptions _storeOptions;
     private readonly ZVecRagOptions _ragOptions;
     private VectorStoreCollection<string, ZVecRagRecordV1>? _collection;
+    private VectorStoreCollection<string, ZVecRagSectionSummaryV1>? _summaryCollection;
 
     /// <summary>Initializes a new instance.</summary>
     public RagCollectionProvider(
@@ -45,26 +47,53 @@ public sealed class RagCollectionProvider : IDisposable, IAsyncDisposable
         return _collection;
     }
 
+    /// <summary>Gets or opens the section-summary collection for this scope.</summary>
+    public async Task<VectorStoreCollection<string, ZVecRagSectionSummaryV1>> GetSummaryCollectionAsync(
+        CancellationToken cancellationToken)
+    {
+        if (_summaryCollection != null)
+        {
+            return _summaryCollection;
+        }
+
+        _summaryCollection = await RagCollectionAccessor.EnsureSummaryCollectionAsync(
+            _store,
+            _storeOptions,
+            ZVecRagConstants.SectionSummaryCollectionName,
+            cancellationToken).ConfigureAwait(false);
+
+        return _summaryCollection;
+    }
+
+    /// <summary>Whether the summary collection handle has been opened in this scope.</summary>
+    public bool SummaryCollectionOpened => _summaryCollection != null;
+
     /// <inheritdoc />
     public void Dispose()
     {
-        ReleaseCollectionHandle();
+        ReleaseCollectionHandles();
     }
 
     /// <inheritdoc />
     public ValueTask DisposeAsync()
     {
-        ReleaseCollectionHandle();
+        ReleaseCollectionHandles();
         return ValueTask.CompletedTask;
     }
 
-    private void ReleaseCollectionHandle()
+    private void ReleaseCollectionHandles()
     {
         if (_collection is ZVecVectorizableRecordCollection<ZVecRagRecordV1, string> nativeCollection)
         {
             nativeCollection.ReleaseNativeHandle();
         }
 
+        if (_summaryCollection is ZVecVectorizableRecordCollection<ZVecRagSectionSummaryV1, string> summaryNative)
+        {
+            summaryNative.ReleaseNativeHandle();
+        }
+
         _collection = null;
+        _summaryCollection = null;
     }
 }

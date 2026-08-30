@@ -2,7 +2,7 @@
 
 `ZVec.Rag` provides a batteries-included RAG orchestration layer (`IRagPipeline`, `IRagIngestor`, `IRagRetriever`, `IRagGenerator`) built on top of Microsoft AI ecosystem primitives:
 
-> **Status:** Stories 2.1–2.3, 2.4.3 (Verify snapshots), 2.6, 2.7 (pipeline AOT), and 2.8 (`IRagEvaluator`) shipped. **Architecture class:** v1 pipeline is Naive RAG (single-shot hybrid retrieve + pack + one generate) per [Liu axes](https://www.youtube.com/watch?v=dI_TmTW9S4c&t=4778s); complex-document ingest (D-7 / Epic 8.7) and query routing (D-8 / Epic 8.8) are post-v1.
+> **Status:** Stories 2.1–2.3, 2.4.3 (Verify snapshots), 2.6, 2.7 (pipeline AOT), 2.8 (`IRagEvaluator`), and **2.9** (optional section-summary helper, default OFF) shipped. **Architecture class:** v1 pipeline is Naive RAG (single-shot hybrid retrieve + pack + one generate) per [Liu axes](https://www.youtube.com/watch?v=dI_TmTW9S4c&t=4778s); complex-document ingest (D-7 / Epic 8.7) and query routing (D-8 / Epic 8.8) are post-v1.
 ```mermaid
 flowchart LR
   reader["1. Document Reader\nMD / TXT in core\nPDF via ZVec.Rag.Pdf"]
@@ -46,7 +46,7 @@ Sliding 64-token overlap inside `TokenTextChunker` is a boundary patch, not stru
 
 **Sequence:** layout-aware reader emits tree → stamp chunks → embed → (later) `ContextPacker` may fetch parent text by `ParentChunkId` ([Liu index≠synthesis](https://www.youtube.com/watch?v=dI_TmTW9S4c&t=4778s)). Org formats (PDF tables, PPT slides, DOCX styles, Excel sheets) need readers **before** stamps mean anything — PdfPig text flatten alone cannot invent parents.
 
-### 1.2 Optional section-summary helper (Story 2.9 — planned, default OFF)
+### 1.2 Optional section-summary helper (Story 2.9 — shipped, default OFF)
 
 Optional `IngestOptions.GenerateSummaries` (default **false**) improves **retrieve and pack accuracy** — not a new RAG product class (still Naive one-shot generate; **not** Advanced RAG, **not** RAPTOR).
 

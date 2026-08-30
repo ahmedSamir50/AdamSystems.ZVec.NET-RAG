@@ -53,7 +53,7 @@ Complete API reference surface for `ZVec.Extensions.VectorData` and `ZVec.Rag`.
 | `ZVec.Rag.Streaming` | `RagSseEndpointExtensions` (`MapRagSseEndpoint`) |
 | `ZVec.Rag.Models` | `Citation`, `RagChunk`, `IngestionResult`, `IngestOptions`, `IngestTextRequest`, `TextChunk`, `DuplicateMode`, `CitationOrder`, `ContextPackingStrategy` |
 | `ZVec.Rag.Options` | `ZVecRagOptions` |
-| `ZVec.Rag.Schema` | `ZVecRagRecordV1` |
+| `ZVec.Rag.Schema` | `ZVecRagRecordV1`, `ZVecRagSectionSummaryV1` |
 | `ZVec.Rag.Exceptions` | `ZVecRagInitializationException` |
 | `ZVec.Rag.Internal` | `RagCollectionProvider` (scoped native handle; releases on scope dispose) |
 | `Microsoft.Extensions.DependencyInjection` | `AddZVecRag`, `AddTokenChunker`, `AddMarkdownChunker`, `AddSentenceChunker` |
@@ -77,7 +77,7 @@ Complete API reference surface for `ZVec.Extensions.VectorData` and `ZVec.Rag`.
 
 - **`IRagPipeline`**: Composite facade (`IRagIngestor` + `IRagRetriever` + `IRagGenerator`).
 - **`RagChunk`**: Streamed response chunk (`Text`, `Citations`, `IsFinal`, `Usage`).
-- **`Citation`**: `SourceDoc`, `SourceUri`, `SourceHash`, `Page`, `Offset`, `ChunkIndex`, `ChunkId`, `RankScore`, `DenseScore`, `FtsScore`. Hybrid search sets `RankScore` from fused RRF. `DenseScore` is cosine similarity (clamped to `[0, 1]`) between the query embedding and the **stored** chunk vector when hybrid search returns it (`IncludeVectors = true`). Empty stored vector → `DenseScore = 0` (retrieve does not re-embed chunk text). `FtsScore` remains `0` until connector exposes per-leg FTS scores.
+- **`Citation`**: `SourceDoc`, `SourceUri`, `SourceHash`, `Page`, `Offset`, `ChunkIndex`, `ChunkId`, `RankScore`, `DenseScore`, `FtsScore`, optional `SectionSummaryId` / `SectionSummary` (packing only; `Text` stays child chunk text). Hybrid search sets `RankScore` from fused RRF. `DenseScore` is cosine similarity (clamped to `[0, 1]`) between the query embedding and the **stored** chunk vector when hybrid search returns it (`IncludeVectors = true`). Empty stored vector → `DenseScore = 0` (retrieve does not re-embed chunk text). `FtsScore` remains `0` until connector exposes per-leg FTS scores.
 - **`CitationOrder`**: `ScoreDescending` (default), `ChunkOrderAscending`, `SourceDocThenChunkOrder`, `PageAscending`, `None`. UI list order; independent of `ContextPacker` prompt order.
 
 ### SSE
@@ -86,7 +86,11 @@ Complete API reference surface for `ZVec.Extensions.VectorData` and `ZVec.Rag`.
 
 ### Options
 
-- **`ZVecRagOptions`**: `StoragePath`, `Embedder`, `Chat`, `RrfK`, `MaxContextTokens`, `GenerationReserveTokens`, `TokenizerEncoding`, `TokenizerModelPath`, nested `ZVecVectorStoreOptions`.
+- **`ZVecRagOptions`**: `StoragePath`, `Embedder`, `Chat`, `RrfK`, `MaxContextTokens`, `GenerationReserveTokens`, `GenerateSummaries` (retrieve/pack; default `false`), `TokenizerEncoding`, `TokenizerModelPath`, nested `ZVecVectorStoreOptions`.
+- **`IngestOptions`**: `GenerateSummaries` (ingest; default `false`), `MaxSummaryTokens` (default `128`), `SummarySectionMaxTokens` (default `2048`), `OnDuplicate`, `SourceUri`, `Page`, `Chunker`.
+- **`ZVecRagConstants.SectionSummaryCollectionName`**: `rag_section_summaries`.
+- **`ZVecRagSectionSummaryV1`**: `SectionSummaryId`, `SourceDoc`, `SourceUri`, `SectionIndex`, `Summary`, `DenseVector`.
+- **`ZVecRagRecordV1.SectionSummaryId`**: indexed FK to parent section summary when ingest summaries are enabled.
 - **`ZVecRagInitializationException`**: Wraps embedder stamp mismatch with delete-path / `IRagMigrationManager` remediation.
 
 ### Connector (`ZVecVectorizableRecordCollection`)

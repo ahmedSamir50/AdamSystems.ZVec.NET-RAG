@@ -55,4 +55,7 @@ public sealed class ZVecRagOptions
 
     /// <summary>Gets or sets the security sanitizer applied at retrieve/pack time (not ingest by default).</summary>
     public IRagSecuritySanitizer? SecuritySanitizer { get; set; }
+
+    /// <summary>Gets or sets whether retrieval uses the section-summary collection (default false).</summary>
+    public bool GenerateSummaries { get; set; }
 }

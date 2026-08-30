@@ -14,6 +14,8 @@ namespace ZVec.Rag.Models;
 /// <param name="RankScore">Fused RRF rank score used for sorting.</param>
 /// <param name="DenseScore">Normalized cosine similarity (0–1).</param>
 /// <param name="FtsScore">Raw FTS relevance score.</param>
+/// <param name="SectionSummaryId">Parent section-summary id when summaries are enabled.</param>
+/// <param name="SectionSummary">Parent section summary text for context packing only.</param>
 public sealed record Citation(
     string SourceDoc,
     string SourceUri,
@@ -25,4 +27,6 @@ public sealed record Citation(
     string Text,
     float RankScore,
     float DenseScore,
-    float FtsScore);
+    float FtsScore,
+    string SectionSummaryId = "",
+    string SectionSummary = "");

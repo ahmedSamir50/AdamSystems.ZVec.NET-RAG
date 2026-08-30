@@ -1,0 +1,3 @@
+The power supply uses standard connectors and delivers regulated output.
+The device operates within normal temperature ranges without special cooling.
+The enclosure meets standard ingress protection ratings for indoor use.

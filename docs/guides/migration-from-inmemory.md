@@ -37,7 +37,7 @@ Replace the InMemory package reference with the ZVec connector:
 
 <!-- After -->
 <PackageReference Include="ZVec.Extensions.VectorData" Version="0.1.0" />
-<PackageReference Include="ZVec.NET" Version="1.0.0-beta.5" />
+<PackageReference Include="ZVec.NET" Version="1.0.0-beta.6" />
 ```
 
 The ZVec connector depends on `Microsoft.Extensions.VectorData.Abstractions` (the same

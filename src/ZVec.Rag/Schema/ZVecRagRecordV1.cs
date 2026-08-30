@@ -48,6 +48,11 @@ public sealed class ZVecRagRecordV1
     [ZVecField]
     public string Text { get; set; } = string.Empty;
 
+    /// <summary>Foreign key to parent section summary; empty when summaries are disabled.</summary>
+    [VectorStoreData(IsIndexed = true)]
+    [ZVecField]
+    public string SectionSummaryId { get; set; } = string.Empty;
+
     /// <summary>Dense embedding vector.</summary>
     [VectorStoreVector(DefaultDimensions)]
     [ZVecVector(DefaultDimensions)]

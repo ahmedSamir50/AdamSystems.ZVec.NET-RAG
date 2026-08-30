@@ -109,7 +109,7 @@ flowchart LR
 
 > **Re-ingest from scratch:** Ingestion is **not reversible**. If you change `GenerateSummaries`, embedding model, vector dimensions, quantize mode, or chunker settings, delete the index (`DuplicateMode.Replace`, new `StoragePath`, or remove storage) and **ingest again from the source**. There is no in-place vector rewrite.
 
-### Optional section-summary helper (Story 2.9 — planned, default OFF)
+### Optional section-summary helper (Story 2.9 — shipped, default OFF)
 
 When **`IngestOptions.GenerateSummaries`** is enabled, ingest builds a **second collection** (`rag_section_summaries`) with one LLM summary per **section** (~2k tokens by default), then chunks as today into **`rag_chunks`**. Children keep **`embed(Text)`** and reference the section via **`SectionSummaryId`**.
 
@@ -136,7 +136,7 @@ This is an **accuracy helper** inside Naive RAG — **not** Advanced RAG, **not*
 
 ## 🌐 Ecosystem Architecture
 
-> **Status:** Security sanitizer shipped (Story 2.6). Pipeline AOT verified (Story 2.7). `ZVec.Rag.Testing` ships `IRagEvaluator`, `DeterministicEvaluator`, `SemanticTestEmbedder` (Story 2.8).
+> **Status:** Security sanitizer shipped (Story 2.6). Pipeline AOT verified (Story 2.7). `ZVec.Rag.Testing` ships `IRagEvaluator`, `DeterministicEvaluator`, `SemanticTestEmbedder` (Story 2.8). Optional section-summary helper shipped (Story 2.9, default OFF).
 ```mermaid
 flowchart TB
   subgraph appLayer ["Your .NET Application / API"]

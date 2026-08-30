@@ -19,6 +19,8 @@ public sealed class DefaultRagSecuritySanitizer : IRagSecuritySanitizer
         string sanitized = chunkText
             .Replace(ZVecRagConstants.RetrievedContextOpenTag, ZVecRagConstants.EscapedRetrievedContextOpenTag, StringComparison.Ordinal)
             .Replace(ZVecRagConstants.RetrievedContextCloseTag, ZVecRagConstants.EscapedRetrievedContextCloseTag, StringComparison.Ordinal)
+            .Replace(ZVecRagConstants.SectionSummaryOpenTag, ZVecRagConstants.EscapedSectionSummaryOpenTag, StringComparison.Ordinal)
+            .Replace(ZVecRagConstants.SectionSummaryCloseTag, ZVecRagConstants.EscapedSectionSummaryCloseTag, StringComparison.Ordinal)
             .Replace("[chunk id=\"", ZVecRagConstants.EscapedChunkIdMarkerPrefix, StringComparison.Ordinal);
 
         return sanitized;

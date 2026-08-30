@@ -28,4 +28,8 @@ public static class ZVecChunkIdGenerator
 
     /// <summary>Returns the default token chunker strategy id.</summary>
     public static string DefaultStrategyId => ZVecRagConstants.TokenChunkerStrategyId;
+
+    /// <summary>Computes a section-summary identifier for the given section index.</summary>
+    public static string ComputeSectionSummaryId(string sourceUri, int sectionIndex) =>
+        Compute(sourceUri, ZVecRagConstants.SectionSummaryStrategyId, sectionIndex);
 }

@@ -67,7 +67,7 @@ public sealed class ContextPacker
             _ => selected
         };
 
-        string context = BuildContextBlock(packedOrder);
+        string context = BuildFullContextBlock(packedOrder);
         return new ContextPackResult(context, packedOrder);
     }
 
@@ -102,6 +102,35 @@ public sealed class ContextPacker
         }
 
         return _tokenizer.CountTokens(text);
+    }
+
+    private static string BuildFullContextBlock(IReadOnlyList<Citation> citations)
+    {
+        if (citations.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        var builder = new System.Text.StringBuilder();
+        IReadOnlyList<string> uniqueSummaries = citations
+            .Select(c => c.SectionSummary)
+            .Where(s => !string.IsNullOrWhiteSpace(s))
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+
+        if (uniqueSummaries.Count > 0)
+        {
+            builder.AppendLine(ZVecRagConstants.SectionSummaryOpenTag);
+            foreach (string summary in uniqueSummaries)
+            {
+                builder.AppendLine(summary);
+            }
+
+            builder.AppendLine(ZVecRagConstants.SectionSummaryCloseTag);
+        }
+
+        builder.Append(BuildContextBlock(citations));
+        return builder.ToString();
     }
 
     private static string BuildContextBlock(IReadOnlyList<Citation> citations)

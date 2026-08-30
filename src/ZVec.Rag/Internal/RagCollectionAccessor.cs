@@ -9,12 +9,12 @@ using ZVec.Rag.Schema;
 namespace ZVec.Rag.Internal;
 
 /// <summary>
-/// Opens the RAG chunk collection and wraps embedder stamp failures.
+/// Opens RAG collections and wraps embedder stamp failures.
 /// </summary>
 internal static class RagCollectionAccessor
 {
     /// <summary>
-    /// Ensures the RAG collection exists, translating stamp failures to <see cref="ZVecRagInitializationException"/>.
+    /// Ensures the RAG chunk collection exists, translating stamp failures to <see cref="ZVecRagInitializationException"/>.
     /// </summary>
     [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "ZVecRagRecordV1 uses source-generated schema and mapper; GetCollection does not require dynamic code at runtime.")]
     [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "ZVecRagRecordV1 uses source-generated schema and mapper; GetCollection does not require unreferenced code at runtime.")]
@@ -23,10 +23,34 @@ internal static class RagCollectionAccessor
         ZVecVectorStoreOptions storeOptions,
         string collectionName,
         CancellationToken cancellationToken)
+        => await EnsureCollectionAsync<ZVecRagRecordV1>(store, storeOptions, collectionName, cancellationToken)
+            .ConfigureAwait(false);
+
+    /// <summary>
+    /// Ensures the section-summary collection exists, translating stamp failures to <see cref="ZVecRagInitializationException"/>.
+    /// </summary>
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "ZVecRagSectionSummaryV1 uses source-generated schema and mapper; GetCollection does not require dynamic code at runtime.")]
+    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "ZVecRagSectionSummaryV1 uses source-generated schema and mapper; GetCollection does not require unreferenced code at runtime.")]
+    public static async Task<VectorStoreCollection<string, ZVecRagSectionSummaryV1>> EnsureSummaryCollectionAsync(
+        ZVecVectorStore store,
+        ZVecVectorStoreOptions storeOptions,
+        string collectionName,
+        CancellationToken cancellationToken)
+        => await EnsureCollectionAsync<ZVecRagSectionSummaryV1>(store, storeOptions, collectionName, cancellationToken)
+            .ConfigureAwait(false);
+
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "ZVecRagRecordV1 and ZVecRagSectionSummaryV1 use source-generated schema and mapper; GetCollection does not require dynamic code at runtime.")]
+    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "ZVecRagRecordV1 and ZVecRagSectionSummaryV1 use source-generated schema and mapper; GetCollection does not require unreferenced code at runtime.")]
+    private static async Task<VectorStoreCollection<string, TRecord>> EnsureCollectionAsync<TRecord>(
+        ZVecVectorStore store,
+        ZVecVectorStoreOptions storeOptions,
+        string collectionName,
+        CancellationToken cancellationToken)
+        where TRecord : class
     {
         try
         {
-            var collection = store.GetCollection<string, ZVecRagRecordV1>(collectionName);
+            var collection = store.GetCollection<string, TRecord>(collectionName);
             await collection.EnsureCollectionExistsAsync(cancellationToken).ConfigureAwait(false);
             return collection;
         }

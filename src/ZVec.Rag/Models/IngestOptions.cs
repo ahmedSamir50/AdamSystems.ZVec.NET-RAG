@@ -16,4 +16,13 @@ public sealed class IngestOptions
 
     /// <summary>Gets or sets an optional chunker override for this ingest operation.</summary>
     public Abstractions.IZVecTextChunker? Chunker { get; set; }
+
+    /// <summary>Gets or sets whether to build section summaries before chunking (default false).</summary>
+    public bool GenerateSummaries { get; set; }
+
+    /// <summary>Gets or sets the maximum tokens per LLM section summary (default 128).</summary>
+    public int MaxSummaryTokens { get; set; } = Constants.ZVecRagConstants.DefaultMaxSummaryTokens;
+
+    /// <summary>Gets or sets the maximum tokens per section before summarization (default 2048).</summary>
+    public int SummarySectionMaxTokens { get; set; } = Constants.ZVecRagConstants.DefaultSummarySectionMaxTokens;
 }

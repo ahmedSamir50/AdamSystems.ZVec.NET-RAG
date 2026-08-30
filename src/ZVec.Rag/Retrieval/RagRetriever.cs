@@ -15,6 +15,9 @@ namespace ZVec.Rag.Retrieval;
 /// </summary>
 public sealed class RagRetriever : IRagRetriever
 {
+    private static readonly FilteredRecordRetrievalOptions<ZVecRagRecordV1> ExpandChildRetrievalOptions =
+        new() { IncludeVectors = true };
+
     private readonly RagCollectionProvider _collectionProvider;
     private readonly ZVecRagOptions _ragOptions;
 
@@ -41,6 +44,20 @@ public sealed class RagRetriever : IRagRetriever
         var embedder = _ragOptions.Embedder
             ?? throw new InvalidOperationException(ZVecRagErrorMessages.EmbedderNotConfigured());
 
+        if (!_ragOptions.GenerateSummaries)
+        {
+            return await RetrieveChunksOnlyAsync(query, embedder, topK, cancellationToken).ConfigureAwait(false);
+        }
+
+        return await RetrieveWithSummariesAsync(query, embedder, topK, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<IReadOnlyList<Citation>> RetrieveChunksOnlyAsync(
+        string query,
+        IEmbeddingGenerator<string, Embedding<float>> embedder,
+        int? topK,
+        CancellationToken cancellationToken)
+    {
         var collection = await _collectionProvider.GetCollectionAsync(cancellationToken).ConfigureAwait(false);
 
         if (collection is not IKeywordHybridSearchable<ZVecRagRecordV1> hybrid)
@@ -48,12 +65,7 @@ public sealed class RagRetriever : IRagRetriever
             throw new InvalidOperationException("RAG collection does not support hybrid search.");
         }
 
-        GeneratedEmbeddings<Embedding<float>> queryEmbeddings = await embedder.GenerateAsync(
-            [query],
-            options: null,
-            cancellationToken).ConfigureAwait(false);
-
-        ReadOnlyMemory<float> queryVector = queryEmbeddings[0].Vector;
+        ReadOnlyMemory<float> queryVector = await EncodeQueryAsync(query, embedder, cancellationToken).ConfigureAwait(false);
         int effectiveTop = topK ?? _ragOptions.RetrieveTopK;
         string[] keywords = TokenizeKeywords(query);
 
@@ -75,6 +87,144 @@ public sealed class RagRetriever : IRagRetriever
         }
 
         return SortCitations(citations, _ragOptions.CitationOrder);
+    }
+
+    private async Task<IReadOnlyList<Citation>> RetrieveWithSummariesAsync(
+        string query,
+        IEmbeddingGenerator<string, Embedding<float>> embedder,
+        int? topK,
+        CancellationToken cancellationToken)
+    {
+        var chunkCollection = await _collectionProvider.GetCollectionAsync(cancellationToken).ConfigureAwait(false);
+        var summaryCollection = await _collectionProvider.GetSummaryCollectionAsync(cancellationToken).ConfigureAwait(false);
+
+        if (chunkCollection is not IKeywordHybridSearchable<ZVecRagRecordV1> chunkHybrid)
+        {
+            throw new InvalidOperationException("RAG collection does not support hybrid search.");
+        }
+
+        if (summaryCollection is not IKeywordHybridSearchable<ZVecRagSectionSummaryV1> summaryHybrid)
+        {
+            throw new InvalidOperationException("Section summary collection does not support hybrid search.");
+        }
+
+        ReadOnlyMemory<float> queryVector = await EncodeQueryAsync(query, embedder, cancellationToken).ConfigureAwait(false);
+        int effectiveTop = topK ?? _ragOptions.RetrieveTopK;
+        string[] keywords = TokenizeKeywords(query);
+
+        var chunkHybridOptions = new ZVecHybridSearchOptions<ZVecRagRecordV1>
+        {
+            RrfK = _ragOptions.RrfK,
+            IncludeVectors = true
+        };
+
+        var summaryHybridOptions = new ZVecHybridSearchOptions<ZVecRagSectionSummaryV1>
+        {
+            RrfK = _ragOptions.RrfK,
+            IncludeVectors = true
+        };
+
+        Task<List<Citation>> chunkTask = CollectChunkHitsAsync(
+            chunkHybrid,
+            queryVector,
+            keywords,
+            effectiveTop,
+            chunkHybridOptions,
+            cancellationToken);
+
+        Task<List<(ZVecRagSectionSummaryV1 Summary, float Score)>> summaryTask = CollectSummaryHitsAsync(
+            summaryHybrid,
+            queryVector,
+            keywords,
+            effectiveTop,
+            summaryHybridOptions,
+            cancellationToken);
+
+        await Task.WhenAll(chunkTask, summaryTask).ConfigureAwait(false);
+
+        List<Citation> chunkHits = await chunkTask.ConfigureAwait(false);
+        List<(ZVecRagSectionSummaryV1 Summary, float Score)> summaryHits = await summaryTask.ConfigureAwait(false);
+
+        var expandedChildren = new List<ZVecRagRecordV1>();
+        foreach ((ZVecRagSectionSummaryV1 summary, _) in summaryHits
+                     .OrderByDescending(h => h.Score)
+                     .Take(ZVecRagConstants.DefaultSummaryExpandTopS))
+        {
+            await foreach (var child in chunkCollection.GetAsync(
+                r => r.SectionSummaryId == summary.SectionSummaryId,
+                effectiveTop,
+                ExpandChildRetrievalOptions,
+                cancellationToken: cancellationToken).ConfigureAwait(false))
+            {
+                expandedChildren.Add(child);
+            }
+        }
+
+        List<Citation> fused = SectionSummaryFusion.Fuse(
+            chunkHits,
+            summaryHits,
+            expandedChildren,
+            queryVector,
+            ZVecRagConstants.DefaultSummaryParentBoost);
+
+        return SortCitations(fused, _ragOptions.CitationOrder);
+    }
+
+    private static async Task<List<Citation>> CollectChunkHitsAsync(
+        IKeywordHybridSearchable<ZVecRagRecordV1> hybrid,
+        ReadOnlyMemory<float> queryVector,
+        string[] keywords,
+        int effectiveTop,
+        ZVecHybridSearchOptions<ZVecRagRecordV1> hybridOptions,
+        CancellationToken cancellationToken)
+    {
+        var citations = new List<Citation>();
+        await foreach (var result in hybrid.HybridSearchAsync(
+            queryVector,
+            keywords,
+            effectiveTop,
+            hybridOptions,
+            cancellationToken).ConfigureAwait(false))
+        {
+            citations.Add(MapToCitation(result.Record, (float)(result.Score ?? 0d), queryVector));
+        }
+
+        return citations;
+    }
+
+    private static async Task<List<(ZVecRagSectionSummaryV1 Summary, float Score)>> CollectSummaryHitsAsync(
+        IKeywordHybridSearchable<ZVecRagSectionSummaryV1> hybrid,
+        ReadOnlyMemory<float> queryVector,
+        string[] keywords,
+        int effectiveTop,
+        ZVecHybridSearchOptions<ZVecRagSectionSummaryV1> hybridOptions,
+        CancellationToken cancellationToken)
+    {
+        var hits = new List<(ZVecRagSectionSummaryV1, float)>();
+        await foreach (var result in hybrid.HybridSearchAsync(
+            queryVector,
+            keywords,
+            effectiveTop,
+            hybridOptions,
+            cancellationToken).ConfigureAwait(false))
+        {
+            hits.Add((result.Record, (float)(result.Score ?? 0d)));
+        }
+
+        return hits;
+    }
+
+    private static async Task<ReadOnlyMemory<float>> EncodeQueryAsync(
+        string query,
+        IEmbeddingGenerator<string, Embedding<float>> embedder,
+        CancellationToken cancellationToken)
+    {
+        GeneratedEmbeddings<Embedding<float>> queryEmbeddings = await embedder.GenerateAsync(
+            [query],
+            options: null,
+            cancellationToken).ConfigureAwait(false);
+
+        return queryEmbeddings[0].Vector;
     }
 
     public static IReadOnlyList<Citation> SortCitations(IReadOnlyList<Citation> citations, CitationOrder order)
@@ -110,9 +260,10 @@ public sealed class RagRetriever : IRagRetriever
             record.ChunkIndex,
             record.ChunkId,
             record.Text,
-            RankScore: rankScore,
-            DenseScore: ComputeCosineSimilarity(queryVector, record.DenseVector),
-            FtsScore: 0f);
+            rankScore,
+            ComputeCosineSimilarity(queryVector, record.DenseVector),
+            0f,
+            record.SectionSummaryId);
     }
 
     public static float ComputeCosineSimilarity(ReadOnlyMemory<float> left, ReadOnlyMemory<float> right)

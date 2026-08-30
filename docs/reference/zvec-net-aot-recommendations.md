@@ -3,7 +3,7 @@
 > **Specification & Verification Record**
 > **Author**: Ahmed Samir (`ahmedsamir50`) | **Org**: Adam Systems
 > **Target Repository**: [`ahmedSamir50/AdamSystems.ZVec.NET`](https://github.com/ahmedSamir50/AdamSystems.ZVec.NET)
-> **SDK Version**: `1.0.0-beta.5+zvec.0.6.0` | **Status**: Verified 100% Native AOT Clean ✅
+> **SDK Version**: `1.0.0-beta.6+zvec.0.6.0` | **Status**: Verified 100% Native AOT Clean ✅
 
 ---
 
@@ -11,11 +11,11 @@
 
 During Phase 0 Native AOT verification of `ZVec.NET` (using `dotnet publish -c Release -r win-x64 /p:PublishAot=true`), an initial audit identified IL trimming warnings (`IL2070` and `IL2091`) in `ZVecTypeModel` and `ZVecMapper` reflection paths.
 
-In `ZVec.NET v1.0.0-beta.5`, these methods were updated with explicit `[DynamicallyAccessedMembers]` annotations. Native AOT execution testing confirmed **100% successful runtime execution** across model resolution, document conversion, vector memory pinning, and POCO restoration.
+In `ZVec.NET v1.0.0-beta.6`, these methods were updated with explicit `[DynamicallyAccessedMembers]` annotations. Native AOT execution testing confirmed **100% successful runtime execution** across model resolution, document conversion, vector memory pinning, and POCO restoration.
 
 ---
 
-## 1. Applied Code Annotations in `ZVec.NET v1.0.0-beta.5`
+## 1. Applied Code Annotations in `ZVec.NET v1.0.0-beta.6`
 
 ### 1.1 `ZVecTypeModel.cs`
 Annotated `Get` and `Build` parameters with `[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)]` to preserve `[ZVecId]`, `[ZVecField]`, and `[ZVecVector]` attribute metadata during ILLink trimming:
@@ -77,7 +77,7 @@ public static class ZVecMapper
 
 ## 2. Phase 0 Audit Verification Results
 
-`ZVec.AotTestApp.exe` was compiled with `/p:PublishAot=true` and executed against `ZVec.NET v1.0.0-beta.5`:
+`ZVec.AotTestApp.exe` was compiled with `/p:PublishAot=true` and executed against `ZVec.NET v1.0.0-beta.6`:
 
 ```text
 === ZVec.NET Native AOT Audit Starting ===

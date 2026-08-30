@@ -1,6 +1,9 @@
+using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DependencyInjection;
+using ZVec.Rag.Models;
 using ZVec.Rag.Schema;
 using ZVec.Rag.Testing;
+using ZVec.Rag.Testing.Evaluation;
 
 namespace ZVec.Rag.Tests;
 
@@ -14,18 +17,22 @@ internal static class RagTestHarness
 
     internal static ServiceProvider CreateServiceProvider(
         string storagePath,
-        FakeChatClient? chatClient = null,
-        string modelId = "test-model-v1")
+        IChatClient? chatClient = null,
+        string modelId = "test-model-v1",
+        bool generateSummaries = false,
+        IEmbeddingGenerator<string, Embedding<float>>? embedder = null,
+        int retrieveTopK = 3)
     {
         var chat = chatClient ?? new FakeChatClient("Answer", " token");
         var services = new ServiceCollection();
         services.AddZVecRag(opts =>
         {
             opts.StoragePath = storagePath;
-            opts.Embedder = new DeterministicEmbedder(ZVecRagRecordV1.DefaultDimensions);
+            opts.Embedder = embedder ?? new DeterministicEmbedder(ZVecRagRecordV1.DefaultDimensions);
             opts.Chat = chat;
             opts.VectorStore.ModelId = modelId;
-            opts.RetrieveTopK = 3;
+            opts.RetrieveTopK = retrieveTopK;
+            opts.GenerateSummaries = generateSummaries;
         })
         .AddTokenChunker()
         .AddMarkdownChunker()
@@ -33,4 +40,7 @@ internal static class RagTestHarness
 
         return services.BuildServiceProvider();
     }
+
+    internal static IEmbeddingGenerator<string, Embedding<float>> CreateSemanticEmbedder()
+        => new SemanticTestEmbedder(ZVecRagRecordV1.DefaultDimensions);
 }

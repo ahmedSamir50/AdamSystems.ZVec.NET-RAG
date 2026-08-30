@@ -71,7 +71,7 @@ All NuGet package versions across the solution are managed centrally in `Directo
 
 | Package | Purpose | Target Version |
 |---|---|---|
-| **`ZVec.NET`** | Native Embedded Vector DB Engine | `1.0.0-beta.5` |
+| **`ZVec.NET`** | Native Embedded Vector DB Engine | `1.0.0-beta.6` |
 | **`Microsoft.Extensions.VectorData.Abstractions`** | Official Vector Store Abstractions | `10.9.0` |
 | **`SixLabors.ImageSharp`** | Cross-Platform Image Preprocessing | `3.1.7` |
 | **`Microsoft.CodeAnalysis.CSharp`** | Roslyn Source Generator SDK | `4.12.0` |

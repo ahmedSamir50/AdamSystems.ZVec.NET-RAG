@@ -66,7 +66,7 @@ Plus a `dotnet new zvec-rag` template that scaffolds a working RAG app in 60 sec
 
 ### 2.3 ZVec.NET already solves the hardest part
 
-The vector DB itself is built and shipped. ZVec.NET v1.0.0-beta.5 (Aug 2026) provides:
+The vector DB itself is built and shipped. ZVec.NET v1.0.0-beta.6 (Aug 2026) provides:
 
 - **9 HARD native RIDs**: win-x64, linux-x64, linux-arm64, osx-arm64, osx-x64, android-arm64, android-x64, ios-arm64, iossimulator-arm64 (+ maccatalyst-arm64 in pack, CI soft)
 - **3 TFMs**: net8.0, net9.0, net10.0 (LTS floor: .NET 8)
@@ -159,7 +159,7 @@ flowchart TB
     int4["Microsoft Agent Framework GA April 2026\nOrchestration patterns optional not required"]
   end
   subgraph owned ["YOU ALREADY OWN existing asset Apache-2.0"]
-    own1["ZVec.NET 1.0.0-beta.5 +zvec.0.6.0\nIZvecFactory IZvecCollection T"]
+    own1["ZVec.NET 1.0.0-beta.6 +zvec.0.6.0\nIZvecFactory IZvecCollection T"]
     own2["AddZVec AddZVecCollection T"]
     own3["ZVecVector ZVecField ZVecId ZVecIgnore"]
     own4["Hybrid search + RRF/weighted rerankers in-DB"]
@@ -382,21 +382,21 @@ That's it. No Azure. No Python. No Qdrant. Connector Native AOT verified (Phase 
 
 > **Story ID map:** Project-plan Epic 2 checkboxes **2.1–2.15** are a legacy breakdown. The locked execution plan uses **implementation-plan Stories 2.1–2.9**. Same-numbered items are **not** the same work unless labeled below (e.g. project-plan **2.9** = citation tracking; implementation-plan **Story 2.9** = section-summary helper).
 
-- [ ] 2.1 `IRagPipeline` orchestrator (thin wrapper) — **maps to implementation-plan Story 2.1** (split interfaces + facade + `ContextPacker` + `AddZVecRag`)
-- [ ] 2.2 `IRagIngestor` — text/markdown chunking in core via in-repo `IZVecTextChunker` ACL (**implementation-plan Story 2.2**; PDF/HTML via optional `ZVec.Rag.Pdf`, not core)
-- [ ] 2.3 ~~`IRagEmbedder`~~ **REJECTED** — use `Microsoft.Extensions.AI` `IEmbeddingGenerator<string, Embedding<float>>` directly (no custom embedder interface)
-- [ ] 2.4 `IRagRetriever` — hybrid search via `ZVec.Extensions.VectorData` (**Story 2.1** retriever slice)
-- [ ] 2.5 `IReranker` pluggable hook — default `ZVecRrfReranker`; cross-encoder deferred (**D-2**, Story 2.3.2)
-- [ ] 2.6 `IRagGenerator` — delegates to `M.E.AI IChatClient`, streaming (**Story 2.1** generator slice)
-- [ ] 2.7 `RagChunk` record — **Story 2.1** (minimal) + **Story 2.3.2** (full `CitationOrder`)
-- [ ] 2.8 `Citation` record — **Story 2.1** (minimal) + **Story 2.3.2** (score fields)
-- [ ] 2.9 Citation tracking — **Story 2.1** + **Story 2.2.5**
-- [ ] 2.10 Near-duplicate dedup — **Story 2.2.2**
-- [ ] 2.11 `IAsyncEnumerable<RagChunk>` streaming — **Story 2.1**
-- [ ] 2.12 SSE endpoint helper — **Story 2.3.3**
-- [ ] 2.13 Test fakes: `DeterministicEmbedder`, `FakeChatClient` — **Story 2.4** (no `InMemoryRagPipeline`)
-- [ ] 2.14 Verify-based snapshot testing — **Story 2.4.3**
-- [ ] 2.15 DI extensions: `services.AddZVecRag(...)` — **Story 2.1.4**
+- [x] 2.1 `IRagPipeline` orchestrator (thin wrapper) — **shipped** (implementation-plan Story 2.1)
+- [x] 2.2 `IRagIngestor` — **shipped** (implementation-plan Story 2.2; PDF/HTML via optional `ZVec.Rag.Pdf`, not core)
+- [x] 2.3 ~~`IRagEmbedder`~~ **REJECTED** — use `Microsoft.Extensions.AI` `IEmbeddingGenerator<string, Embedding<float>>` directly (no custom embedder interface)
+- [x] 2.4 `IRagRetriever` — **shipped** (Story 2.1 retriever slice)
+- [x] 2.5 `IReranker` pluggable hook — default `ZVecRrfReranker`; cross-encoder deferred (**D-2**, Story 2.3.2)
+- [x] 2.6 `IRagGenerator` — **shipped** (Story 2.1 generator slice)
+- [x] 2.7 `RagChunk` record — **shipped** (Story 2.1 minimal + Story 2.3.2 full `CitationOrder`)
+- [x] 2.8 `Citation` record — **shipped** (Story 2.1 minimal + Story 2.3.2 score fields)
+- [x] 2.9 Citation tracking — **shipped** (Story 2.1 + Story 2.2.5)
+- [x] 2.10 Near-duplicate dedup — **shipped** (Story 2.2.2)
+- [x] 2.11 `IAsyncEnumerable<RagChunk>` streaming — **shipped** (Story 2.1)
+- [x] 2.12 SSE endpoint helper — **shipped** (Story 2.3.3)
+- [x] 2.13 Test fakes: `DeterministicEmbedder`, `FakeChatClient` — **shipped** (Story 2.4)
+- [x] 2.14 Verify-based snapshot testing — **shipped** (Story 2.4.3)
+- [x] 2.15 DI extensions: `services.AddZVecRag(...)` — **shipped** (Story 2.1.4)
 
 ### Epic 3 — Local LLM recipes
 
@@ -498,7 +498,7 @@ That's it. No Azure. No Python. No Qdrant. Connector Native AOT verified (Phase 
 
 | Library | License | Status | Mature? | Covers wedge? |
 |---|---|---|---|---|
-| **ZVec.NET** (yours) | Apache-2.0 | 1.0.0-beta.5 | Mature SDK, beta versioning | Foundation — Path B builds on this |
+| **ZVec.NET** (yours) | Apache-2.0 | 1.0.0-beta.6 | Mature SDK, beta versioning | Foundation — Path B builds on this |
 | **Microsoft.Extensions.VectorData.InMemory** | MIT | GA | Mature for testing; **explicitly not for production persistence** per Microsoft docs | ❌ |
 | **sqlite-vec + SK connector** | MIT / Apache | Alpha upstream, Preview connector | Not mature | ⚠️ Partial, alpha-quality |
 | **LanceDB .NET** | Apache | Single-contributor P/Invoke wrapper | Not mature | ⚠️ Partial |
@@ -650,7 +650,7 @@ It's also **the only candidate we've evaluated that leverages an existing asset*
   - Ingestion dataflow: bounded `Channels` (no `Task.Run` chunker wrapper); DI-registered `IZVecTextChunker` (no `Activator`); core text/md only
   - Story 2.7: `ZVec.Rag.AotTestApp` pipeline AOT gate (M.E.AI + plain-text `IngestTextAsync` via Channels + DI chunker + Tiktoken)
   - Story 2.8: `IRagEvaluator` in `ZVec.Rag.Testing` (Recall@K/MRR/nDCG + `RecallAtKLift`)
-  - Story 2.9: Optional section-summary helper — second collection `rag_section_summaries`, parallel union+boost retrieve, packer prepends summary (`GenerateSummaries` default OFF; closes D-9; **not** Advanced RAG / RAPTOR)
+  - Story 2.9: Optional section-summary helper — **shipped** (second collection `rag_section_summaries`, parallel union+boost retrieve, packer prepends summary; `GenerateSummaries` default OFF; closes D-9; **not** Advanced RAG / RAPTOR)
   - Multi-turn conversation history (`IList<ChatMessage>`)
   - Citation tracking (chunk IDs → source doc + page + offset + `RankScore` / `DenseScore` distinction)
   - Streaming IAsyncEnumerable<RagChunk> with `app.MapRagSseEndpoint` unbuffered SSE helper (`HttpContext.RequestAborted` linked to `AskAsync`)
@@ -782,7 +782,7 @@ Execute strategic pivot (or pivot to maintenance-only) **if any**:
 - **Docs:** https://ahmedsamir50.github.io/AdamSystems.ZVec.NET
 - **Samples:** https://github.com/ahmedSamir50/AdamSystems.ZVec.NET/tree/main/samples
 - **Demos & POCs:** https://github.com/ahmedSamir50/ZVec.Net-DemosAndPOCs
-- **Version (Aug 2026):** 1.0.0-beta.5+zvec.0.6.0
+- **Version (Aug 2026):** 1.0.0-beta.6+zvec.0.6.0
 - **License:** Apache-2.0
 - **TFMs:** net8.0, net9.0, net10.0
 - **Native RIDs (9 HARD):** win-x64, linux-x64, linux-arm64, osx-arm64, osx-x64, android-arm64, android-x64, ios-arm64, iossimulator-arm64 (+ maccatalyst-arm64 in pack)
@@ -857,7 +857,7 @@ I'm starting work on Path B from my prior research session. The full project pla
 /home/z/my-project/download/ZVec.NET-RAG-project-plan.md — please read it completely
 before responding.
 
-Context: I own ZVec.NET (Apache-2.0, 1.0.0-beta.5, https://github.com/ahmedSamir50/AdamSystems.ZVec.NET).
+Context: I own ZVec.NET (Apache-2.0, 1.0.0-beta.6, https://github.com/ahmedSamir50/AdamSystems.ZVec.NET).
 Path B is to build two new NuGet packages on top of it:
 1. ZVec.Extensions.VectorData — a Microsoft.Extensions.VectorData connector (the v1 centerpiece)
 2. ZVec.Rag — a thin RAG integration library that factors proven sample patterns into a reusable library

@@ -14,7 +14,7 @@ This document tracks upstream Microsoft ecosystem packages, community signals, a
 
 | Package | Purpose | Target Version |
 |---|---|---|
-| **`ZVec.NET`** | Native Embedded Vector DB Engine | `[1.0.0-beta.5, 2.0.0)` |
+| **`ZVec.NET`** | Native Embedded Vector DB Engine | `[1.0.0-beta.6, 2.0.0)` |
 | **`Microsoft.Extensions.VectorData.Abstractions`** | Official Vector Store Abstractions (`IVectorStore`, `IVectorizedSearch<T>`) | `10.9.0` |
 | **`Microsoft.Extensions.AI.Abstractions`** | Chat & Embedding Abstractions (`IChatClient`, `IEmbeddingGenerator`) | `10.9.0` |
 | **`Microsoft.CodeAnalysis.CSharp`** | Roslyn Source Generator SDK | `4.12.0` |
@@ -36,8 +36,8 @@ This document tracks upstream Microsoft ecosystem packages, community signals, a
 
 ## 3. ZVec.NET Engine Baseline
 
-- **NuGet Package**: [`ZVec.NET 1.0.0-beta.5`](https://www.nuget.org/packages/ZVec.NET/)
+- **NuGet Package**: [`ZVec.NET 1.0.0-beta.6`](https://www.nuget.org/packages/ZVec.NET/)
 - **GitHub Repository**: [`ahmedSamir50/AdamSystems.ZVec.NET`](https://github.com/ahmedSamir50/AdamSystems.ZVec.NET)
-- **Engine Version**: `1.0.0-beta.5+zvec.0.6.0`
+- **Engine Version**: `1.0.0-beta.6+zvec.0.6.0`
 - **Supported RIDs (9 HARD)**: `win-x64`, `linux-x64`, `linux-arm64`, `osx-arm64`, `osx-x64`, `android-arm64`, `android-x64`, `ios-arm64`, `iossimulator-arm64`
 - **Native AOT Status**: Verified 100% Native AOT clean under `PublishAot=true` via Phase 0 `ZVec.AotTestApp`.

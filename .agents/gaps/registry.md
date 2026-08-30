@@ -45,6 +45,7 @@
 | DS-2 | P2 | 2026-08-26 | 2026-08-26 | working-tree | mobile-memory-budget.md corrected: mmap+ReadOnly for shipped indexes; real ZVecQuantizeType API |
 | DS-3 | P2 | 2026-08-26 | 2026-08-26 | working-tree | Second evaluation: LITM vs CitationOrder decoupled; Sample 03 Flat default; stamp QuantizeType; Tiktoken AOT gate; Channels not Task.Run |
 | D-1 | P2 | 2026-08-26 | 2026-08-30 | working-tree | Story 2.8: `IRagEvaluator`, `DeterministicEvaluator`, `SemanticTestEmbedder`, in-repo seed fixtures |
+| D-9 | P2 | 2026-08-26 | 2026-08-30 | working-tree | Story 2.9: optional section-summary helper (`GenerateSummaries` default OFF); `rag_section_summaries` collection; parallel union+boost retrieve; packer prepends summary outside `<retrieved_context>` |
 
 ## Phase 2 Design Gaps (Block WRITE of that epic)
 
@@ -59,7 +60,6 @@ These are **not** "do not block forever." They block **WRITE of the epic they be
 | D-6 | P2 | batch_ingestion_topology_undefined | **Shipped topology:** bounded `System.Threading.Channels` via `IngestionChannelPump` (capacity 1024, wait-on-full); Task 2.2.3 forbids `Task.Run`. `IngestTextAsync` awaits same-call pipeline completion. **Not NATS:** broker/distributed ingest = post-v1 optional `IIngestBus`, not core v1. |
 | D-7 | P2 | complex_doc_ingest | **Deferred post-v1** — Epic 8.7 (owner: `zvec-architect-strategy-expert`). Layout-aware readers (PDF tables, PPT slides, DOCX, Excel) emit parse tree **before** stamps. Additive schema: `HeadingPath` (indexed breadcrumb), `ParentChunkId` (indexed nullable heading/page/table node). `ContextPacker` may fetch parent by id later; **`ChunkId` formula unchanged**. Markdown `HeadingPath` = first reader of epic, not silent v1 schema change. Sample 02 PdfPig = text extract only. |
 | D-8 | P2 | query_complexity | **Deferred post-v1** — Epic 8.8 (owner: `zvec-architect-strategy-expert`). Router, sub-questions, auto-retrieval filters. Blocks research-assistant epic until tasked. |
-| D-9 | P2 | optional_section_summary_helper | **Story 2.9** (after 2.7 AOT + 2.8 eval). `GenerateSummaries` default OFF. Second collection `rag_section_summaries` (`embed(Summary)`); chunks keep `embed(Text)` + `SectionSummaryId` FK. Retrieve: parallel union+parent boost; packer prepends section summary, cites child `Text`. Re-ingest on flag/embedder/chunker change. Not Advanced RAG / RAPTOR; not in AOT harness. |
 
 ## Spec Gaps (S-*)
 
