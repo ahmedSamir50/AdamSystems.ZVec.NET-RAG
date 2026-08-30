@@ -111,4 +111,36 @@ Complete API reference surface for `ZVec.Extensions.VectorData` and `ZVec.Rag`.
 | Type | Purpose |
 |------|---------|
 | `DeterministicEmbedder` | Hash-based `IEmbeddingGenerator` for fast CI tests |
-| `FakeChatClient` | Dual streaming/non-streaming `IChatClient` fake (`LastStreamingCallWasCanceled`, `TokensYielded`) |
+| `FakeChatClient` | Dual streaming/non-streaming `IChatClient` fake (`LastStreamingCallWasCanceled`, `TokensYielded`, optional `UsageDetails` on final streaming update) |
+
+## `ZVec.Rag.LLamaSharp`
+
+| Namespace | Key types |
+|-----------|-----------|
+| `ZVec.Rag.LLamaSharp` | `LLamaSharpChatClient`, `LLamaSharpEmbedder`, `LLamaSharpOptions`, `LLamaSharpConstants` |
+| `Microsoft.Extensions.DependencyInjection` | `AddZVecRagLLamaSharp` |
+
+- **`LLamaSharpChatClient`**: `IChatClient` over local GGUF weights (`GetResponseAsync`, `GetStreamingResponseAsync`). Honors `CancellationToken`. `[RequiresUnreferencedCode]` — not in `ZVec.Rag.AotTestApp`.
+- **`LLamaSharpEmbedder`**: `IEmbeddingGenerator<string, Embedding<float>>` when the GGUF exposes embeddings.
+- **`AddZVecRagLLamaSharp`**: Registers singleton chat + embed adapters; sets `ZVecRagOptions.Chat` / `Embedder` when null.
+
+## `ZVec.Rag.ONNX`
+
+| Namespace | Key types |
+|-----------|-----------|
+| `ZVec.Rag.ONNX` | `OnnxEmbedder`, `OnnxEmbedderOptions`, `OnnxEmbeddingModelKind`, `ClipImagePreprocessor`, `OnnxConstants` |
+| `ZVec.Rag.ONNX.Schema` | `ZVecRagMultimodalRecordV1` (512-d CLIP; indexed `SourceKind` = `text` \| `image`) |
+| `Microsoft.Extensions.DependencyInjection` | `AddZVecRagOnnxEmbedder` |
+
+- **`OnnxEmbedder`**: Text embeddings for `MiniLm`, `EmbeddingGemma`, `ClipText`. `EmbedImageAsync` when `ModelKind == ClipText` and `VisionModelPath` is set.
+- **`ClipImagePreprocessor`**: ImageSharp NCHW tensor with documented CLIP mean/std in `OnnxConstants`.
+- **`AddZVecRagOnnxEmbedder`**: Registers singleton `OnnxEmbedder`; assigns `ZVecRagOptions.Embedder` only when dimensions match `ZVecRagRecordV1.DefaultDimensions` (768).
+
+## `ZVec.Rag.Telemetry`
+
+| Type | Purpose |
+|------|---------|
+| `ZVecRagTelemetry.ActivitySource` | OpenTelemetry activities: `ingest`, `retrieve`, `generate` |
+| `ZVecRagTelemetry.Meter` | `zvec.rag.tokens` counter; `zvec.rag.stage.duration` histogram (ms) |
+
+Tag keys: `stage` (`ingest` \| `retrieve` \| `generate` \| `embed` \| `chat`), `direction` (`input` \| `output`) for token counter. Host apps subscribe via `AddOpenTelemetry().WithTracing(t => t.AddSource("ZVec.Rag")).WithMetrics(m => m.AddMeter("ZVec.Rag"))` — not shipped inside `ZVec.Rag`.

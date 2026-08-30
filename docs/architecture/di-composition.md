@@ -47,6 +47,39 @@ services.AddZVecRag(opts => { ... })
 
 Chunker selection: `IngestOptions.Chunker` override → else `text/markdown` uses markdown chunker when registered → else token chunker. No `Activator.CreateInstance`.
 
+### Optional recipe extensions (Story 4.1)
+
+After `AddZVecRag`, hosts may register local model adapters:
+
+```csharp
+services.AddZVecRag(opts => { /* StoragePath, Embedder, Chat */ })
+    .AddTokenChunker();
+
+// Local GGUF (desktop/server; not AOT-safe)
+services.AddZVecRagLLamaSharp(o => o.ModelPath = Environment.GetEnvironmentVariable("ZVEC_LLAMA_MODEL")!);
+
+// ONNX embedder (768-d EmbeddingGemma for default pipeline; CLIP 512-d uses ZVecRagMultimodalRecordV1)
+services.AddZVecRagOnnxEmbedder(o =>
+{
+    o.ModelPath = onnxPath;
+    o.ModelKind = OnnxEmbeddingModelKind.EmbeddingGemma;
+    o.Dimensions = ZVecRagRecordV1.DefaultDimensions;
+});
+```
+
+`AddZVecRagLLamaSharp` registers **Singleton** chat + embed adapters and sets `ZVecRagOptions.Chat` / `Embedder` when those properties are still null. `AddZVecRagOnnxEmbedder` registers **Singleton** `OnnxEmbedder` and sets `Embedder` only when dimensions are 768 and `Embedder` is still null — it does **not** set `Chat`.
+
+### OpenTelemetry host wiring (Story 4.2)
+
+`ZVec.Rag` emits `ActivitySource` / `Meter` named `ZVec.Rag` from `ZVecRagTelemetry`. The host subscribes — no OTLP exporter ships in `ZVec.Rag`:
+
+```csharp
+builder.Services.AddOpenTelemetry()
+    .WithTracing(t => t.AddSource("ZVec.Rag"))
+    .WithMetrics(m => m.AddMeter("ZVec.Rag"))
+    .AddOtlpExporter(); // host choice
+```
+
 ---
 
 ## ⏱️ Service Lifetimes Matrix

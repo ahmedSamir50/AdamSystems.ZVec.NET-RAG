@@ -358,9 +358,9 @@ That's it. No Azure. No Python. No Qdrant. Connector Native AOT verified (Phase 
 
 - [ ] **0.1 License-clean the demos repo** (`ZVec.Net-DemosAndPOCs` currently has no LICENSE file). Add Apache-2.0 to enable lifting patterns into the OSS starter.
 - [x] **0.2 AOT / trim audit of ZVec.NET**. Annotate public API with `[DynamicallyAccessedMembers]`. Add a `dotnet publish -c Release -r linux-x64 /p:PublishAot=true` CI job. Document which paths are AOT-clean and which need fixing. The pin-based `ReadOnlyMemory<float>` + SafeHandle design is favorable but unverified. *(Done — `ZVec.AotTestApp` + `aot-smoke` / `trim-warning-smoke` jobs in `.github/workflows/quality-gate.yml`; `ZVEC001` / `ZVEC002` analyzers enforce source-generated mappers.)*
-- [ ] **0.3 Confirm M.E.VectorData conformance test availability**. If Microsoft ships a conformance suite, run ZVec connector against it. If not, write one and contribute back.
-- [ ] **0.4 Monitor `microsoft/semantic-kernel#13224` and `microsoft/agent-framework#1395`** for any first-party embedded connector announcement. Quarterly check.
-- [ ] **0.5 Verify `Microsoft.Extensions.DataIngestion` API stability**. Currently Preview; abstract behind `IRagPipeline` so v1 doesn't break when DataIngestion goes GA.
+- [x] **0.3 Confirm M.E.VectorData conformance test availability**. Custom 13-test conformance suite ships in `tests/ZVec.Extensions.VectorData.ConformanceTests` (implementation-plan Story 0.3). Microsoft's official suite not integrated — keep Partial until upstream publishes one.
+- [x] **0.4 Monitor `microsoft/semantic-kernel#13224` and `microsoft/agent-framework#1395`** for any first-party embedded connector announcement. Quarterly watchlist in `docs/reference/dependencies.md` (implementation-plan Story 0.4).
+- [x] **0.5 DataIngestion PackageReference rejected** — no `Microsoft.Extensions.DataIngestion` dependency. Ingest ACL is `IRagDocumentReader` / `IZVecTextChunker` in `ZVec.Rag`. MkDocs wiki shipped (implementation-plan Story 0.5).
 
 ### Epic 1 — `ZVec.Extensions.VectorData` connector (THE centerpiece)
 
@@ -402,46 +402,46 @@ That's it. No Azure. No Python. No Qdrant. Connector Native AOT verified (Phase 
 
 > **Story ID map:** Matches **implementation-plan Epic 4** (LLM recipe packages). Implementation-plan Epic 3 is the `dotnet new zvec-rag` template — not this epic.
 
-- [ ] 3.1 `ZVec.Rag.Ollama` recipe (pre-wired Ollama via M.E.AI's `OpenAIClient.GetEmbeddingGenerator(...)`)
-- [ ] 3.2 `ZVec.Rag.LLamaSharp` (LLamaSharpChatClient + LLamaSharpEmbedder as M.E.AI adapters)
-- [ ] 3.3 `ZVec.Rag.ONNX` (OnnxEmbedder for CLIP / MiniLM / EmbeddingGemma — lift from `demos/01-clip-onnx`)
-- [ ] 3.4 Recipe: fully local RAG (LLamaSharp + ZVec, zero network calls)
+- [ ] 3.1 `ZVec.Rag.Ollama` recipe — **Deferred** (owner: `zvec-rag-pipeline-expert`): use M.E.AI Ollama `IChatClient` / `IEmbeddingGenerator` directly; no v1.1 package.
+- [x] 3.2 `ZVec.Rag.LLamaSharp` (LLamaSharpChatClient + LLamaSharpEmbedder as M.E.AI adapters)
+- [x] 3.3 `ZVec.Rag.ONNX` (OnnxEmbedder for CLIP / MiniLM / EmbeddingGemma — lift from `demos/01-clip-onnx`)
+- [x] 3.4 Recipe: fully local RAG (LLamaSharp + ZVec, zero network calls) — Sample 04 + `ZVec.Rag.LLamaSharp`
 - [ ] 3.5 Recipe: multimodal RAG (CLIP ONNX + ZVec, see `demos/01-clip-onnx`)
 
 ### Epic 4 — `dotnet new zvec-rag` template
 
 > **Story ID map:** Matches **implementation-plan Epic 3** (template + samples). Implementation-plan Epic 4 is LLM recipe adapters — not this epic.
 
-- [ ] 4.1 `dotnet new zvec-rag` (Console variant, ~50 LOC)
-- [ ] 4.2 `dotnet new zvec-rag-aspnet` (ASP.NET Core + SSE streaming)
-- [ ] 4.3 `dotnet new zvec-rag-maui` (MAUI Blazor Hybrid + offline)
-- [ ] 4.4 Template options: Phase 3 symbols: `--llm fake|ollama|azure|openai|llamasharp` (generated code is fake; other values are README hints). `--embedder fake|ollama|azure`. `--storage zvec`. `onnx` embedder = Story 4.1 (H-ONNX-TPL).
-- [ ] 4.5 Published as `ZVec.Rag.Template` NuGet
-- [ ] 4.6 Install docs: `dotnet new install ZVec.Rag.Template && dotnet new zvec-rag -n MyRagApp`
+- [x] 4.1 `dotnet new zvec-rag` (Console variant, ~50 LOC) — **shipped** (implementation-plan Story 3.1)
+- [x] 4.2 `dotnet new zvec-rag-aspnet` (ASP.NET Core + SSE streaming) — **shipped** (implementation-plan Story 3.1)
+- [x] 4.3 `dotnet new zvec-rag-maui` (MAUI Blazor Hybrid + offline) — **shipped** (implementation-plan Story 3.1)
+- [x] 4.4 Template options: `--llm fake|ollama|azure|openai|llamasharp` (generated code is **fake** unless `llamasharp` + `ZVEC_LLAMA_MODEL`). `--embedder fake|ollama|azure|onnx` (`onnx` generates `OnnxEmbedder` with `ZVEC_ONNX_MODEL` fallback to Deterministic). `--storage zvec`. — **shipped** (implementation-plan Story 3.1)
+- [x] 4.5 Published as `ZVec.Rag.Template` NuGet — **shipped** (implementation-plan Story 3.1)
+- [x] 4.6 Install docs: `dotnet new install ZVec.Rag.Template && dotnet new zvec-rag -n MyRagApp` — **shipped** (implementation-plan Story 3.1)
 - [x] 4.7 Honesty pass (Task 3.4): unified package Version 1.0.0-preview.1; PDF magic sniff; SummaryCollectionName. (implementation-plan Story 3.4)
 
 ### Epic 5 — Sample apps (factored from existing, not greenfield)
 
-- [ ] 5.1 **01-rag-your-docs** — Console, ingest a folder, ask questions (60-second demo)
-- [ ] 5.2 **02-local-first-pdf-chat** — ASP.NET Core + SSE (lift from `samples/AspNet` `/rag/ask/stream` pattern, EN+AR + Egyptian FAQ fixtures)
-- [ ] 5.3 **03-offline-phone-rag** — MAUI Blazor Hybrid retrieve+cite (lift MudBlazor pattern from `demos/02-movie-recs`): ship read-only mmap Flat index ≤20k chunks built on desktop; optional INT8 HNSW only if Recall@K ≥0.95 vs FP32 Flat; background collection open (never on UI thread); no on-device LLamaSharp
-- [ ] 5.4 **04-airgapped-enterprise-rag** — AspNet + LLamaSharp + ZVec (zero network calls)
+- [x] 5.1 **01-rag-your-docs** — Console, ingest a folder, ask questions (60-second demo) — **shipped** (implementation-plan Story 3.2)
+- [x] 5.2 **02-local-first-pdf-chat** — ASP.NET Core + SSE (lift from `samples/AspNet` `/rag/ask/stream` pattern, EN+AR + Egyptian FAQ fixtures) — **shipped** (implementation-plan Story 3.2)
+- [x] 5.3 **03-offline-phone-rag** — MAUI Blazor Hybrid retrieve+cite — **shipped** (implementation-plan Story 3.2). Residual iOS finalizer / signed `.ipa` risk documented (`H-IOS-SIM`, `H-IPA-DEVICE`); no on-device LLamaSharp.
+- [x] 5.4 **04-airgapped-enterprise-rag** — AspNet + LLamaSharp + ZVec (zero network calls when `ZVEC_LLAMA_MODEL` set) — **shipped** (implementation-plan Story 3.2). CI **builds** Sample 04 only; without env var the sample uses Fake/Deterministic (no `dotnet run` in CI).
 - [ ] 5.5 **05-multimodal-rag** — CLIP ONNX + ZVec (lift from `demos/01-clip-onnx` Flickr8k pattern)
 - [ ] 5.6 **06-aspire-dashboard** — Aspire + Docker (lift from `demos/Advanced/PDDM` Jira RAG navigator pattern)
 - [ ] 5.7 Each sample <200 LOC, each runnable in <60 seconds
 
 ### Epic 6 — Observability
 
-- [ ] 6.1 `ActivitySource` per ingestion / retrieval / generation
-- [ ] 6.2 Token usage tracking (wrap IChatClient + IEmbeddingGenerator with usage counters)
-- [ ] 6.3 Latency histograms per pipeline stage
+- [x] 6.1 `ActivitySource` per ingestion / retrieval / generation — **shipped** (`ZVecRagTelemetry`; implementation-plan Story 4.2)
+- [ ] 6.2 Token usage tracking — **Shipped-partial**: `zvec.rag.tokens` counter on `UsageContent` / embed `Usage`; **not** a public `IChatClient` decorator type (implementation-plan Story 4.2)
+- [x] 6.3 Latency histograms per pipeline stage — **shipped** (`zvec.rag.stage.duration`; implementation-plan Story 4.2)
 - [ ] 6.4 OTLP exporter config helpers
-- [ ] 6.5 Verify-based snapshot testing for RAG responses
+- [x] 6.5 Verify-based snapshot testing for RAG responses — **shipped** as Epic 2 **2.14** / implementation-plan Task 2.4.3 (no second snapshot stack)
 - [ ] 6.6 Integrate with existing `ZVecHealthCheck` for end-to-end health endpoints
 
 ### Epic 7 — Docs & branding
 
-- [ ] 7.1 DocFX or mkdocs site (extend existing ZVec.NET mkdocs)
+- [x] 7.1 MkDocs site in this repo (`docs/`); DocFX not used — **shipped** (implementation-plan Story 0.5 / 4.3). Conference/marketing pages 7.2–7.7 remain open.
 - [ ] 7.2 Quickstart: "RAG in 60 seconds" (the killer demo)
 - [ ] 7.3 Architecture guide: "Why embedded?" + local-first AI manifesto
 - [ ] 7.4 Comparison page: ZVec.Rag vs Azure AI Search vs sqlite-vec vs pgvector vs LM-Kit vs KernelMemory
@@ -459,6 +459,7 @@ That's it. No Azure. No Python. No Qdrant. Connector Native AOT verified (Phase 
 - [ ] 8.6 win-arm64 support (blocked by `alibaba/zvec#622` — unblock when MSVC issue resolved)
 - [ ] 8.7 **Complex-document ingest (D-7)** — layout-aware readers (PDF tables, PPT slides, DOCX styles, Excel sheets) emit parse tree **before** stamps; additive `HeadingPath` + `ParentChunkId` on `ZVecRagRecordV1` (`ChunkId` formula unchanged); `ContextPacker` may fetch parent text later; owner: `zvec-architect-strategy-expert`. Post-v1; blocks table QA claims until tasked.
 - [ ] 8.8 **Query complexity (D-8)** — router (pointed vs summarize vs compare), sub-question decomposition, auto-retrieval metadata filters; owner: `zvec-architect-strategy-expert`. Post-v1; blocks research-assistant epic until tasked.
+- [ ] 8.9 **Production RAG ops (D-10)** — host-app alerting, cascading retrieve fallbacks, circuit-breaker / half-open health, and query / embedding / vector-search / LLM response caches via `Microsoft.Extensions.AI` decorators, `Microsoft.Extensions.Http.Resilience` / Polly, and Aspire/Grafana — **not** v1 `ZVec.Rag` library types; hybrid dense+FTS+RRF remains the v1 retrieve path; retrieval quality stays Story 2.8 offline evaluators; library stage telemetry stays Story 4.2 / Epic 6; owner: `zvec-architect-strategy-expert`. Post-v1.
 
 ---
 
@@ -676,7 +677,7 @@ It's also **the only candidate we've evaluated that leverages an existing asset*
 
 ### Phase 4 — Local LLM recipes + polish (2–3 weeks)
 
-- `ZVec.Rag.Ollama` recipe
+- `ZVec.Rag.Ollama` — **Deferred** (owner: `zvec-rag-pipeline-expert`): use M.E.AI Ollama client directly; no separate package.
 - `ZVec.Rag.LLamaSharp` (LLamaSharpChatClient + LLamaSharpEmbedder, Desktop only)
 - `ZVec.Rag.ONNX` (OnnxEmbedder for CLIP / MiniLM / EmbeddingGemma + ImagePreprocessor)
 - Observability (ActivitySource, token tracking, OTLP)

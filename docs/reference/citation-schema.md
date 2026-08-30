@@ -55,8 +55,30 @@ public sealed class ZVecRagRecordV1
     [VectorStoreVector(768)]
     [ZVecVector(768)]
     public ReadOnlyMemory<float> DenseVector { get; set; } // Dense vector embedding
+
+    [VectorStoreData(IsIndexed = true)]
+    [ZVecField]
+    public string SectionSummaryId { get; set; } = string.Empty; // FK to ZVecRagSectionSummaryV1 when summaries enabled
 }
 ```
+
+### Multimodal record (`ZVecRagMultimodalRecordV1`, `ZVec.Rag.ONNX.Schema`)
+
+CLIP collections use **512-d** vectors and an indexed `SourceKind` field (`OnnxConstants.SourceKindText` = `"text"`, `SourceKindImage` = `"image"`). This POCO is for multimodal ingest (Sample 05, Epic 5.5 — planned); core `RagIngestor` still writes `ZVecRagRecordV1` (768-d) only.
+
+```csharp
+public sealed class ZVecRagMultimodalRecordV1
+{
+    // Same citation fields as ZVecRagRecordV1, plus:
+    [VectorStoreData(IsIndexed = true)]
+    public string SourceKind { get; set; } = OnnxConstants.SourceKindText;
+
+    [VectorStoreVector(OnnxConstants.ClipDimensions)]
+    public ReadOnlyMemory<float> DenseVector { get; set; }
+}
+```
+
+`SourceKind` is **not** on `ZVecRagRecordV1` — filter with LINQ when unimodal UI is required.
 
 ### ChunkId Generation (D-4)
 

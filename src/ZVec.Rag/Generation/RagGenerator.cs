@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Microsoft.Extensions.AI;
 using ZVec.Rag.Abstractions;
 using ZVec.Rag.Constants;
@@ -5,6 +6,7 @@ using ZVec.Rag.Models;
 using ZVec.Rag.Options;
 using ZVec.Rag.Retrieval;
 using ZVec.Rag.Security;
+using ZVec.Rag.Telemetry;
 
 namespace ZVec.Rag.Generation;
 
@@ -45,6 +47,29 @@ public sealed class RagGenerator : IRagGenerator
             throw new ArgumentException(ZVecRagErrorMessages.NullOrEmptyQuestion(), nameof(question));
         }
 
+        using Activity? activity = ZVecRagTelemetry.ActivitySource.StartActivity(ZVecRagConstants.ActivityNameGenerate);
+        var stopwatch = Stopwatch.StartNew();
+        try
+        {
+            await foreach (RagChunk chunk in AskCoreAsync(question, history, streamCitations, cancellationToken)
+                .ConfigureAwait(false))
+            {
+                yield return chunk;
+            }
+        }
+        finally
+        {
+            stopwatch.Stop();
+            ZVecRagTelemetry.RecordStageDuration(ZVecRagConstants.TelemetryStageGenerate, stopwatch.Elapsed.TotalMilliseconds);
+        }
+    }
+
+    private async IAsyncEnumerable<RagChunk> AskCoreAsync(
+        string question,
+        IList<ChatMessage>? history,
+        bool streamCitations,
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
+    {
         var chat = _ragOptions.Chat
             ?? throw new InvalidOperationException(ZVecRagErrorMessages.ChatClientNotConfigured());
 
@@ -73,7 +98,10 @@ public sealed class RagGenerator : IRagGenerator
             cancellationToken.ThrowIfCancellationRequested();
             string text = update.Text ?? string.Empty;
             bool isFinal = update.FinishReason != null;
-            yield return new RagChunk(text, streamCitationsList, isFinal, update.Contents.OfType<UsageContent>().FirstOrDefault()?.Details);
+            UsageDetails? usage = update.Contents.OfType<UsageContent>().FirstOrDefault()?.Details;
+            ZVecRagTelemetry.RecordUsageDetails(ZVecRagConstants.TelemetryStageChat, usage);
+
+            yield return new RagChunk(text, streamCitationsList, isFinal, usage);
         }
     }
 

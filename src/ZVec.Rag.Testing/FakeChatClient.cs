@@ -11,6 +11,7 @@ public sealed class FakeChatClient : IChatClient
     private readonly IReadOnlyList<string> _tokens;
     private readonly TimeSpan _delayPerToken;
     private readonly Func<IReadOnlyList<ChatMessage>, string>? _responseFactory;
+    private readonly UsageDetails? _streamingUsage;
 
     /// <summary>Initializes a new instance with a token sequence.</summary>
     public FakeChatClient(params string[] tokens)
@@ -20,9 +21,16 @@ public sealed class FakeChatClient : IChatClient
 
     /// <summary>Initializes a new instance with a token sequence and per-token delay.</summary>
     public FakeChatClient(IReadOnlyList<string> tokens, TimeSpan delayPerToken)
+        : this(tokens, delayPerToken, streamingUsage: null)
+    {
+    }
+
+    /// <summary>Initializes a new instance with optional usage on the final streaming update.</summary>
+    public FakeChatClient(IReadOnlyList<string> tokens, TimeSpan delayPerToken, UsageDetails? streamingUsage)
     {
         _tokens = tokens ?? throw new ArgumentNullException(nameof(tokens));
         _delayPerToken = delayPerToken;
+        _streamingUsage = streamingUsage;
     }
 
     /// <summary>Initializes a new instance with a custom non-streaming response factory.</summary>
@@ -31,6 +39,7 @@ public sealed class FakeChatClient : IChatClient
         _responseFactory = responseFactory ?? throw new ArgumentNullException(nameof(responseFactory));
         _tokens = Array.Empty<string>();
         _delayPerToken = TimeSpan.Zero;
+        _streamingUsage = null;
     }
 
     /// <summary>Gets the number of streaming calls observed.</summary>
@@ -104,10 +113,21 @@ public sealed class FakeChatClient : IChatClient
 
             bool isLast = i == _tokens.Count - 1;
             TokensYielded++;
-            yield return new ChatResponseUpdate(ChatRole.Assistant, _tokens[i])
+            if (isLast && _streamingUsage != null)
             {
-                FinishReason = isLast ? ChatFinishReason.Stop : null
-            };
+                yield return new ChatResponseUpdate(ChatRole.Assistant, _tokens[i])
+                {
+                    FinishReason = ChatFinishReason.Stop,
+                    Contents = [new TextContent(_tokens[i]), new UsageContent(_streamingUsage)]
+                };
+            }
+            else
+            {
+                yield return new ChatResponseUpdate(ChatRole.Assistant, _tokens[i])
+                {
+                    FinishReason = isLast ? ChatFinishReason.Stop : null
+                };
+            }
         }
     }
 

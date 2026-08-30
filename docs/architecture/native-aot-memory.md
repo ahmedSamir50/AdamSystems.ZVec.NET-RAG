@@ -44,7 +44,7 @@ This prevents managed heap array allocations (`float[]`) and ensures zero GC pre
 
 > **Connector AOT (Phase 0 — complete):** `ZVec.AotTestApp` verifies `ZVec.Extensions.VectorData` connector under Native AOT on desktop RIDs.
 
-> **Pipeline AOT (Story 2.7 — verified):** Native AOT for the RAG pipeline is verified in CI by publishing and running `tests/ZVec.Rag.AotTestApp` (`rag-aot-smoke`) on linux-x64, win-x64, and osx-x64: text ingest, hybrid retrieve, `AskAsync`. PDF, SSE, and LLamaSharp are not in that smoke. `rag-aot-smoke` fails on `IL2026`/`IL3050` in publish output. SentencePiece `.model` files are **not** required in the AOT gate (ship as Content + `FileStream` if needed).
+> **Pipeline AOT (Story 2.7 — verified):** Native AOT for the RAG pipeline is verified in CI by publishing and running `tests/ZVec.Rag.AotTestApp` (`rag-aot-smoke`) on linux-x64, win-x64, and osx-x64: text ingest, hybrid retrieve, `AskAsync`. PDF, SSE, `ZVec.Rag.LLamaSharp`, and `ZVec.Rag.ONNX` are not in that smoke. `rag-aot-smoke` fails on `IL2026`/`IL3050` in publish output. SentencePiece `.model` files are **not** required in the AOT gate (ship as Content + `FileStream` if needed).
 
 ---
 

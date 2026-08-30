@@ -7,10 +7,9 @@
     <RootNamespace>ZVec.Rag.Sample04</RootNamespace>
   </PropertyGroup>
 
-  <!-- H-LS-WRAP: replace with ZVec.Rag.LLamaSharp in Story 4.1.1 -->
-
   <ItemGroup>
     <ProjectReference Include="..\..\src\ZVec.Rag\ZVec.Rag.csproj" />
+    <ProjectReference Include="..\..\src\ZVec.Rag.LLamaSharp\ZVec.Rag.LLamaSharp.csproj" />
     <ProjectReference Include="..\..\src\ZVec.Rag.Testing\ZVec.Rag.Testing.csproj" />
   </ItemGroup>
 

@@ -36,24 +36,33 @@ public sealed class RagEvaluatorIntegrationTests
             IRagIngestor ingestor = scope.ServiceProvider.GetRequiredService<IRagIngestor>();
             IRagRetriever retriever = scope.ServiceProvider.GetRequiredService<IRagRetriever>();
 
-            string orionText = await File.ReadAllTextAsync(GetFixturePath("corpus/doc-orion.md"));
-            string zephyrText = await File.ReadAllTextAsync(GetFixturePath("corpus/doc-zephyr.md"));
+            string orionText = await File.ReadAllTextAsync(
+                GetFixturePath("corpus/doc-orion.md"),
+                TestContext.Current.CancellationToken);
+            string zephyrText = await File.ReadAllTextAsync(
+                GetFixturePath("corpus/doc-zephyr.md"),
+                TestContext.Current.CancellationToken);
 
             await ingestor.IngestTextAsync(
                 orionText,
                 "doc-orion",
-                new IngestOptions { SourceUri = "fixture://doc-orion.md" });
+                new IngestOptions { SourceUri = "fixture://doc-orion.md" },
+                cancellationToken: TestContext.Current.CancellationToken);
             await ingestor.IngestTextAsync(
                 zephyrText,
                 "doc-zephyr",
-                new IngestOptions { SourceUri = "fixture://doc-zephyr.md" });
+                new IngestOptions { SourceUri = "fixture://doc-zephyr.md" },
+                cancellationToken: TestContext.Current.CancellationToken);
             int generateCallsAfterIngest = embedder.GenerateAsyncCalls;
             string goldOrion = ZVecChunkIdGenerator.Compute(
                 "fixture://doc-orion.md",
                 ZVecChunkIdGenerator.DefaultStrategyId,
                 chunkIndex: 0);
 
-            var citations = await retriever.RetrieveAsync("Orion battery 5V output", topK: 5);
+            var citations = await retriever.RetrieveAsync(
+                "Orion battery 5V output",
+                topK: 5,
+                cancellationToken: TestContext.Current.CancellationToken);
             Assert.Equal(generateCallsAfterIngest + 1, embedder.GenerateAsyncCalls);
             Assert.Contains(citations, c => c.ChunkId == goldOrion);
             Assert.All(citations, c => Assert.InRange(c.DenseScore, 0f, 1f));

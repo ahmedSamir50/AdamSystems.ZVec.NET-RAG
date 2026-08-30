@@ -1,5 +1,6 @@
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.VectorData;
+using System.Diagnostics;
 using ZVec.Extensions.VectorData.Hybrid;
 using ZVec.Rag.Abstractions;
 using ZVec.Rag.Constants;
@@ -7,6 +8,7 @@ using ZVec.Rag.Internal;
 using ZVec.Rag.Models;
 using ZVec.Rag.Options;
 using ZVec.Rag.Schema;
+using ZVec.Rag.Telemetry;
 
 namespace ZVec.Rag.Retrieval;
 
@@ -41,15 +43,25 @@ public sealed class RagRetriever : IRagRetriever
 
         cancellationToken.ThrowIfCancellationRequested();
 
-        var embedder = _ragOptions.Embedder
-            ?? throw new InvalidOperationException(ZVecRagErrorMessages.EmbedderNotConfigured());
-
-        if (!_ragOptions.GenerateSummaries)
+        using Activity? activity = ZVecRagTelemetry.ActivitySource.StartActivity(ZVecRagConstants.ActivityNameRetrieve);
+        var stopwatch = Stopwatch.StartNew();
+        try
         {
-            return await RetrieveChunksOnlyAsync(query, embedder, topK, cancellationToken).ConfigureAwait(false);
-        }
+            var embedder = _ragOptions.Embedder
+                ?? throw new InvalidOperationException(ZVecRagErrorMessages.EmbedderNotConfigured());
 
-        return await RetrieveWithSummariesAsync(query, embedder, topK, cancellationToken).ConfigureAwait(false);
+            if (!_ragOptions.GenerateSummaries)
+            {
+                return await RetrieveChunksOnlyAsync(query, embedder, topK, cancellationToken).ConfigureAwait(false);
+            }
+
+            return await RetrieveWithSummariesAsync(query, embedder, topK, cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            stopwatch.Stop();
+            ZVecRagTelemetry.RecordStageDuration(ZVecRagConstants.TelemetryStageRetrieve, stopwatch.Elapsed.TotalMilliseconds);
+        }
     }
 
     private async Task<IReadOnlyList<Citation>> RetrieveChunksOnlyAsync(
@@ -223,6 +235,8 @@ public sealed class RagRetriever : IRagRetriever
             [query],
             options: null,
             cancellationToken).ConfigureAwait(false);
+
+        ZVecRagTelemetry.RecordUsageDetails(ZVecRagConstants.TelemetryStageEmbed, queryEmbeddings.Usage);
 
         return queryEmbeddings[0].Vector;
     }

@@ -1,11 +1,10 @@
-# Task 3.4 honesty pass — 2026-08-30
+# Latest gap report
+
+See [2026-08-30-phase4-review.md](2026-08-30-phase4-review.md) for Phase 4 review gate closeout.
 
 ```yaml
 date: 2026-08-30
-gates:
-  merge_allowed: true
-  blocking_gaps: []
-  warning_gaps: [H-ENGINE-GA, H-MAGIC-NEXT, H-IPA-DEVICE, H-LS-WRAP, H-ONNX-TPL, H-SAMPLE05, H-SAMPLE06, H-MIGRATE, H-PDF-TABLE, H-IOS-SIM, H-BENCH-DTYPE]
+merge_allowed: true
+phase: 4-review-gate-complete
+blocking_gaps: []
 ```
-
-See `.agents/gaps/reports/2026-08-30-task-3.4.md`.

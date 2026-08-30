@@ -5,6 +5,7 @@ using ZVec.Rag.Abstractions;
 using ZVec.Rag.Constants;
 using ZVec.Rag.Models;
 using ZVec.Rag.Schema;
+using ZVec.Rag.Telemetry;
 
 namespace ZVec.Rag.Ingestion;
 
@@ -126,6 +127,8 @@ public sealed partial class RagIngestor
             texts,
             options: null,
             cancellationToken).ConfigureAwait(false);
+
+        ZVecRagTelemetry.RecordUsageDetails(ZVecRagConstants.TelemetryStageEmbed, embeddings.Usage);
 
         var records = new List<ZVecRagRecordV1>();
         for (int i = 0; i < texts.Count; i++)

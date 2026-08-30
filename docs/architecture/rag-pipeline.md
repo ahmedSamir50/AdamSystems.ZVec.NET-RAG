@@ -2,7 +2,7 @@
 
 `ZVec.Rag` provides a batteries-included RAG orchestration layer (`IRagPipeline`, `IRagIngestor`, `IRagRetriever`, `IRagGenerator`) built on top of Microsoft AI ecosystem primitives:
 
-> **Status:** Stories 2.1–2.3, 2.4.3 (Verify snapshots), 2.6, 2.7 (pipeline AOT), 2.8 (`IRagEvaluator`), and **2.9** (optional section-summary helper, default OFF) shipped. **Architecture class:** v1 pipeline is Naive RAG (single-shot hybrid retrieve + pack + one generate) per [Liu axes](https://www.youtube.com/watch?v=dI_TmTW9S4c&t=4778s); complex-document ingest (D-7 / Epic 8.7) and query routing (D-8 / Epic 8.8) are post-v1.
+> **Status:** Stories 2.1–2.3, 2.4.3 (Verify snapshots), 2.6, 2.7 (pipeline AOT), 2.8 (`IRagEvaluator`), and **2.9** (optional section-summary helper, default OFF) shipped. **Architecture class:** v1 pipeline is Naive RAG (single-shot hybrid retrieve + pack + one generate) per [Liu axes](https://www.youtube.com/watch?v=dI_TmTW9S4c&t=4778s); complex-document ingest (D-7 / Epic 8.7), query routing (D-8 / Epic 8.8), and production RAG ops (D-10 / Epic 8.9) are post-v1.
 ```mermaid
 flowchart LR
   reader["1. Document Reader\nMD / TXT in core\nPDF via ZVec.Rag.Pdf"]
@@ -92,4 +92,20 @@ Optional `IngestOptions.GenerateSummaries` (default **false**) improves **retrie
 - **Re-Ranking Engines (`LlmReranker` / `ICrossEncoderReranker`)**: Pluggable re-ranking hook (deferred D-2, post-v1.1) enabling `LlmReranker` (via `IChatClient` prompt) and ONNX cross-encoders (`bge-reranker-v2-m3`). Default hybrid fusion remains `ZVecRrfReranker`.
 - **Citation Tracking**: Round-trip metadata (`SourceDoc`, `SourceUri`, `SourceHash`, `Page`, `Offset`, `ChunkIndex`, `ChunkId`) into streaming `RagChunk` records, with distinct `RankScore`, `DenseScore`, and `FtsScore`. UI citation lists use `CitationOrder`; prompt packing uses `ContextPacker` strategy — these are decoupled.
 - **SSE Response Helpers**: Real-time unbuffered Server-Sent Events endpoint helpers (`app.MapRagSseEndpoint(...)`) calling `Response.BodyWriter.FlushAsync()` after every chunk. **Must** pass `HttpContext.RequestAborted` as the `CancellationToken` to `IRagGenerator.AskAsync(...)` so client disconnect cancels LLM token generation.
+
+---
+
+## 5. Production RAG ops — library vs host (D-10 / Epic 8.9 — planned, not shipped)
+
+v1 `ZVec.Rag` does **not** ship production alerting, cascading retrieve fallbacks, circuit-breaker / half-open health probes, or query / embedding / vector-search / LLM response caches. Those are **post-v1 Epic 8.9 / D-10** and belong in the **host application** (`Microsoft.Extensions.AI` caching decorators, `Microsoft.Extensions.Http.Resilience` / Polly, Aspire/Grafana alert rules).
+
+| Concern | v1 `ZVec.Rag` | Host / later epic |
+|---|---|---|
+| Retrieve path | Hybrid dense + FTS + RRF (`RagRetriever`) — **primary**, not a degraded fallback | Optional extractive-only via `RetrieveAsync` without `AskAsync` |
+| Retrieval quality | Offline `IRagEvaluator` (Story 2.8) — not live production gauges | Host dashboards if needed |
+| Stage latency / tokens | Shipped `ZVecRagTelemetry` (`ActivitySource`, `zvec.rag.tokens`, `zvec.rag.stage.duration`) — host OTLP export | Host alert thresholds |
+| Cascading fallbacks | Not shipped — typed exceptions; SSE cancel on disconnect | Host middleware / Polly |
+| Query / embed / LLM caches | Not shipped | Host `IDistributedCache` / `HybridCache` or M.E.AI decorators |
+
+Do not add `IRagFallbackPipeline` or in-library cache types without amending the plan and re-running spec_lock.
 

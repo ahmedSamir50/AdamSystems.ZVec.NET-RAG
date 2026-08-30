@@ -60,6 +60,7 @@ These are **not** "do not block forever." They block **WRITE of the epic they be
 | D-6 | P2 | batch_ingestion_topology_undefined | **Shipped topology:** bounded `System.Threading.Channels` via `IngestionChannelPump` (capacity 1024, wait-on-full); Task 2.2.3 forbids `Task.Run`. `IngestTextAsync` awaits same-call pipeline completion. **Not NATS:** broker/distributed ingest = post-v1 optional `IIngestBus`, not core v1. |
 | D-7 | P2 | complex_doc_ingest | **Deferred post-v1** — Epic 8.7 (owner: `zvec-architect-strategy-expert`). Layout-aware readers (PDF tables, PPT slides, DOCX, Excel) emit parse tree **before** stamps. Additive schema: `HeadingPath` (indexed breadcrumb), `ParentChunkId` (indexed nullable heading/page/table node). `ContextPacker` may fetch parent by id later; **`ChunkId` formula unchanged**. Markdown `HeadingPath` = first reader of epic, not silent v1 schema change. Sample 02 PdfPig = text extract only. |
 | D-8 | P2 | query_complexity | **Deferred post-v1** — Epic 8.8 (owner: `zvec-architect-strategy-expert`). Router, sub-questions, auto-retrieval filters. Blocks research-assistant epic until tasked. |
+| D-10 | P2 | production_rag_ops_host_only | **Deferred post-v1** — Epic 8.9 (owner: `zvec-architect-strategy-expert`). Host alerting, cascading fallbacks, circuit-breaker health, query/embed/search/LLM caches via `Microsoft.Extensions.*` — **not** v1 `ZVec.Rag` types. Hybrid dense+FTS+RRF remains v1 retrieve path; retrieval quality stays Story 2.8 offline evaluators; library stage telemetry stays Story 4.2 / Epic 6. |
 
 ## Handshake (H-*) — Phase 3 leftovers block consuming epic WRITE
 
@@ -67,15 +68,15 @@ Same gate as `D-*`: spec_lock of the consuming epic is `write_allowed: false` un
 
 | ID | Consuming story | Phase 3 leftover | Status | Since | Last Checked |
 |----|-----------------|------------------|--------|-------|-------------|
-| H-LS-WRAP | 4.1.1 | Sample 04 / template hint use raw LLamaSharp or Fake | OPEN | 2026-08-30 | 2026-08-30 |
-| H-ONNX-TPL | 4.1.2 | `--embedder onnx` not generated | OPEN | 2026-08-30 | 2026-08-30 |
+| H-LS-WRAP | 4.1.1 | Sample 04 / template hint use raw LLamaSharp or Fake | Fixed | 2026-08-30 | 2026-08-30 |
+| H-ONNX-TPL | 4.1.2 | `--embedder onnx` not generated | Fixed | 2026-08-30 | 2026-08-30 |
 | H-SAMPLE05 | Epic 5.5 | no Sample 05 | OPEN | 2026-08-30 | 2026-08-30 |
 | H-SAMPLE06 | Epic 5.6 | no Sample 06 | OPEN | 2026-08-30 | 2026-08-30 |
 | H-MIGRATE | D-3 | `IRagMigrationManager` not implemented | OPEN | 2026-08-30 | 2026-08-30 |
 | H-PDF-TABLE | Epic 8.7 / D-7 | PdfPig text extract only | OPEN | 2026-08-30 | 2026-08-30 |
 | H-IOS-SIM | Task 1.10.1 | iOS residual-risk wiki banner | OPEN | 2026-08-30 | 2026-08-30 |
 | H-IPA-DEVICE | 3.3 follow-up | no signed `.ipa` numbers | OPEN | 2026-08-30 | 2026-08-30 |
-| H-BENCH-DTYPE | Task 4.3.2 | Sample 03 gate is fixture Recall@K only | OPEN | 2026-08-30 | 2026-08-30 |
+| H-BENCH-DTYPE | Task 4.3.2 | Sample 03 gate is fixture Recall@K only | Fixed | 2026-08-30 | 2026-08-30 |
 | H-ENGINE-GA | first story after ZVec.NET 1.0.0 or documented engine break | bump ZVec.NET pin + AOT; do not copy engine number onto Directory.Build.props | OPEN | 2026-08-30 | 2026-08-30 |
 | H-MAGIC-NEXT | later ingest formats | HTML/DOCX/magic table deferred; PDF %PDF- only in 3.4 | OPEN | 2026-08-30 | 2026-08-30 |
 
@@ -118,6 +119,7 @@ Locked findings from spec_lock / consultant restudies. Process gaps live here to
 | NC-CA-CONNECTOR | P2 | connector_configure_await_hygiene | Fixed | 2026-08-27 | CAF on ZVecVectorizableRecordCollection CRUD/search awaits + ListCollectionNames Yield |
 | S-EPIC34-MAP-DRIFT | P1 | epic34_map_notes_false | Fixed | 2026-08-27 | Implementation-plan map notes corrected; plan_alignment_check.py asserts inversion |
 | S-RAG-SG-AOT | P1 | rag_schema_no_source_generator | Fixed | 2026-08-30 | Story 2.7.3: SG wired into `ZVec.Rag.csproj`; `ZVecRagRecordV1` AOT-clean schema via registry |
+| S-OLLAMA-DEFER | P2 | ollama_package_deferred | Fixed | 2026-08-30 | Epic 3.1 / Phase 4: no `ZVec.Rag.Ollama`; M.E.AI Ollama client directly; owner `zvec-rag-pipeline-expert` |
 
 DS-1…DS-3 (mmap/quantize plumbing, mobile wiki, second-evaluation docs) remain in Fixed Gaps (Historical).
 

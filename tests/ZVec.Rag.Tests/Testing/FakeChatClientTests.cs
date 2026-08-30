@@ -37,6 +37,28 @@ public sealed class FakeChatClientTests
     }
 
     [Fact]
+    public async Task GetStreamingResponseAsync_IncludesUsageContent_WhenConfigured()
+    {
+        var usage = new UsageDetails { InputTokenCount = 10, OutputTokenCount = 5 };
+        var client = new FakeChatClient(["Done"], TimeSpan.Zero, usage);
+        ChatResponseUpdate? finalUpdate = null;
+
+        await foreach (ChatResponseUpdate update in client.GetStreamingResponseAsync(
+            [new ChatMessage(ChatRole.User, "test")],
+            cancellationToken: TestContext.Current.CancellationToken))
+        {
+            finalUpdate = update;
+        }
+
+        Assert.NotNull(finalUpdate);
+        Assert.Equal("Done", finalUpdate.Text);
+        UsageContent? usageContent = finalUpdate.Contents.OfType<UsageContent>().FirstOrDefault();
+        Assert.NotNull(usageContent);
+        Assert.Equal(10, usageContent.Details.InputTokenCount);
+        Assert.Equal(5, usageContent.Details.OutputTokenCount);
+    }
+
+    [Fact]
     public async Task GetStreamingResponseAsync_ThrowsOperationCanceledException_WhenCanceled()
     {
         var client = new FakeChatClient(["slow", "tokens"], TimeSpan.FromSeconds(30));

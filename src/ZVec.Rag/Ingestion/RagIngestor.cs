@@ -1,5 +1,6 @@
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.VectorData;
+using System.Diagnostics;
 using System.Threading.Channels;
 using ZVec.Extensions.VectorData.Collection;
 using ZVec.Rag.Abstractions;
@@ -9,6 +10,7 @@ using ZVec.Rag.Models;
 using ZVec.Rag.Options;
 using ZVec.Rag.Schema;
 using ZVec.Rag.Security;
+using ZVec.Rag.Telemetry;
 
 namespace ZVec.Rag.Ingestion;
 
@@ -51,6 +53,25 @@ public sealed partial class RagIngestor : IRagIngestor
         string documentId,
         IngestOptions? options = null,
         CancellationToken cancellationToken = default)
+    {
+        using Activity? activity = ZVecRagTelemetry.ActivitySource.StartActivity(ZVecRagConstants.ActivityNameIngest);
+        var stopwatch = Stopwatch.StartNew();
+        try
+        {
+            return await IngestTextCoreAsync(text, documentId, options, cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            stopwatch.Stop();
+            ZVecRagTelemetry.RecordStageDuration(ZVecRagConstants.TelemetryStageIngest, stopwatch.Elapsed.TotalMilliseconds);
+        }
+    }
+
+    private async ValueTask<IngestionResult> IngestTextCoreAsync(
+        string text,
+        string documentId,
+        IngestOptions? options,
+        CancellationToken cancellationToken)
     {
         ValidateTextAndDocumentId(text, documentId);
         cancellationToken.ThrowIfCancellationRequested();
@@ -113,6 +134,27 @@ public sealed partial class RagIngestor : IRagIngestor
         string contentType,
         IngestOptions? options = null,
         CancellationToken cancellationToken = default)
+    {
+        using Activity? activity = ZVecRagTelemetry.ActivitySource.StartActivity(ZVecRagConstants.ActivityNameIngest);
+        var stopwatch = Stopwatch.StartNew();
+        try
+        {
+            return await IngestDocumentCoreAsync(documentStream, documentId, contentType, options, cancellationToken)
+                .ConfigureAwait(false);
+        }
+        finally
+        {
+            stopwatch.Stop();
+            ZVecRagTelemetry.RecordStageDuration(ZVecRagConstants.TelemetryStageIngest, stopwatch.Elapsed.TotalMilliseconds);
+        }
+    }
+
+    private async ValueTask<IngestionResult> IngestDocumentCoreAsync(
+        Stream documentStream,
+        string documentId,
+        string contentType,
+        IngestOptions? options,
+        CancellationToken cancellationToken)
     {
         if (documentStream == null)
         {
@@ -186,6 +228,24 @@ public sealed partial class RagIngestor : IRagIngestor
         IEnumerable<IngestTextRequest> requests,
         IngestOptions? options = null,
         CancellationToken cancellationToken = default)
+    {
+        using Activity? activity = ZVecRagTelemetry.ActivitySource.StartActivity(ZVecRagConstants.ActivityNameIngest);
+        var stopwatch = Stopwatch.StartNew();
+        try
+        {
+            return await IngestBatchCoreAsync(requests, options, cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            stopwatch.Stop();
+            ZVecRagTelemetry.RecordStageDuration(ZVecRagConstants.TelemetryStageIngest, stopwatch.Elapsed.TotalMilliseconds);
+        }
+    }
+
+    private async ValueTask<IngestionResult> IngestBatchCoreAsync(
+        IEnumerable<IngestTextRequest> requests,
+        IngestOptions? options,
+        CancellationToken cancellationToken)
     {
         if (requests == null)
         {

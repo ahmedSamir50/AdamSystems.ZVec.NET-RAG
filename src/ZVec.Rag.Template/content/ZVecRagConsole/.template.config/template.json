@@ -28,7 +28,8 @@
       "choices": [
         { "choice": "fake", "description": "DeterministicEmbedder (default)" },
         { "choice": "ollama", "description": "README Ollama embedder hint" },
-        { "choice": "azure", "description": "README Azure embedder hint" }
+        { "choice": "azure", "description": "README Azure embedder hint" },
+        { "choice": "onnx", "description": "OnnxEmbedder (EmbeddingGemma 768; ZVEC_ONNX_MODEL)" }
       ],
       "defaultValue": "fake",
       "replaces": "TEMPLATE_EMBEDDER"

@@ -10,6 +10,10 @@ dotnet build ZVec.NET-RAG.slnx --configuration Release
 echo "[pre-commit] Running tests..."
 ./tests/ZVec.Extensions.VectorData.Tests/bin/Release/net8.0/ZVec.Extensions.VectorData.Tests
 ./tests/ZVec.Extensions.VectorData.ConformanceTests/bin/Release/net8.0/ZVec.Extensions.VectorData.ConformanceTests
+./tests/ZVec.Rag.Tests/bin/Release/net8.0/ZVec.Rag.Tests
+./tests/ZVec.Rag.Pdf.Tests/bin/Release/net8.0/ZVec.Rag.Pdf.Tests
+./tests/ZVec.Rag.LLamaSharp.Tests/bin/Release/net8.0/ZVec.Rag.LLamaSharp.Tests
+./tests/ZVec.Rag.ONNX.Tests/bin/Release/net8.0/ZVec.Rag.ONNX.Tests
 
 echo "[pre-commit] Verifying formatting..."
 dotnet format ZVec.NET-RAG.slnx --verify-no-changes

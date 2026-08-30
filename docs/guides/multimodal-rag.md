@@ -21,48 +21,38 @@ flowchart LR
 
 ---
 
-## ⚡ Image Preprocessing Pipeline (`SixLabors.ImageSharp`)
+## ⚡ Image Preprocessing (`ClipImagePreprocessor`)
 
-Image preprocessing before passing raw pixels into the CLIP vision ONNX model requires image loading, resizing, cropping, and tensor normalization.
-
-To ensure **100% Native AOT compatibility** and cross-platform execution, `ZVec.Rag.ONNX` uses `SixLabors.ImageSharp` for image preprocessing:
+`ZVec.Rag.ONNX` ships `ClipImagePreprocessor` with CLIP mean/std in `OnnxConstants` (no magic numbers in app code):
 
 ```csharp
-public sealed class ClipImagePreprocessor
-{
-    private static readonly float[] Mean = [0.48145466f, 0.4578275f, 0.40821073f];
-    private static readonly float[] Std = [0.26862954f, 0.26130258f, 0.27577711f];
+using ZVec.Rag.ONNX;
+using ZVec.Rag.ONNX.Schema;
 
-    public Tensor<float> Preprocess(Stream imageStream, int targetSize = 224)
-    {
-        using var image = Image.Load<Rgb24>(imageStream);
-        
-        // 1. Resize image preserving aspect ratio & crop center
-        image.Mutate(x => x.Resize(new ResizeOptions {
-            Size = new Size(targetSize, targetSize),
-            Mode = ResizeMode.Crop
-        }));
-
-        // 2. Normalize RGB values to NCHW Tensor format [1, 3, 224, 224]
-        var tensor = new DenseTensor<float>(new[] { 1, 3, targetSize, targetSize });
-        
-        image.ProcessPixelRows(accessor => {
-            for (int y = 0; y < accessor.Height; y++)
-            {
-                var pixelRow = accessor.GetRowSpan(y);
-                for (int x = 0; x < accessor.Width; x++)
-                {
-                    tensor[0, 0, y, x] = (pixelRow[x].R / 255.0f - Mean[0]) / Std[0];
-                    tensor[0, 1, y, x] = (pixelRow[x].G / 255.0f - Mean[1]) / Std[1];
-                    tensor[0, 2, y, x] = (pixelRow[x].B / 255.0f - Mean[2]) / Std[2];
-                }
-            }
-        });
-
-        return tensor;
-    }
-}
+var preprocessor = new ClipImagePreprocessor();
+DenseTensor<float> tensor = preprocessor.Preprocess(imageStream, targetSize: 224);
 ```
+
+---
+
+## 🔌 DI registration
+
+```csharp
+services.AddZVecRag(opts => { /* StoragePath, Chat */ })
+    .AddTokenChunker();
+
+services.AddZVecRagOnnxEmbedder(o =>
+{
+    o.ModelPath = textOnnxPath;
+    o.ModelKind = OnnxEmbeddingModelKind.ClipText;
+    o.Dimensions = OnnxConstants.ClipDimensions;
+    o.VisionModelPath = visionOnnxPath; // required for EmbedImageAsync
+});
+```
+
+Use `ZVecRagMultimodalRecordV1` (512-d, `SourceKind`) for CLIP collections. One embedder model per collection (Story 1.11 manifest stamp). Default `IRagPipeline` / `ZVecRagRecordV1` remains 768-d text-only.
+
+Embed-stage telemetry: `ZVecRagTelemetry` records `stage=embed` token usage when `GeneratedEmbeddings.Usage` is present.
 
 ---
 

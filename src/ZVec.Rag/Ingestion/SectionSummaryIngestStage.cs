@@ -8,6 +8,7 @@ using ZVec.Rag.Models;
 using ZVec.Rag.Options;
 using ZVec.Rag.Schema;
 using ZVec.Rag.Security;
+using ZVec.Rag.Telemetry;
 
 namespace ZVec.Rag.Ingestion;
 
@@ -93,6 +94,8 @@ internal sealed class SectionSummaryIngestStage
                 options: null,
                 cancellationToken).ConfigureAwait(false);
 
+            ZVecRagTelemetry.RecordUsageDetails(ZVecRagConstants.TelemetryStageEmbed, summaryEmbedding.Usage);
+
             await summaryCollection.UpsertAsync(
                 [
                     new ZVecRagSectionSummaryV1
@@ -114,6 +117,8 @@ internal sealed class SectionSummaryIngestStage
                     [childChunk.Text],
                     options: null,
                     cancellationToken).ConfigureAwait(false);
+
+                ZVecRagTelemetry.RecordUsageDetails(ZVecRagConstants.TelemetryStageEmbed, childEmbedding.Usage);
 
                 string chunkId = ZVecChunkIdGenerator.Compute(sourceUri, chunker.StrategyId, nextChunkIndex);
                 await chunkCollection.UpsertAsync(

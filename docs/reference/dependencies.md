@@ -5,8 +5,8 @@ This document tracks upstream Microsoft ecosystem packages, community signals, a
 ---
 
 > [!NOTE]
-> **Implementation Status Banner — Story 2.4 (partial)**:
-> `DeterministicEmbedder` and `FakeChatClient` ship in `ZVec.Rag.Testing`. `SemanticTestEmbedder`, `IRagEvaluator`, and `DeterministicEvaluator` ship in Story 2.8. Roslyn SDK is pinned to `Microsoft.CodeAnalysis.CSharp` `4.12.0` (matching .NET 9 SDK wave) and `Microsoft.Extensions.VectorData.Abstractions` `10.9.0` in CPM.
+> **Implementation Status — Story 4.1 shipped**:
+> `ZVec.Rag.LLamaSharp` and `ZVec.Rag.ONNX` recipe packages ship at `1.0.0-preview.1`. `DeterministicEmbedder` and `FakeChatClient` ship in `ZVec.Rag.Testing`. `SemanticTestEmbedder`, `IRagEvaluator`, and `DeterministicEvaluator` ship in Story 2.8. Roslyn SDK is pinned to `Microsoft.CodeAnalysis.CSharp` `4.12.0` and `Microsoft.Extensions.VectorData.Abstractions` `10.9.0` in CPM.
 
 ---
 
@@ -23,6 +23,13 @@ This document tracks upstream Microsoft ecosystem packages, community signals, a
 | **`PdfPig`** | Optional PDF text extraction (`ZVec.Rag.Pdf`) | `0.1.16` |
 | **`ZVec.Rag.Pdf`** | Optional PDF ingestion package | `1.0.0-preview.1` |
 | **`ZVec.Rag.Template`** | `dotnet new zvec-rag` project templates | `1.0.0-preview.1` |
+| **`ZVec.Rag.LLamaSharp`** | Local GGUF chat + embed adapters | `1.0.0-preview.1` |
+| **`LLamaSharp`** | GGUF inference (transitive via `ZVec.Rag.LLamaSharp`) | `0.27.0` |
+| **`LLamaSharp.Backend.Cpu`** | CPU backend for LLamaSharp | `0.27.0` |
+| **`ZVec.Rag.ONNX`** | ONNX Runtime embedding adapters | `1.0.0-preview.1` |
+| **`Microsoft.ML.OnnxRuntime`** | ONNX inference (transitive via `ZVec.Rag.ONNX`) | `1.22.1` |
+| **`SixLabors.ImageSharp`** | CLIP image preprocessing | `3.1.12` |
+| **`BenchmarkDotNet`** | Local allocation benchmarks (`ZVec.Rag.Benchmarks`) | `0.15.8` |
 | **`tryAGI/Tiktoken`** | Optional BPE Adapter for high-throughput OpenAI Tiktoken workloads | `1.0.0+` |
 
 ---

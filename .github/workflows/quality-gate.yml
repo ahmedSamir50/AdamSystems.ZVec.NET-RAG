@@ -37,6 +37,8 @@ jobs:
           ./tests/ZVec.Extensions.VectorData.SourceGenerator.Tests/bin/Release/net8.0/ZVec.Extensions.VectorData.SourceGenerator.Tests
           ./tests/ZVec.Rag.Tests/bin/Release/net8.0/ZVec.Rag.Tests
           ./tests/ZVec.Rag.Pdf.Tests/bin/Release/net8.0/ZVec.Rag.Pdf.Tests
+          ./tests/ZVec.Rag.LLamaSharp.Tests/bin/Release/net8.0/ZVec.Rag.LLamaSharp.Tests
+          ./tests/ZVec.Rag.ONNX.Tests/bin/Release/net8.0/ZVec.Rag.ONNX.Tests
 
       - name: Run Sample 01
         run: dotnet run --project samples/01-rag-your-docs/ZVec.Rag.Sample01.csproj -c Release --no-build -f net8.0
@@ -73,6 +75,8 @@ jobs:
           dotnet pack src/ZVec.Rag.Pdf/ZVec.Rag.Pdf.csproj -c Release --no-build
           dotnet pack src/ZVec.Rag.Template/ZVec.Rag.Template.csproj -c Release --no-build
           dotnet pack src/ZVec.Rag.Testing/ZVec.Rag.Testing.csproj -c Release --no-build
+          dotnet pack src/ZVec.Rag.LLamaSharp/ZVec.Rag.LLamaSharp.csproj -c Release --no-build
+          dotnet pack src/ZVec.Rag.ONNX/ZVec.Rag.ONNX.csproj -c Release --no-build
 
   template-smoke:
     runs-on: ubuntu-latest
@@ -91,6 +95,8 @@ jobs:
           dotnet pack src/ZVec.Rag/ZVec.Rag.csproj -c Release -o ./artifacts
           dotnet pack src/ZVec.Rag.Testing/ZVec.Rag.Testing.csproj -c Release -o ./artifacts
           dotnet pack src/ZVec.Rag.Template/ZVec.Rag.Template.csproj -c Release -o ./artifacts
+          dotnet pack src/ZVec.Rag.LLamaSharp/ZVec.Rag.LLamaSharp.csproj -c Release -o ./artifacts
+          dotnet pack src/ZVec.Rag.ONNX/ZVec.Rag.ONNX.csproj -c Release -o ./artifacts
 
       - name: Install template and scaffold
         run: |
@@ -103,6 +109,12 @@ jobs:
           dotnet new zvec-rag-aspnet -n TmpAsp --llm fake --embedder fake -o ./TmpAsp
           dotnet restore ./TmpAsp/TmpAsp.csproj --source https://api.nuget.org/v3/index.json --source "$GITHUB_WORKSPACE/artifacts"
           dotnet build ./TmpAsp/TmpAsp.csproj --no-restore
+          dotnet new zvec-rag -n TmpOnnx --llm fake --embedder onnx -o ./TmpOnnx
+          dotnet restore ./TmpOnnx/TmpOnnx.csproj --source https://api.nuget.org/v3/index.json --source "$GITHUB_WORKSPACE/artifacts"
+          dotnet run --project ./TmpOnnx/TmpOnnx.csproj -f net8.0 --no-restore
+          dotnet new zvec-rag-aspnet -n TmpLlama --llm llamasharp --embedder fake -o ./TmpLlama
+          dotnet restore ./TmpLlama/TmpLlama.csproj --source https://api.nuget.org/v3/index.json --source "$GITHUB_WORKSPACE/artifacts"
+          dotnet build ./TmpLlama/TmpLlama.csproj --no-restore
 
   rag-aot-smoke:
     strategy:
