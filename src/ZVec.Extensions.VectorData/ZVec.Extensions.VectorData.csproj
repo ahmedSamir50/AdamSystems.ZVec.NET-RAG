@@ -7,16 +7,17 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <PackageId>ZVec.Extensions.VectorData</PackageId>
-    <Version>1.0.0-preview.1</Version>
     <Authors>Ahmed Samir (ahmedsamir50)</Authors>
     <Company>Adam Systems</Company>
     <Description>Microsoft.Extensions.VectorData connector implementation over native embedded vector engine ZVec.NET.</Description>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>package-icon.png</PackageIcon>
   </PropertyGroup>
 
   <ItemGroup>
     <None Include="README.md" Pack="true" PackagePath="\" />
+    <None Include="..\..\docs\assets\zvec-icon.png" Pack="true" PackagePath="package-icon.png" />
   </ItemGroup>
 
   <ItemGroup>

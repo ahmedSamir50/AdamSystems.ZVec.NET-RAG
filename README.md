@@ -1,4 +1,7 @@
-# ZVec.Rag 🚀
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/zvec-rag-logo-dark.png">
+  <img src="docs/assets/zvec-rag-logo-light.png" width="360" alt="ZVec.Rag">
+</picture>
 
 > **Local-first RAG for .NET. No cloud. No Python. No kidding.**
 
@@ -13,10 +16,10 @@
 - **`Microsoft.Extensions.AI` Ecosystem Integration**: Plug-and-play with any `IChatClient` or `IEmbeddingGenerator` (Ollama, Azure OpenAI, ONNX Runtime, LLamaSharp).
 - **Streaming Citations (`IAsyncEnumerable<RagChunk>`)**: Real-time token streaming with precise document & page citation tracking (`SourceDoc`, `Page`, `Offset`, `Score`). SSE via `MapRagSseEndpoint` (links `RequestAborted` to cancel generation).
 - **Universal Tokenization**: `Microsoft.ML.Tokenizers` engine (Tiktoken BPE `cl100k_base` default, `o200k_base` when embedder model indicates GPT-4o family). SentencePiece/WordPiece via `TokenizerModelPath` (`FileStream`, not embedded).
-- **Transparent Document Ingestion**: Core `ZVec.Rag` ships text/markdown readers and ZVec-owned `IZVecTextChunker` ACL (`TokenTextChunker`, `MarkdownHeadingChunker`, `SentenceTextChunker`). PDF/HTML via optional `ZVec.Rag.Pdf` package. Bounded `System.Threading.Channels` pipeline (no `Task.Run`).
+- **Transparent Document Ingestion**: Core `ZVec.Rag` ships text/markdown readers and ZVec-owned `IZVecTextChunker` ACL (`TokenTextChunker`, `MarkdownHeadingChunker`, `SentenceTextChunker`). PDF via optional `ZVec.Rag.Pdf` package (text extract only). HTML is not shipped. Bounded `System.Threading.Channels` pipeline (no `Task.Run`).
 - **Embedded Hybrid Search**: In-database dense + FTS (full-text search) retrieval with native Reciprocal Rank Fusion (`ZVecRrfReranker`).
 - **Native AOT & Trimmer Friendly**: `ZVec.Extensions.VectorData` connector is Native AOT-verified (`ZVec.AotTestApp`, Phase 0). Native AOT for the RAG pipeline is verified in CI by publishing and running `tests/ZVec.Rag.AotTestApp` (`rag-aot-smoke`) on linux-x64, win-x64, and osx-x64: text ingest, hybrid retrieve, `AskAsync`. PDF, SSE, and LLamaSharp are not in that smoke.
-- **Project template (planned)**: `dotnet new zvec-rag` scaffolding ships in **Story 3.1** (`ZVec.Rag.Template`); use `samples/ZVec.Rag.Console` today.
+- **Project template**: `dotnet new install ZVec.Rag.Template && dotnet new zvec-rag -n MyApp`
 
 ---
 
@@ -30,7 +33,7 @@
 - **Not** a compare-two-filings, summarize-whole-topic, or multi-part research assistant.
 - **Not** auto-retrieval with inferred metadata filters (year, doc, page) — `RetrieveAsync` embeds the raw question once; chat history is for generation only.
 
-Chunking always extracts text from its surrounding context; token windows do not preserve table headers, units, or page coherence. `MarkdownHeadingChunker` is heading-**split** only — it does not stamp `HeadingPath` on child chunks today ([Liu, LlamaIndex workshop](https://www.youtube.com/watch?v=dI_TmTW9S4c&t=4778s); planned D-7 / Epic 8.7). Planned `ZVec.Rag.Pdf` (Sample 02) uses **text extract** (PdfPig-class); **table-cell QA is post-v1** ([financial chunking review](https://doi.org/10.1109/it67293.2026.11435730); [PDF parsing for financial QA](https://www.alphaxiv.org/abs/2604.12047)). Future work: Epic 8.7 (complex-document ingest) and 8.8 (query complexity) in the project plan.
+Chunking always extracts text from its surrounding context; token windows do not preserve table headers, units, or page coherence. `MarkdownHeadingChunker` is heading-**split** only — it does not stamp `HeadingPath` on child chunks today ([Liu, LlamaIndex workshop](https://www.youtube.com/watch?v=dI_TmTW9S4c&t=4778s); planned D-7 / Epic 8.7). Shipped `ZVec.Rag.Pdf` (Sample 02) uses **text extract** (PdfPig); **table-cell QA is post-v1** ([financial chunking review](https://doi.org/10.1109/it67293.2026.11435730); [PDF parsing for financial QA](https://www.alphaxiv.org/abs/2604.12047)). Future work: Epic 8.7 (complex-document ingest) and 8.8 (query complexity) in the project plan.
 
 We do **not** publish Recall@K or table-QA benchmarks in README marketing. Use `IRagEvaluator` / `DeterministicEvaluator` in tests; optional local SOTA runs stay gitignored.
 
@@ -41,11 +44,12 @@ We do **not** publish Recall@K or table-QA benchmarks in README marketing. Use `
 | Package | Version | Primary Focus & Responsibility | Synergy & Cross-Navigation ("If you need X...") |
 |---|---|---|---|
 | **`ZVec.Extensions.VectorData`** | `1.0.0-preview.1` | Official `Microsoft.Extensions.VectorData` connector for ZVec.NET | Core vector store (`IVectorStore`). *Need full RAG orchestration & citations? Add **`ZVec.Rag`**. Need zero-reflection AOT schemas? Add **`ZVec.Extensions.VectorData.SourceGenerator`**.* |
-| **`ZVec.Rag`** | `0.5.0-preview.1` | Batteries-included RAG orchestration (`IRagIngestor`, `IRagRetriever`, `IRagGenerator`, `IRagPipeline`, citations, SSE) | *Need pure vector storage for Semantic Kernel / Agent Framework? Use **`ZVec.Extensions.VectorData`**. Need unit test fakes without LLMs? Add **`ZVec.Rag.Testing`**.* |
-| **`ZVec.Rag.Testing`** | `0.5.0-preview.1` | Unit testing fakes: `DeterministicEmbedder`, `FakeChatClient`, `SemanticTestEmbedder`, `IRagEvaluator` / `DeterministicEvaluator`, optional LLM-judge evaluators (off in CI) | *Add to test projects to mock RAG pipelines without external LLMs.* |
+| **`ZVec.Rag`** | `1.0.0-preview.1` | Batteries-included RAG orchestration (`IRagIngestor`, `IRagRetriever`, `IRagGenerator`, `IRagPipeline`, citations, SSE) | *Need pure vector storage for Semantic Kernel / Agent Framework? Use **`ZVec.Extensions.VectorData`**. Need unit test fakes without LLMs? Add **`ZVec.Rag.Testing`**.* |
+| **`ZVec.Rag.Testing`** | `1.0.0-preview.1` | Unit testing fakes: `DeterministicEmbedder`, `FakeChatClient`, `SemanticTestEmbedder`, `IRagEvaluator` / `DeterministicEvaluator`, optional LLM-judge evaluators (off in CI) | *Add to test projects to mock RAG pipelines without external LLMs.* |
+| **`ZVec.Rag.Pdf`** | `1.0.0-preview.1` | Optional PDF text extract (`AddZVecRagPdf`, PdfPig) | *Not* table QA; not in AOT smoke. |
 | **`ZVec.Extensions.VectorData.SourceGenerator`** | `1.0.0-preview.1` | Roslyn source generator for zero-reflection AOT record mappers | *Referenced as analyzer from apps using annotated `[VectorStore]` POCOs.* |
 | **`ZVec.Extensions.VectorData.Analyzers`** | `1.0.0-preview.1` | Roslyn analyzers (`ZVEC001`, `ZVEC002`) for VectorData connector hygiene | *Ships with the connector package graph.* |
-| *Planned — Story 3.1* | — | `ZVec.Rag.Template` (`dotnet new zvec-rag`) | *Not in this repo yet.* |
+| **`ZVec.Rag.Template`** | `1.0.0-preview.1` | `dotnet new zvec-rag` / `zvec-rag-aspnet` / `zvec-rag-maui` | Install: `dotnet new install ZVec.Rag.Template` |
 | *Planned — Story 4.1* | — | `ZVec.Rag.LLamaSharp`, `ZVec.Rag.ONNX` recipe adapters | *Not in this repo yet.* |
 
 ---
@@ -173,11 +177,12 @@ flowchart TB
 ## 🛠️ Installation & Template Usage
 
 ```bash
-# Clone and run the console sample today
-dotnet run --project samples/ZVec.Rag.Console
+# Minimal console sample (IRagPipeline + deterministic fakes)
+dotnet run --project samples/01-rag-your-docs/ZVec.Rag.Sample01.csproj
 
-# dotnet new zvec-rag template — planned Story 3.1 (ZVec.Rag.Template NuGet not shipped yet)
-# dotnet new install ZVec.Rag.Template && dotnet new zvec-rag -n MyApp
+# Project template (Console, ASP.NET SSE, MAUI Blazor Hybrid)
+dotnet new install ZVec.Rag.Template
+dotnet new zvec-rag -n MyApp --llm fake --embedder fake
 ```
 
 ---

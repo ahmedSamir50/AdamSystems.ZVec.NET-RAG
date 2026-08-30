@@ -8,6 +8,7 @@
 > `Verify.XunitV3` snapshots (2.4.3), package READMEs (2.5), and `IRagSecuritySanitizer` (2.6) are shipped.
 > `ZVec.Rag.AotTestApp` + `rag-aot-smoke` verify pipeline AOT on 3 desktop RIDs (Story 2.7).
 > `IRagEvaluator` / `DeterministicEvaluator` / `SemanticTestEmbedder` ship in `ZVec.Rag.Testing` (Story 2.8); LLM-judge evaluators are off in CI.
+> Story 3.4 Pdf magic + Arabic retrieve tests (shipped).
 
 ---
 
@@ -44,7 +45,7 @@ finally
 ## 3. Core Testing Rules
 
 1. **Red $\rightarrow$ Green $\rightarrow$ Refactor**: Unit tests must be written BEFORE writing implementation code.
-2. **100% Branch Coverage**: All execution paths, edge cases, null checks, and error conditions must be covered.
+2. **Cover new branches with named tests; do not claim 100%.** All execution paths, edge cases, null checks, and error conditions must be covered.
 3. **Mock-Free CI Execution**: Core RAG pipeline tests use `DeterministicEmbedder` and `FakeChatClient` in `ZVec.Rag.Testing`. Retrieval metrics use `DeterministicEvaluator` + `SemanticTestEmbedder` with a **seed** in-repo fixture under `tests/ZVec.Rag.Tests/Fixtures/` (two labeled queries, not 50–200).
 4. **Snapshot Response Testing**: `Verify.XunitV3` snapshot tests (Story 2.4.3) validate citation formats and prompt construction.
 

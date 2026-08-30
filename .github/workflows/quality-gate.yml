@@ -36,6 +36,13 @@ jobs:
           ./tests/ZVec.Extensions.VectorData.ConformanceTests/bin/Release/net8.0/ZVec.Extensions.VectorData.ConformanceTests
           ./tests/ZVec.Extensions.VectorData.SourceGenerator.Tests/bin/Release/net8.0/ZVec.Extensions.VectorData.SourceGenerator.Tests
           ./tests/ZVec.Rag.Tests/bin/Release/net8.0/ZVec.Rag.Tests
+          ./tests/ZVec.Rag.Pdf.Tests/bin/Release/net8.0/ZVec.Rag.Pdf.Tests
+
+      - name: Run Sample 01
+        run: dotnet run --project samples/01-rag-your-docs/ZVec.Rag.Sample01.csproj -c Release --no-build -f net8.0
+
+      - name: Run Sample 03 desktop-index
+        run: dotnet run --project samples/03-offline-phone-rag/desktop-index/ZVec.Rag.Sample03.DesktopIndex.csproj -c Release --no-build -f net8.0
 
       - name: Check Class Line Count Limit
         run: |
@@ -63,7 +70,39 @@ jobs:
         run: |
           dotnet pack src/ZVec.Extensions.VectorData/ZVec.Extensions.VectorData.csproj -c Release --no-build
           dotnet pack src/ZVec.Rag/ZVec.Rag.csproj -c Release --no-build
+          dotnet pack src/ZVec.Rag.Pdf/ZVec.Rag.Pdf.csproj -c Release --no-build
+          dotnet pack src/ZVec.Rag.Template/ZVec.Rag.Template.csproj -c Release --no-build
           dotnet pack src/ZVec.Rag.Testing/ZVec.Rag.Testing.csproj -c Release --no-build
+
+  template-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Pack local NuGet artifacts
+        run: |
+          dotnet pack src/ZVec.Extensions.VectorData/ZVec.Extensions.VectorData.csproj -c Release -o ./artifacts
+          dotnet pack src/ZVec.Rag/ZVec.Rag.csproj -c Release -o ./artifacts
+          dotnet pack src/ZVec.Rag.Testing/ZVec.Rag.Testing.csproj -c Release -o ./artifacts
+          dotnet pack src/ZVec.Rag.Template/ZVec.Rag.Template.csproj -c Release -o ./artifacts
+
+      - name: Install template and scaffold
+        run: |
+          mkdir -p "$RUNNER_TEMP/template-smoke"
+          cd "$RUNNER_TEMP/template-smoke"
+          dotnet new install "$GITHUB_WORKSPACE/artifacts/ZVec.Rag.Template.1.0.0-preview.1.nupkg"
+          dotnet new zvec-rag -n TmpRag --llm fake --embedder fake -o ./TmpRag
+          dotnet restore ./TmpRag/TmpRag.csproj --source https://api.nuget.org/v3/index.json --source "$GITHUB_WORKSPACE/artifacts"
+          dotnet run --project ./TmpRag/TmpRag.csproj -f net8.0 --no-restore
+          dotnet new zvec-rag-aspnet -n TmpAsp --llm fake --embedder fake -o ./TmpAsp
+          dotnet restore ./TmpAsp/TmpAsp.csproj --source https://api.nuget.org/v3/index.json --source "$GITHUB_WORKSPACE/artifacts"
+          dotnet build ./TmpAsp/TmpAsp.csproj --no-restore
 
   rag-aot-smoke:
     strategy:

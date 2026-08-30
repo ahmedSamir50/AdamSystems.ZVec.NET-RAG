@@ -50,7 +50,7 @@ Sliding 64-token overlap inside `TokenTextChunker` is a boundary patch, not stru
 
 Optional `IngestOptions.GenerateSummaries` (default **false**) improves **retrieve and pack accuracy** — not a new RAG product class (still Naive one-shot generate; **not** Advanced RAG, **not** RAPTOR).
 
-**Ingest (when on):** split source into **sections** (default `SummarySectionMaxTokens` = 2048) → `IChatClient` summary per section (default `MaxSummaryTokens` = 128, one LLM call per section) → upsert `ZVecRagSectionSummaryV1` into collection **`rag_section_summaries`** (`embed(Summary)`); chunk the section → upsert children into **`rag_chunks`** with **`embed(Text)` unchanged** and indexed **`SectionSummaryId`** FK. `ChunkId` formula unchanged.
+**Ingest (when on):** split source into **sections** (default `SummarySectionMaxTokens` = 2048) → `IChatClient` summary per section (default `MaxSummaryTokens` = 128, one LLM call per section) → upsert `ZVecRagSectionSummaryV1` into collection **`rag_section_summaries`** (`embed(Summary)`) (or `ZVecRagOptions.SummaryCollectionName` / `{CollectionName}_summaries` when `CollectionName` is not `rag_chunks`); chunk the section → upsert children into **`rag_chunks`** with **`embed(Text)` unchanged** and indexed **`SectionSummaryId`** FK. `ChunkId` formula unchanged.
 
 **Retrieve (when on):** **parallel hybrid** on both collections — union + **parent boost** (keep direct chunk hits; boost chunks whose parent summary also matched; add children of top matching summaries). **Pack:** prepend the short section summary so the generator is not blind (e.g. “5V” + “X1000” context); **cite** child `ChunkId` / `Text` only.
 

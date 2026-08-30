@@ -1,7 +1,6 @@
 using Microsoft.Extensions.VectorData;
 using ZVec.Extensions.VectorData.Collection;
 using ZVec.Extensions.VectorData.Store;
-using ZVec.Rag.Constants;
 using ZVec.Rag.Options;
 using ZVec.Rag.Schema;
 
@@ -59,7 +58,7 @@ public sealed class RagCollectionProvider : IDisposable, IAsyncDisposable
         _summaryCollection = await RagCollectionAccessor.EnsureSummaryCollectionAsync(
             _store,
             _storeOptions,
-            ZVecRagConstants.SectionSummaryCollectionName,
+            _ragOptions.ResolveSummaryCollectionName(),
             cancellationToken).ConfigureAwait(false);
 
         return _summaryCollection;

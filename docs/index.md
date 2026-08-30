@@ -1,5 +1,10 @@
 # ZVec.Rag — Local-First RAG for .NET
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/zvec-rag-logo-dark.png">
+  <img src="assets/zvec-rag-logo-light.png" width="360" alt="ZVec.Rag">
+</picture>
+
 Welcome to the official technical wiki for **`ZVec.Rag`** and **`ZVec.Extensions.VectorData`**.
 
 > **"Local-first RAG for .NET. No cloud. No Python. No kidding."**

@@ -11,7 +11,7 @@
 | Corpus Size | Recommended Index | Memory Footprint | Latency Profile | Best Use Case |
 |---|---|---|---|---|
 | **< 10,000 Chunks** | **Flat** (Exact Search) | Minimal | < 3.7 ms | Desktop apps, small document collections |
-| **≤ 20,000 Chunks (mobile)** | **Flat** (Exact Search) | Minimal | < 3.7 ms | **Sample 03 default** — zero recall loss; optional INT8 HNSW only if Recall@K ≥0.95 vs FP32 Flat |
+| **≤ 20,000 Chunks (mobile)** | **Flat** (Exact Search) | Minimal | < 3.7 ms | **Sample 03 default** — Flat index + shipped `Fp16` dtype; optional INT8 only if Recall@K ≥0.95 vs FP32 Flat baseline |
 | **10k – 100k Chunks** | **HNSW** (Hierarchical Navigable Small World) | High (RAM) | < 1.0 ms | Production desktop/server RAG, default recommendation |
 | **100k – 1M Chunks** | **IVF** (Inverted File Index) | Moderate | < 2.5 ms | Large corpus, mobile memory-constrained RAG |
 | **> 1,000,000 Chunks** | **DiskANN** (Linux only) | Low (Disk I/O) | < 5.0 ms | Enterprise server clusters with high vector volume |

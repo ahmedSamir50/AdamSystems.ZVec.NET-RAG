@@ -1,0 +1,3 @@
+ZVec is a local-first embedded vector database for .NET.
+It supports hybrid dense and full-text retrieval without cloud services.
+Use ZVec.Rag to ingest documents and stream grounded answers with citations.

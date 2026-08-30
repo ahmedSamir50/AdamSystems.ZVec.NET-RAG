@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <PackageId>ZVec.Rag.Pdf</PackageId>
+    <Authors>Ahmed Samir (ahmedsamir50)</Authors>
+    <Company>Adam Systems</Company>
+    <Description>Optional PDF text extraction for ZVec.Rag ingestion via PdfPig.</Description>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>package-icon.png</PackageIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+    <None Include="..\..\docs\assets\zvec-icon.png" Pack="true" PackagePath="package-icon.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="PdfPig" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ZVec.Rag\ZVec.Rag.csproj" />
+  </ItemGroup>
+
+</Project>

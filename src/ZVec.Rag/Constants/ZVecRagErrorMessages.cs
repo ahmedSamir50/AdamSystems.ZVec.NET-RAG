@@ -17,6 +17,14 @@ public static class ZVecRagErrorMessages
     public static string UnsupportedContentType(string contentType) =>
         $"Content type '{contentType}' is not supported in core ZVec.Rag. Use plain text or markdown, or install ZVec.Rag.Pdf for PDF ingestion.";
 
+    /// <summary>Formats error when PDF ingestion requires ZVec.Rag.Pdf.</summary>
+    public static string PdfPackageRequired() =>
+        "Content type 'application/pdf' requires package ZVec.Rag.Pdf. Install ZVec.Rag.Pdf and call AddZVecRagPdf().";
+
+    /// <summary>Formats error when declared content type does not match file magic.</summary>
+    public static string ContentTypeMagicMismatch(string contentType) =>
+        $"Content type '{contentType}' does not match file magic. PDF requires a %PDF- prefix.";
+
     /// <summary>Formats error when text is null or empty.</summary>
     public static string NullOrEmptyText() =>
         "Ingest text cannot be null or empty.";
@@ -24,6 +32,10 @@ public static class ZVecRagErrorMessages
     /// <summary>Formats error when document id is null or empty.</summary>
     public static string NullOrEmptyDocumentId() =>
         "Document id cannot be null or empty.";
+
+    /// <summary>Formats error when summary collection name is null or whitespace.</summary>
+    public static string NullOrEmptySummaryCollectionName() =>
+        "Summary collection name cannot be empty or whitespace.";
 
     /// <summary>Formats error when question is null or empty.</summary>
     public static string NullOrEmptyQuestion() =>

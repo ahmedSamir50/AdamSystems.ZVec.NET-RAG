@@ -7,16 +7,17 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <PackageId>ZVec.Rag.Testing</PackageId>
-    <Version>0.5.0-preview.1</Version>
     <Authors>Ahmed Samir (ahmedsamir50)</Authors>
     <Company>Adam Systems</Company>
     <Description>Deterministic test fakes for ZVec.Rag unit and integration tests.</Description>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>package-icon.png</PackageIcon>
   </PropertyGroup>
 
   <ItemGroup>
     <None Include="README.md" Pack="true" PackagePath="\" />
+    <None Include="..\..\docs\assets\zvec-icon.png" Pack="true" PackagePath="package-icon.png" />
   </ItemGroup>
 
   <ItemGroup>

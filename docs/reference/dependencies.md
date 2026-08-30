@@ -20,6 +20,9 @@ This document tracks upstream Microsoft ecosystem packages, community signals, a
 | **`Microsoft.CodeAnalysis.CSharp`** | Roslyn Source Generator SDK | `4.12.0` |
 | **`Microsoft.CodeAnalysis.Analyzers`** | Roslyn Analyzers SDK (`ZVec.Extensions.VectorData.Analyzers`) | `3.11.0` |
 | **`Microsoft.ML.Tokenizers`** | Default Tokenizer Engine (Tiktoken BPE, SentencePiece, WordPiece) | `1.0.0+` |
+| **`PdfPig`** | Optional PDF text extraction (`ZVec.Rag.Pdf`) | `0.1.16` |
+| **`ZVec.Rag.Pdf`** | Optional PDF ingestion package | `1.0.0-preview.1` |
+| **`ZVec.Rag.Template`** | `dotnet new zvec-rag` project templates | `1.0.0-preview.1` |
 | **`tryAGI/Tiktoken`** | Optional BPE Adapter for high-throughput OpenAI Tiktoken workloads | `1.0.0+` |
 
 ---

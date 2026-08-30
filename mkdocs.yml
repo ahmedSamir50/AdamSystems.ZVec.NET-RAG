@@ -8,18 +8,20 @@ repo_url: https://github.com/ahmedsamir50/AdamSystems.ZVec.NET-RAG
 
 theme:
   name: material
+  logo: assets/zvec-icon.png
+  favicon: assets/zvec-icon.png
   palette:
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
-      primary: indigo
-      accent: blue
+      primary: custom
+      accent: custom
       toggle:
         icon: material/brightness-4
         name: Switch to light mode
     - media: "(prefers-color-scheme: light)"
       scheme: default
-      primary: indigo
-      accent: blue
+      primary: custom
+      accent: custom
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
@@ -51,6 +53,9 @@ markdown_extensions:
 extra_javascript:
   - https://unpkg.com/mermaid@10/dist/mermaid.min.js
 
+extra_css:
+  - assets/extra.css
+
 nav:
   - Overview: index.md
   - Architecture & Theory:
@@ -77,5 +82,6 @@ nav:
       - Citation Schema & DDL Immutability: reference/citation-schema.md
       - Index Selection & Parameter Tuning: reference/index-selection.md
       - Dependency Matrix: reference/dependencies.md
+      - Versioning: reference/versioning.md
       - ZVec.NET Native AOT Spec: reference/zvec-net-aot-recommendations.md
       - Performance Benchmarks: reference/benchmarks.md

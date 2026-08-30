@@ -6,5 +6,8 @@ namespace ZVec.Rag.Abstractions;
 public interface IRagDocumentReader
 {
     /// <summary>Reads a document stream into text.</summary>
-    ValueTask<string> ReadAsync(Stream documentStream, CancellationToken cancellationToken = default);
+    ValueTask<string> ReadAsync(
+        Stream documentStream,
+        string contentType,
+        CancellationToken cancellationToken = default);
 }

@@ -7,7 +7,6 @@
 | ID | Severity | Category | File | Status | Since | Last Checked |
 |----|----------|----------|------|--------|-------|-------------|
 | P2-E | P2 | dynamic_dictionary_collections_stubbed | src/ZVec.Extensions.VectorData/Collection/ZVecVectorizableRecordCollection.cs | OPEN | 2026-08-13 | 2026-08-30 |
-| P3-C | P3 | sample_app_not_smoke_tested | samples/ZVec.Rag.Console/ | OPEN | 2026-08-13 | 2026-08-30 |
 | NC-DENSE-FTS-ZERO | P2 | citation_dense_fts_scores_zeroed | src/ZVec.Rag/Retrieval/RagRetriever.cs | PartiallyFixed | 2026-08-30 | 2026-08-30 |
 
 ## Fixed Gaps (Historical)
@@ -21,6 +20,7 @@
 | P2-G | P2 | 2026-08-13 | 2026-08-13 | working-tree | docs/architecture/native-aot-memory.md updated to reflect actual 3-RID CI coverage (linux-x64, win-x64, osx-x64); mobile RIDs attributed to upstream ZVec.NET package CI |
 | P3-A | P3 | 2026-08-13 | 2026-08-13 | working-tree | Created docs/guides/migration-from-inmemory.md (Epic 1.11); added to mkdocs.yml nav |
 | P3-B | P3 | 2026-08-13 | 2026-08-13 | working-tree | ZVec.Extensions.VectorData.SourceGenerator.Tests added to ZVec.NET-RAG.slnx and to quality-gate.yml test run; CS8892 suppressed to match other test projects |
+| P3-C | P3 | 2026-08-13 | 2026-08-30 | Task 3.4 | Sample 01 (`samples/01-rag-your-docs`) smoke-tested; legacy `samples/ZVec.Rag.Console` removed; CI runs sample via quality gate |
 | P3-D | P3 | 2026-08-13 | 2026-08-13 | working-tree | ZVec.NET-RAG-project-plan.md Epic 0.2 + Epic 1.1/1.2/1.3/1.6/1.8/1.10/1.11 checkboxes updated to reflect actual implementation; partial items (1.4, 1.5, 1.7, 1.9) annotated with status notes |
 | P2-I | P2 | 2026-08-13 | 2026-08-13 | working-tree | ZVecVectorizableRecordCollection.cs refactored into partial classes (Schema.cs + Mapping.cs); main file reduced from 607 to 446 lines, under the 500-line CI cap |
 | P2-H | P2 | 2026-08-13 | 2026-08-26 | 9b54094 | ZVecFilterExpressionVisitor split into partial classes (Evaluation.cs + MethodCalls.cs); largest file 241 lines |
@@ -60,6 +60,24 @@ These are **not** "do not block forever." They block **WRITE of the epic they be
 | D-6 | P2 | batch_ingestion_topology_undefined | **Shipped topology:** bounded `System.Threading.Channels` via `IngestionChannelPump` (capacity 1024, wait-on-full); Task 2.2.3 forbids `Task.Run`. `IngestTextAsync` awaits same-call pipeline completion. **Not NATS:** broker/distributed ingest = post-v1 optional `IIngestBus`, not core v1. |
 | D-7 | P2 | complex_doc_ingest | **Deferred post-v1** — Epic 8.7 (owner: `zvec-architect-strategy-expert`). Layout-aware readers (PDF tables, PPT slides, DOCX, Excel) emit parse tree **before** stamps. Additive schema: `HeadingPath` (indexed breadcrumb), `ParentChunkId` (indexed nullable heading/page/table node). `ContextPacker` may fetch parent by id later; **`ChunkId` formula unchanged**. Markdown `HeadingPath` = first reader of epic, not silent v1 schema change. Sample 02 PdfPig = text extract only. |
 | D-8 | P2 | query_complexity | **Deferred post-v1** — Epic 8.8 (owner: `zvec-architect-strategy-expert`). Router, sub-questions, auto-retrieval filters. Blocks research-assistant epic until tasked. |
+
+## Handshake (H-*) — Phase 3 leftovers block consuming epic WRITE
+
+Same gate as `D-*`: spec_lock of the consuming epic is `write_allowed: false` until tasked or re-deferred.
+
+| ID | Consuming story | Phase 3 leftover | Status | Since | Last Checked |
+|----|-----------------|------------------|--------|-------|-------------|
+| H-LS-WRAP | 4.1.1 | Sample 04 / template hint use raw LLamaSharp or Fake | OPEN | 2026-08-30 | 2026-08-30 |
+| H-ONNX-TPL | 4.1.2 | `--embedder onnx` not generated | OPEN | 2026-08-30 | 2026-08-30 |
+| H-SAMPLE05 | Epic 5.5 | no Sample 05 | OPEN | 2026-08-30 | 2026-08-30 |
+| H-SAMPLE06 | Epic 5.6 | no Sample 06 | OPEN | 2026-08-30 | 2026-08-30 |
+| H-MIGRATE | D-3 | `IRagMigrationManager` not implemented | OPEN | 2026-08-30 | 2026-08-30 |
+| H-PDF-TABLE | Epic 8.7 / D-7 | PdfPig text extract only | OPEN | 2026-08-30 | 2026-08-30 |
+| H-IOS-SIM | Task 1.10.1 | iOS residual-risk wiki banner | OPEN | 2026-08-30 | 2026-08-30 |
+| H-IPA-DEVICE | 3.3 follow-up | no signed `.ipa` numbers | OPEN | 2026-08-30 | 2026-08-30 |
+| H-BENCH-DTYPE | Task 4.3.2 | Sample 03 gate is fixture Recall@K only | OPEN | 2026-08-30 | 2026-08-30 |
+| H-ENGINE-GA | first story after ZVec.NET 1.0.0 or documented engine break | bump ZVec.NET pin + AOT; do not copy engine number onto Directory.Build.props | OPEN | 2026-08-30 | 2026-08-30 |
+| H-MAGIC-NEXT | later ingest formats | HTML/DOCX/magic table deferred; PDF %PDF- only in 3.4 | OPEN | 2026-08-30 | 2026-08-30 |
 
 ## Spec Gaps (S-*)
 

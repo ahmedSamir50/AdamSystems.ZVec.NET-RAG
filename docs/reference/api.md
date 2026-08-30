@@ -49,6 +49,7 @@ Complete API reference surface for `ZVec.Extensions.VectorData` and `ZVec.Rag`.
 | `ZVec.Rag` | `RagPipeline` |
 | `ZVec.Rag.Generation` | `ContextPacker`, `RagGenerator` |
 | `ZVec.Rag.Ingestion` | `RagIngestor`, `PlainTextDocumentReader`, `TokenTextChunker`, `MarkdownHeadingChunker`, `SentenceTextChunker`, `ZVecChunkIdGenerator`, `ZVecTokenizerResolver`, `ZVecTextChunkerRegistry` |
+| `ZVec.Rag.Pdf` | `PdfDocumentReader`, `CompositeRagDocumentReader`, `AddZVecRagPdf` |
 | `ZVec.Rag.Retrieval` | `RagRetriever` |
 | `ZVec.Rag.Streaming` | `RagSseEndpointExtensions` (`MapRagSseEndpoint`) |
 | `ZVec.Rag.Models` | `Citation`, `RagChunk`, `IngestionResult`, `IngestOptions`, `IngestTextRequest`, `TextChunk`, `DuplicateMode`, `CitationOrder`, `ContextPackingStrategy` |
@@ -56,12 +57,19 @@ Complete API reference surface for `ZVec.Extensions.VectorData` and `ZVec.Rag`.
 | `ZVec.Rag.Schema` | `ZVecRagRecordV1`, `ZVecRagSectionSummaryV1` |
 | `ZVec.Rag.Exceptions` | `ZVecRagInitializationException` |
 | `ZVec.Rag.Internal` | `RagCollectionProvider` (scoped native handle; releases on scope dispose) |
-| `Microsoft.Extensions.DependencyInjection` | `AddZVecRag`, `AddTokenChunker`, `AddMarkdownChunker`, `AddSentenceChunker` |
+| `Microsoft.Extensions.DependencyInjection` | `AddZVecRag`, `AddTokenChunker`, `AddMarkdownChunker`, `AddSentenceChunker`, `AddZVecRagPdf` |
+
+### Document readers
+
+- **`IRagDocumentReader.ReadAsync(stream, contentType, cancellationToken)`**: Format ACL entry point. Core ships `PlainTextDocumentReader` (text/markdown). PDF requires `ZVec.Rag.Pdf` and `AddZVecRagPdf()`.
+- **`ZVecRagConstants.PdfContentType`**: `application/pdf`.
+- **`PdfDocumentReader`**: PdfPig text extract only (no table parsing). Trim-annotated; not in Native AOT smoke.
+- **`AddZVecRagPdf()`**: Replaces `IRagDocumentReader` with `CompositeRagDocumentReader` routing PDF vs text.
 
 ### Ingestion (`IRagIngestor`)
 
 - **`IngestTextAsync`**: Chunk, embed, and upsert plain text or markdown.
-- **`IngestDocumentAsync`**: UTF-8 stream ingest with `contentType` (`text/plain`, `text/markdown`).
+- **`IngestDocumentAsync`**: Stream ingest with `contentType` (`text/plain`, `text/markdown`, or `application/pdf` when `ZVec.Rag.Pdf` is installed).
 - **`IngestBatchAsync`**: Sequential multi-document ingest; auto-runs **`OptimizeAsync`** after the batch.
 - **`OptimizeAsync`**: Delegates to `ZVecVectorizableRecordCollection.OptimizeAndReopenAsync` (native optimize outside lock; dispose-reopen inside `lock (_initLock)`).
 
@@ -86,7 +94,8 @@ Complete API reference surface for `ZVec.Extensions.VectorData` and `ZVec.Rag`.
 
 ### Options
 
-- **`ZVecRagOptions`**: `StoragePath`, `Embedder`, `Chat`, `RrfK`, `MaxContextTokens`, `GenerationReserveTokens`, `GenerateSummaries` (retrieve/pack; default `false`), `TokenizerEncoding`, `TokenizerModelPath`, nested `ZVecVectorStoreOptions`.
+- **`ZVecRagOptions`**: `StoragePath`, `Embedder`, `Chat`, `RrfK`, `MaxContextTokens`, `GenerationReserveTokens`, `GenerateSummaries` (retrieve/pack; default false), `CollectionName` (default rag_chunks), `SummaryCollectionName` (null = resolve), `TokenizerEncoding`, `TokenizerModelPath`, nested `ZVecVectorStoreOptions`.
+- **Summary collection resolve:** if `SummaryCollectionName` is set (non-whitespace), use it; else if `CollectionName` is `rag_chunks`, use `rag_section_summaries`; else use `CollectionName` + `_summaries`.
 - **`IngestOptions`**: `GenerateSummaries` (ingest; default `false`), `MaxSummaryTokens` (default `128`), `SummarySectionMaxTokens` (default `2048`), `OnDuplicate`, `SourceUri`, `Page`, `Chunker`.
 - **`ZVecRagConstants.SectionSummaryCollectionName`**: `rag_section_summaries`.
 - **`ZVecRagSectionSummaryV1`**: `SectionSummaryId`, `SourceDoc`, `SourceUri`, `SectionIndex`, `Summary`, `DenseVector`.

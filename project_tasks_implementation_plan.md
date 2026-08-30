@@ -322,17 +322,19 @@ ZVec.NET-RAG.slnx
 
 #### Epic 3: Scaffolding Template & Reference Applications
 
-- [ ] **Story 3.1: Project Template `ZVec.Rag.Template`** (Owner: `zvec-architect-strategy-expert`)
-  - **Task 3.1.1**: Create `dotnet new zvec-rag` template definitions (`template.json`, package `ZVec.Rag.Template`) with shortNames `zvec-rag`, `zvec-rag-aspnet`, `zvec-rag-maui` supporting Console, ASP.NET Core SSE, and MAUI Blazor Hybrid flags (`--llm`, `--embedder`, `--storage`). Include pre-embedded micro-fixture (100 pre-computed chunks) for instant 60s working onboarding. Note: Blazor WASM is explicitly excluded due to native C++ interop constraints. Do **not** use generic `rag` as primary shortName (ZVec-specific, not a generic RAG scaffold).
-  - **Task 3.1.2**: Package and test `ZVec.Rag.Template` NuGet.
-- [ ] **Story 3.2: Reference Sample Applications** (Owner: `zvec-rag-pipeline-expert`)
-  - **Task 3.2.1**: Implement `01-rag-your-docs` (Console 60s doc ingestion demo, <50 LOC).
-  - **Task 3.2.2**: Implement `02-local-first-pdf-chat` (ASP.NET Core SSE web app, bilingual EN/AR fixtures; references optional `ZVec.Rag.Pdf` — **PdfPig text extract only**; document no table-cell QA until D-7 / Epic 8.7).
-  - **Task 3.2.3**: Implement `03-offline-phone-rag` (MAUI Blazor Hybrid retrieve+cite sample: ship read-only index built on desktop; `EnableMmap = true`, `ReadOnly = true`; corpus ≤ 20k chunks; **Flat index default** for exact recall; optional HNSW+INT8 only if desktop Recall@K ≥ 0.95 relative to FP32 Flat on shipped fixture via Story 2.8 `IRagEvaluator`; fallback FP16 Flat if INT8 fails; **no on-device LLamaSharp**). **Never open a ZVec collection on the MAUI UI/main thread** — initialize on a background thread during startup with a loading spinner until `IZvecCollection<T>` is ready (exception to ingest `Task.Run` ban; collection open only). **Gate:** cannot mark complete until Task 1.10.1 simulator launch + GC passes **or** residual iOS finalizer risk is documented in `docs/architecture/native-aot-memory.md`.
-  - **Task 3.2.4**: Implement `04-airgapped-enterprise-rag` (ASP.NET Core + LLamaSharp local model).
-- [ ] **Story 3.3: MAUI Binary Size & Cold-Start Profiling** (Owner: `zvec-architect-strategy-expert`, `zvec-performance-expert`)
-  - **Task 3.3.1**: Measure thinned `.ipa` / `.apk` size for Sample 03; document App Thinning / On-Demand Resources or Wi-Fi-only download policy if cellular limit exceeded.
-  - **Task 3.3.2**: Profile cold-start latency on mid-range Android (target &lt; 3s). Kill rule: if thinned `.ipa` remains above cellular limits, ship desktop-built index sample and document Wi-Fi-only onboarding.
+- [x] **Story 3.1: Project Template `ZVec.Rag.Template`** (Owner: `zvec-architect-strategy-expert`)
+  - [x] **Task 3.1.1**: Create `dotnet new zvec-rag` template definitions (`template.json`, package `ZVec.Rag.Template`) with shortNames `zvec-rag`, `zvec-rag-aspnet`, `zvec-rag-maui` supporting Console, ASP.NET Core SSE, and MAUI Blazor Hybrid flags (`--llm`, `--embedder`, `--storage`). Include pre-embedded micro-fixture (100 pre-computed chunks) for instant 60s working onboarding. Note: Blazor WASM is explicitly excluded due to native C++ interop constraints. Do **not** use generic `rag` as primary shortName (ZVec-specific, not a generic RAG scaffold).
+  - [x] **Task 3.1.2**: Package and test `ZVec.Rag.Template` NuGet.
+- [x] **Story 3.2: Reference Sample Applications** (Owner: `zvec-rag-pipeline-expert`)
+  - [x] **Task 3.2.1**: Implement `01-rag-your-docs` (Console 60s doc ingestion demo, <50 LOC).
+  - [x] **Task 3.2.2**: Implement `02-local-first-pdf-chat` (ASP.NET Core SSE web app, bilingual EN/AR fixtures; references optional `ZVec.Rag.Pdf` — **PdfPig text extract only**; document no table-cell QA until D-7 / Epic 8.7).
+  - [x] **Task 3.2.3**: Implement `03-offline-phone-rag` (MAUI Blazor Hybrid retrieve+cite sample: ship read-only index built on desktop; `EnableMmap = true`, `ReadOnly = true`; corpus ≤ 20k chunks; **Flat index default** for exact recall; optional HNSW+INT8 only if desktop Recall@K ≥ 0.95 relative to FP32 Flat on shipped fixture via Story 2.8 `IRagEvaluator`; fallback FP16 Flat if INT8 fails; **no on-device LLamaSharp**). **Never open a ZVec collection on the MAUI UI/main thread** — initialize on a background thread during startup with a loading spinner until `IZvecCollection<T>` is ready (exception to ingest `Task.Run` ban; collection open only). **Gate:** cannot mark complete until Task 1.10.1 simulator launch + GC passes **or** residual iOS finalizer risk is documented in `docs/architecture/native-aot-memory.md`.
+  - [x] **Task 3.2.4**: Implement `04-airgapped-enterprise-rag` (ASP.NET Core + LLamaSharp local model). Uses LLamaSharp as `IChatClient` in the sample when `ZVEC_LLAMA_MODEL` is set; `ZVec.Rag.LLamaSharp` recipe remains Story 4.1 (H-LS-WRAP).
+- [x] **Story 3.3: MAUI Binary Size & Cold-Start Profiling** (Owner: `zvec-architect-strategy-expert`, `zvec-performance-expert`)
+  - [x] **Task 3.3.1**: Measure thinned `.ipa` / `.apk` size for Sample 03; document App Thinning / On-Demand Resources or Wi-Fi-only download policy if cellular limit exceeded.
+  - [x] **Task 3.3.2**: Profile cold-start latency on mid-range Android (target &lt; 3s). Kill rule: if thinned `.ipa` remains above cellular limits, ship desktop-built index sample and document Wi-Fi-only onboarding. Methodology is in docs/guides/mobile-memory-budget.md; signed .ipa numbers and device cold-start remain H-IPA-DEVICE (not measured in this repo).
+- [x] **Story 3.4: Honesty pass (Pdf magic, summary collection name, unified version, Arabic retrieve)** (Owner: `zvec-rag-pipeline-expert`, `zvec-ci-cd-expert`, `zvec-docs-expert`)
+  - [x] **Task 3.4.1**: PDF magic-byte mismatch reject (`%PDF-`); `SummaryCollectionName` + convention; pin PdfPig 0.1.16; all `src/` packages `1.0.0-preview.1` via Directory.Build.props; Arabic fixture retrieve test; document versioning.
 
 ---
 
@@ -341,6 +343,8 @@ ZVec.NET-RAG.slnx
 > **Story ID map:** This implementation plan Epic 4 = LLM recipes. Project-plan Epic 3 = LLM recipes (labeled → implementation Epic 4). Project-plan Epic 4 = template (labeled → implementation Epic 3).
 
 #### Epic 4: Modular Local Model Adapters & Observability
+
+> **Must consume open `H-*` rows in registry before WRITE.**
 
 - [ ] **Story 4.1: Standalone Local LLM Recipe Packages** (Owner: `zvec-rag-pipeline-expert`)
   - **Task 4.1.1 (TDD)**: Build `ZVec.Rag.LLamaSharp` adapter implementing `IChatClient` / `IEmbeddingGenerator` over LLamaSharp.

@@ -29,14 +29,17 @@ public ReadOnlyMemory<Half> Embedding { get; set; } // → VectorFp16
 
 ## Mobile Sample 03 Policy
 
+**Index type** (Flat vs HNSW) is independent of **storage dtype** (`Undefined`/FP32 baseline vs `Fp16`/`Int8`). Flat is the search algorithm for ≤20k chunks; quantization is how many bytes you store per dimension.
+
 | Setting | Default | Gate |
 |---|---|---|
-| Index type | **Flat** (≤20k chunks) | Exact recall, fast on mobile |
-| Quantization | None (Flat FP32) | — |
-| Optional INT8 HNSW | Only if measured | Recall@K ≥ **0.95** vs FP32 Flat on desktop fixture |
-| Fallback if INT8 fails | Flat or Flat+FP16 | FP16 is ARM NEON-safe |
+| Index type | **Flat** (≤20k chunks) | Exact nearest neighbor — not the same knob as dtype |
+| Shipped dtype | **Fp16 Flat** (`ZVecQuantizeType.Fp16`) | Desktop Recall@K gate vs FP32 Flat baseline |
+| FP32 Flat | Eval baseline only | Story 2.8 `IRagEvaluator` on desktop fixture |
+| Optional INT8 | Test-only gate | Recall@K ≥ **0.95** vs FP32 Flat; do not ship INT8 if gate fails |
+| Fallback if INT8 fails | Fp16 Flat | ARM NEON-safe |
 
-Do **not** blindly ship INT8 for the mobile demo. Run `IRagEvaluator` (Story 2.8) on the shipped fixture before locking config.
+Do **not** conflate Flat with “no quantization.” Sample 03 **ships** `ZVecQuantizeType.Fp16` + Flat.
 
 ---
 

@@ -13,5 +13,6 @@
     <Company>Adam Systems</Company>
     <Copyright>Copyright © 2026 Ahmed Samir (Adam Systems)</Copyright>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <Version>1.0.0-preview.1</Version>
   </PropertyGroup>
 </Project>

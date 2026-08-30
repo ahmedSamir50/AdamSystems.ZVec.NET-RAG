@@ -121,8 +121,9 @@ public sealed partial class RagIngestor : IRagIngestor
 
         ValidateDocumentId(documentId);
         ValidateContentType(contentType);
+        PdfMagicSniffer.Validate(documentStream, contentType);
 
-        string text = await _documentReader.ReadAsync(documentStream, cancellationToken).ConfigureAwait(false);
+        string text = await _documentReader.ReadAsync(documentStream, contentType, cancellationToken).ConfigureAwait(false);
         if (string.IsNullOrWhiteSpace(text))
         {
             throw new ArgumentException(ZVecRagErrorMessages.NullOrEmptyText(), nameof(documentStream));
@@ -285,6 +286,7 @@ public sealed partial class RagIngestor : IRagIngestor
 
         if (!contentType.Equals(ZVecRagConstants.PlainTextContentType, StringComparison.OrdinalIgnoreCase)
             && !contentType.Equals(ZVecRagConstants.MarkdownContentType, StringComparison.OrdinalIgnoreCase)
+            && !contentType.Equals(ZVecRagConstants.PdfContentType, StringComparison.OrdinalIgnoreCase)
             && !contentType.StartsWith("text/", StringComparison.OrdinalIgnoreCase))
         {
             throw new NotSupportedException(ZVecRagErrorMessages.UnsupportedContentType(contentType));

@@ -415,9 +415,10 @@ That's it. No Azure. No Python. No Qdrant. Connector Native AOT verified (Phase 
 - [ ] 4.1 `dotnet new zvec-rag` (Console variant, ~50 LOC)
 - [ ] 4.2 `dotnet new zvec-rag-aspnet` (ASP.NET Core + SSE streaming)
 - [ ] 4.3 `dotnet new zvec-rag-maui` (MAUI Blazor Hybrid + offline)
-- [ ] 4.4 Template options: `--llm ollama|azure|openai|llamasharp`, `--embedder ollama|azure|onnx|llamasharp`, `--storage zvec`
+- [ ] 4.4 Template options: Phase 3 symbols: `--llm fake|ollama|azure|openai|llamasharp` (generated code is fake; other values are README hints). `--embedder fake|ollama|azure`. `--storage zvec`. `onnx` embedder = Story 4.1 (H-ONNX-TPL).
 - [ ] 4.5 Published as `ZVec.Rag.Template` NuGet
 - [ ] 4.6 Install docs: `dotnet new install ZVec.Rag.Template && dotnet new zvec-rag -n MyRagApp`
+- [x] 4.7 Honesty pass (Task 3.4): unified package Version 1.0.0-preview.1; PDF magic sniff; SummaryCollectionName. (implementation-plan Story 3.4)
 
 ### Epic 5 — Sample apps (factored from existing, not greenfield)
 
@@ -575,7 +576,7 @@ This story is **rare and defensible** because:
 
 - **Repo name** — `zvec-rag` (short, brand-aligned). Connector: `zvec-extensions-vectordata`.
 - **Tagline** — "Local-first RAG for .NET. No cloud. No Python. No kidding."
-- **Logo** — vector motif (arrows) merging into a database cylinder. Simple SVG, dark/light variants. Align with ZVec.NET's existing brand.
+- **Logo** — Alibaba folded-ribbon Z as glyph (vendor SVG from upstream ZVec branding); sibling wordmark **Zvec.Rag** in Segoe UI; NuGet **128×128** transparent PNG in .NET purple **#512BD4**; light/dark wordmark PNGs for README and MkDocs. Do not use the official .NET swirl logo.
 - **Demo site** — extend `ahmedsamir50.github.io/AdamSystems.ZVec.NET` with a "RAG in 60 seconds" interactive playground (live ASP.NET Core sample, Azure-hosted for demo purposes).
 - **Talk abstracts** — 5 ready-to-submit:
   1. "Local-first RAG in .NET: No Cloud, No Python, No Kidding"
@@ -668,8 +669,8 @@ It's also **the only candidate we've evaluated that leverages an existing asset*
 - Sample 02: Local-first PDF chat (AspNet + SSE)
 - Sample 03: Offline phone RAG (MAUI: ship read-only mmap Flat index ≤20k chunks; optional INT8 HNSW only if Recall@K ≥0.95 vs FP32 Flat; no on-device LLamaSharp)
 - Sample 04: Air-gapped enterprise RAG (LLamaSharp, Desktop only)
-- Sample 05: Multimodal RAG (CLIP ONNX + SixLabors.ImageSharp)
-- Sample 06: Aspire dashboard
+- Sample 05: Multimodal RAG (CLIP ONNX + SixLabors.ImageSharp) (Epic 5.5 / 5.6 after Story 4.1 — not Phase 3 WRITE)
+- Sample 06: Aspire dashboard (Epic 5.5 / 5.6 after Story 4.1 — not Phase 3 WRITE)
 
 **Ship v1.0.0.** Conference talk delivered. "No cloud, no Python" manifesto blog post.
 

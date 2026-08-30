@@ -1,0 +1,46 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "Adam Systems",
+  "classifications": [ "Console", "RAG", "ZVec" ],
+  "identity": "ZVec.Rag.Template.Console",
+  "name": "ZVec RAG Console Application",
+  "shortName": "zvec-rag",
+  "sourceName": "ZVecRagApp",
+  "defaultName": "ZVecRagApp",
+  "preferNameDirectory": true,
+  "symbols": {
+    "llm": {
+      "type": "parameter",
+      "datatype": "choice",
+      "choices": [
+        { "choice": "fake", "description": "FakeChatClient (default)" },
+        { "choice": "ollama", "description": "README Ollama hint" },
+        { "choice": "azure", "description": "README Azure hint" },
+        { "choice": "openai", "description": "README OpenAI hint" },
+        { "choice": "llamasharp", "description": "README LLamaSharp hint" }
+      ],
+      "defaultValue": "fake",
+      "replaces": "TEMPLATE_LLM"
+    },
+    "embedder": {
+      "type": "parameter",
+      "datatype": "choice",
+      "choices": [
+        { "choice": "fake", "description": "DeterministicEmbedder (default)" },
+        { "choice": "ollama", "description": "README Ollama embedder hint" },
+        { "choice": "azure", "description": "README Azure embedder hint" }
+      ],
+      "defaultValue": "fake",
+      "replaces": "TEMPLATE_EMBEDDER"
+    },
+    "storage": {
+      "type": "parameter",
+      "datatype": "choice",
+      "choices": [
+        { "choice": "zvec", "description": "ZVec embedded store" }
+      ],
+      "defaultValue": "zvec",
+      "replaces": "TEMPLATE_STORAGE"
+    }
+  }
+}

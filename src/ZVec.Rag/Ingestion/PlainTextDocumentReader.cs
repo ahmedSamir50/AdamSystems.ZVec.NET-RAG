@@ -1,5 +1,6 @@
 using System.Text;
 using ZVec.Rag.Abstractions;
+using ZVec.Rag.Constants;
 
 namespace ZVec.Rag.Ingestion;
 
@@ -9,11 +10,19 @@ namespace ZVec.Rag.Ingestion;
 public sealed class PlainTextDocumentReader : IRagDocumentReader
 {
     /// <inheritdoc />
-    public async ValueTask<string> ReadAsync(Stream documentStream, CancellationToken cancellationToken = default)
+    public async ValueTask<string> ReadAsync(
+        Stream documentStream,
+        string contentType,
+        CancellationToken cancellationToken = default)
     {
         if (documentStream == null)
         {
             throw new ArgumentNullException(nameof(documentStream));
+        }
+
+        if (contentType.Equals(ZVecRagConstants.PdfContentType, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new NotSupportedException(ZVecRagErrorMessages.PdfPackageRequired());
         }
 
         using var reader = new StreamReader(

@@ -1,0 +1,27 @@
+@namespace ZVecRagApp.Components
+@inject IServiceProvider Services
+<h1>ZVec RAG (MAUI Blazor Hybrid)</h1>
+<p>@_status</p>
+<ul>
+@foreach (var id in _chunkIds)
+{
+    <li>@id</li>
+}
+</ul>
+
+@code {
+    private string _status = "Opening vector index...";
+    private List<string> _chunkIds = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        await BackgroundCollectionOpener.OpenAsync(async ct =>
+        {
+            using var scope = Services.CreateScope();
+            var retriever = scope.ServiceProvider.GetRequiredService<IRagRetriever>();
+            var citations = await retriever.RetrieveAsync("What is ZVec?", cancellationToken: ct);
+            _chunkIds = citations.Select(c => c.ChunkId).ToList();
+            _status = "Index ready.";
+        }, CancellationToken.None);
+    }
+}

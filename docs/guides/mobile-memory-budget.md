@@ -38,23 +38,23 @@ Indexes built **on-device** must use `ReadOnly = false` during ingest, then reop
 
 ### 2. Mobile Best Practice Recommendations (Sample 03)
 
-**Default:** Flat index (exact search, zero recall loss) for ≤20k chunks. Do **not** mandate HNSW+INT8.
+**Default:** Flat index (exact search) for ≤20k chunks. **Shipped dtype:** `ZVecQuantizeType.Fp16` (quantized storage — not FP32). Index type (Flat vs HNSW) is independent of storage dtype.
 
 > **Never open a ZVec collection on the UI/main thread in MAUI.** Initialize the collection on a background thread during app startup and show a loading spinner in the Blazor WebView until `IZvecCollection<T>` is ready. This is an exception to the ingest `Task.Run` ban — collection open only.
 
 ```csharp
-// Recommended MAUI Mobile Initialization (shipped read-only Flat index)
+// Recommended MAUI Mobile Initialization (shipped read-only Flat + Fp16 index)
 builder.Services.AddZVecVectorStore(options =>
 {
     options.StoragePath = Path.Combine(FileSystem.AppDataDirectory, "mobile_rag.zvec");
     options.EnableMmap = true;   // mmap for shipped indexes
     options.ReadOnly = true;     // query-only on device
-    // Flat index built on desktop — no DefaultQuantizeType required for ≤20k
+    options.DefaultQuantizeType = ZVecQuantizeType.Fp16; // shipped quantized dtype
     options.MaxConcurrentNativeCalls = 4;
 });
 ```
 
-**Optional INT8 HNSW** (memory reduction): only adopt if a **desktop** Recall@K check on the shipped fixture (Story 2.8 `IRagEvaluator`) stays **≥ 0.95 relative to FP32 Flat**. If INT8 fails, keep Flat or use Flat+FP16 (`EmbeddingType=Half`).
+**Optional INT8** (memory reduction): only adopt if a **desktop** Recall@K check on the shipped fixture (Story 2.8 `IRagEvaluator`) stays **≥ 0.95 relative to FP32 Flat**. If INT8 fails, keep Fp16 Flat.
 
 ### 3. Recommended Corpus Bounds for Mobile RAG
 
@@ -64,3 +64,22 @@ builder.Services.AddZVecVectorStore(options =>
 - **Vector vs LLM quant:** `DefaultQuantizeType` applies to the **vector store**. Do not conflate with GGUF Q4_K_M LLM weights.
 
 See also: [Quantization & Index Rebuild Guide](quantization.md).
+
+---
+
+## Measuring thinned `.ipa` / `.apk` (methodology)
+
+1. Build the MAUI Blazor Hybrid app with release configuration and platform-specific publish (`dotnet publish -f net8.0-ios` / `net8.0-android`).
+2. For iOS: export an `.ipa` and measure **thinned** size via App Store Connect / Transporter validation or Xcode Organizer (App Thinning report). Do not cite unsigned simulator build sizes as shipping numbers.
+3. For Android: measure **download-size** from Play Console internal testing or `bundletool build-apks` + `get-size` on the generated `.aab`.
+4. Record cold-start separately: time from process launch until first successful `RetrieveAsync` after `BackgroundCollectionOpener` completes (target &lt; 3s on mid-range Android — measure on hardware; not automated in this repo yet).
+
+## Wi-Fi-only onboarding policy
+
+When a cellular install cap would be exceeded:
+
+1. **Quantize the index first** (`Fp16` shipped default; optional `Int8` only after desktop Recall@K gate).
+2. **Then** apply distribution policy: Wi-Fi-only download of the pre-built index bundle, not embedding precision as the primary lever.
+3. Document the cellular cap your org enforces; this repo does **not** publish signed `.ipa` megabyte figures (H-IPA-DEVICE).
+
+On-Demand Resources and store-hosted index bundles are **post-v1** distribution options — no ODR code ships in Sample 03.

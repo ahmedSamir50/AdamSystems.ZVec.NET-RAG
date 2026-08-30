@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <Description>Minimal local-first RAG sample using IRagPipeline with deterministic fakes.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\ZVec.Rag\ZVec.Rag.csproj" />
+    <ProjectReference Include="..\..\src\ZVec.Rag.Testing\ZVec.Rag.Testing.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="docs\hello.md" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

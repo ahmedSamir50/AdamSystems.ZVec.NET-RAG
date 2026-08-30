@@ -47,6 +47,30 @@ public sealed class ZVecRagOptions
     /// <summary>Gets or sets the native collection name for RAG chunks.</summary>
     public string CollectionName { get; set; } = Constants.ZVecRagConstants.DefaultCollectionName;
 
+    /// <summary>Gets or sets the section-summary collection name. Null means resolve (see ResolveSummaryCollectionName).</summary>
+    public string? SummaryCollectionName { get; set; }
+
+    /// <summary>Resolves the native collection name for section summaries.</summary>
+    public string ResolveSummaryCollectionName()
+    {
+        if (SummaryCollectionName != null)
+        {
+            if (string.IsNullOrWhiteSpace(SummaryCollectionName))
+            {
+                throw new ArgumentException(Constants.ZVecRagErrorMessages.NullOrEmptySummaryCollectionName(), nameof(SummaryCollectionName));
+            }
+
+            return SummaryCollectionName;
+        }
+
+        if (CollectionName.Equals(Constants.ZVecRagConstants.DefaultCollectionName, StringComparison.Ordinal))
+        {
+            return Constants.ZVecRagConstants.SectionSummaryCollectionName;
+        }
+
+        return CollectionName + Constants.ZVecRagConstants.SummaryCollectionNameSuffix;
+    }
+
     /// <summary>Gets or sets optional Tiktoken encoding override (e.g. <c>cl100k_base</c>, <c>o200k_base</c>).</summary>
     public string? TokenizerEncoding { get; set; }
 

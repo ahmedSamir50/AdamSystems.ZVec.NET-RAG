@@ -36,6 +36,12 @@
 
   <ItemGroup>
     <Content Include="Fixtures\**\*" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\samples\02-local-first-pdf-chat\fixtures\ar-faq.txt" Link="Fixtures\sample02\ar-faq.txt" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\samples\02-local-first-pdf-chat\fixtures\en-faq.txt" Link="Fixtures\sample02\en-faq.txt" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\samples\03-offline-phone-rag\BackgroundCollectionOpener.cs" Link="Samples\BackgroundCollectionOpener.cs" />
   </ItemGroup>
 
   <ItemGroup>

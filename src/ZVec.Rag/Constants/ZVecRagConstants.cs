@@ -11,6 +11,9 @@ public static class ZVecRagConstants
     /// <summary>Native collection name for section-summary records (Story 2.9).</summary>
     public const string SectionSummaryCollectionName = "rag_section_summaries";
 
+    /// <summary>Suffix appended to <see cref="DefaultCollectionName"/> when resolving summary collection names.</summary>
+    public const string SummaryCollectionNameSuffix = "_summaries";
+
     /// <summary>Strategy id for section-summary identifier hashing.</summary>
     public const string SectionSummaryStrategyId = "section-summary-v1";
 
@@ -79,6 +82,9 @@ public static class ZVecRagConstants
 
     /// <summary>Markdown content type.</summary>
     public const string MarkdownContentType = "text/markdown";
+
+    /// <summary>PDF content type (requires ZVec.Rag.Pdf package).</summary>
+    public const string PdfContentType = "application/pdf";
 
     /// <summary>Tiktoken encoding name for cl100k_base (used via CreateForEncoding).</summary>
     public const string Cl100kBaseEncoding = "cl100k_base";

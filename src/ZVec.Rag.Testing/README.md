@@ -2,7 +2,7 @@
 
 Deterministic test fakes for `ZVec.Rag` pipelines — no cloud LLMs required in CI.
 
-**Version:** `0.5.0-preview.1` · **TFMs:** `net8.0`, `net9.0`, `net10.0`
+**Version:** `1.0.0-preview.1` · **TFMs:** `net8.0`, `net9.0`, `net10.0`
 
 ## Install
 
