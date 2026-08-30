@@ -25,6 +25,7 @@ You own documentation accuracy for `docs/` and `mkdocs.yml`.
 3. **Architecture Freshness**: Update architecture docs when connector, AOT, or RAG design changes.
 4. **No Stale Examples**: Code snippets in docs must compile against current APIs.
 5. **Wiki vs live API (even when no C# changed)**: Every snippet in `docs/guides/` names a real member on current public types (`ZVecVectorStoreOptions`, etc.) or is explicitly marked Planned. Invented types (`ZVecQuantizationMode`) are a P1 spec gap.
+6. **Lexicon firewall**: Never copy agent/CI jargon (`harness`, `spec_lock`, `WRITE`) into README, wiki (`docs/**`), or NuGet READMEs. Name test projects (`ZVec.Rag.AotTestApp`) when AOT smoke must be described.
 
 ## Required Actions
 

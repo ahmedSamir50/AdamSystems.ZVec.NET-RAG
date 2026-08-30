@@ -6,8 +6,9 @@
 
 | ID | Severity | Category | File | Status | Since | Last Checked |
 |----|----------|----------|------|--------|-------|-------------|
-| P2-E | P2 | dynamic_dictionary_collections_stubbed | src/ZVec.Extensions.VectorData/Collection/ZVecVectorizableRecordCollection.cs | OPEN | 2026-08-13 | 2026-08-26 |
-| P3-C | P3 | sample_app_not_smoke_tested | samples/ZVec.Rag.Console/ | OPEN | 2026-08-13 | 2026-08-26 |
+| P2-E | P2 | dynamic_dictionary_collections_stubbed | src/ZVec.Extensions.VectorData/Collection/ZVecVectorizableRecordCollection.cs | OPEN | 2026-08-13 | 2026-08-30 |
+| P3-C | P3 | sample_app_not_smoke_tested | samples/ZVec.Rag.Console/ | OPEN | 2026-08-13 | 2026-08-30 |
+| NC-DENSE-FTS-ZERO | P2 | citation_dense_fts_scores_zeroed | src/ZVec.Rag/Retrieval/RagRetriever.cs | PartiallyFixed | 2026-08-30 | 2026-08-30 |
 
 ## Fixed Gaps (Historical)
 
@@ -43,6 +44,7 @@
 | DS-1 | P2 | 2026-08-26 | 2026-08-26 | working-tree | ZVecVectorStoreOptions: EnableMmap, ReadOnly, MemoryLimitMb, DefaultQuantizeType plumbed; ZVecVectorIndexResolver for FP16/INT8 |
 | DS-2 | P2 | 2026-08-26 | 2026-08-26 | working-tree | mobile-memory-budget.md corrected: mmap+ReadOnly for shipped indexes; real ZVecQuantizeType API |
 | DS-3 | P2 | 2026-08-26 | 2026-08-26 | working-tree | Second evaluation: LITM vs CitationOrder decoupled; Sample 03 Flat default; stamp QuantizeType; Tiktoken AOT gate; Channels not Task.Run |
+| D-1 | P2 | 2026-08-26 | 2026-08-30 | working-tree | Story 2.8: `IRagEvaluator`, `DeterministicEvaluator`, `SemanticTestEmbedder`, in-repo seed fixtures |
 
 ## Phase 2 Design Gaps (Block WRITE of that epic)
 
@@ -50,12 +52,14 @@ These are **not** "do not block forever." They block **WRITE of the epic they be
 
 | ID | Severity | Category | Doc Status |
 |----|----------|----------|------------|
-| D-1 | P2 | no_rag_evaluation_framework | Story 2.8 tasked in implementation plan; IRagEvaluator in rag-pipeline.md |
 | D-2 | P2 | cross_encoder_reranking_deferred | Explicitly deferred in Task 2.3.2 (post-v1.1); default `ZVecRrfReranker` |
-| D-3 | P2 | no_embedding_migration_strategy | IRagMigrationManager specified |
+| D-3 | P2 | no_embedding_migration_strategy | **Deferred post-Story 2.8 / pre-v1.1** (owner: `zvec-rag-pipeline-expert`); interface referenced in error strings/wiki only |
 | D-4 | P2 | citation_chunk_id_undefined | Specified: SHA256(doc_uri \| strategy_id \| chunk_index) |
 | D-5 | P2 | security_sanitizer_interface_only | Story 2.6 shipped: `IRagSecuritySanitizer` + `DefaultRagSecuritySanitizer` + prompt isolation |
-| D-6 | P2 | batch_ingestion_topology_undefined | Bounded-channel dataflow graph specified; Task 2.2.3 forbids Task.Run |
+| D-6 | P2 | batch_ingestion_topology_undefined | **Shipped topology:** bounded `System.Threading.Channels` via `IngestionChannelPump` (capacity 1024, wait-on-full); Task 2.2.3 forbids `Task.Run`. `IngestTextAsync` awaits same-call pipeline completion. **Not NATS:** broker/distributed ingest = post-v1 optional `IIngestBus`, not core v1. |
+| D-7 | P2 | complex_doc_ingest | **Deferred post-v1** — Epic 8.7 (owner: `zvec-architect-strategy-expert`). Layout-aware readers (PDF tables, PPT slides, DOCX, Excel) emit parse tree **before** stamps. Additive schema: `HeadingPath` (indexed breadcrumb), `ParentChunkId` (indexed nullable heading/page/table node). `ContextPacker` may fetch parent by id later; **`ChunkId` formula unchanged**. Markdown `HeadingPath` = first reader of epic, not silent v1 schema change. Sample 02 PdfPig = text extract only. |
+| D-8 | P2 | query_complexity | **Deferred post-v1** — Epic 8.8 (owner: `zvec-architect-strategy-expert`). Router, sub-questions, auto-retrieval filters. Blocks research-assistant epic until tasked. |
+| D-9 | P2 | optional_section_summary_helper | **Story 2.9** (after 2.7 AOT + 2.8 eval). `GenerateSummaries` default OFF. Second collection `rag_section_summaries` (`embed(Summary)`); chunks keep `embed(Text)` + `SectionSummaryId` FK. Retrieve: parallel union+parent boost; packer prepends section summary, cites child `Text`. Re-ingest on flag/embedder/chunker change. Not Advanced RAG / RAPTOR; not in AOT harness. |
 
 ## Spec Gaps (S-*)
 
@@ -80,7 +84,10 @@ Locked findings from spec_lock / consultant restudies. Process gaps live here to
 | S-AOT-INGEST-ACL | P2 | aot_tokenizer_only | Fixed | 2026-08-26 | Task 2.2.3 DI factory; 2.7.1 full IngestTextAsync |
 | S-SAMPLE03-EPIC5 | P2 | epic53_generic | Fixed | 2026-08-26 | project-plan Epic 5.3 detailed Sample 03 policy |
 | S-CATEGORY-G | P1 | runtime_interop_harness_gap | Fixed | 2026-08-26 | spec-lock.md §7 + skill pushbacks G1–G5 |
-| S-TEXTCHUNKER | P2 | itextchunker_stale_api | Fixed | 2026-08-27 | Re-verified 2026-08-27: all three plan files use in-repo `IZVecTextChunker`; no `M.E.DataIngestion` PackageReference |
+| S-TEXTCHUNKER | P2 | itextchunker_stale_api | Fixed | 2026-08-27 | 2026-08-30: project-plan mermaid + package tree corrected; in-repo `IZVecTextChunker` only |
+| S-RAG-STATUS-BANNER | P2 | rag_pipeline_status_stale | Fixed | 2026-08-30 | rag-pipeline.md banner: 2.7 + 2.8 shipped |
+| S-SLIDING-CHUNKER | P3 | mermaid_lists_unshipped_chunker | Fixed | 2026-08-30 | README + rag-pipeline mermaid: Token / Markdown / Sentence only |
+| S-NAIVE-RAG-HONESTY | P2 | readme_overclaims_advanced_rag | Fixed | 2026-08-30 | README "What this is / is not" + plan Epic 8.7/8.8; Liu-axis citations |
 | S-README-OVERCLAIM | P1 | readme_nonexistent_packages | Fixed | 2026-08-27 | README lists only shipped packages; Template/LLamaSharp/ONNX marked Planned |
 | S-EPIC34-MAP | P1 | epic_3_4_unlabeled | Fixed | 2026-08-27 | Story ID map labels added to both plan files |
 | S-WIKI-HYBRID-API | P1 | wiki_invented_hybrid_api | Fixed | 2026-08-27 | score-semantics.md + hybrid-search-rrf.md aligned to `IKeywordHybridSearchable` / raw RRF |
@@ -92,6 +99,7 @@ Locked findings from spec_lock / consultant restudies. Process gaps live here to
 | S-INGEST-CALLER-ENUM | P2 | ingest_caller_continuation_docs | Fixed | 2026-08-27 | rag-pipeline.md async contract aligned with Channels + ForceYielding open; not Task.Run |
 | NC-CA-CONNECTOR | P2 | connector_configure_await_hygiene | Fixed | 2026-08-27 | CAF on ZVecVectorizableRecordCollection CRUD/search awaits + ListCollectionNames Yield |
 | S-EPIC34-MAP-DRIFT | P1 | epic34_map_notes_false | Fixed | 2026-08-27 | Implementation-plan map notes corrected; plan_alignment_check.py asserts inversion |
+| S-RAG-SG-AOT | P1 | rag_schema_no_source_generator | Fixed | 2026-08-30 | Story 2.7.3: SG wired into `ZVec.Rag.csproj`; `ZVecRagRecordV1` AOT-clean schema via registry |
 
 DS-1…DS-3 (mmap/quantize plumbing, mobile wiki, second-evaluation docs) remain in Fixed Gaps (Historical).
 

@@ -17,6 +17,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\ZVec.Rag\ZVec.Rag.csproj" />
     <ProjectReference Include="..\..\src\ZVec.Rag.Testing\ZVec.Rag.Testing.csproj" />
+    <ProjectReference Include="..\..\src\ZVec.Extensions.VectorData.SourceGenerator\ZVec.Extensions.VectorData.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
 </Project>

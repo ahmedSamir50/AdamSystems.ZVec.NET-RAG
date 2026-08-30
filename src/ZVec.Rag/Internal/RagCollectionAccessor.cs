@@ -1,4 +1,5 @@
 using Microsoft.Extensions.VectorData;
+using System.Diagnostics.CodeAnalysis;
 using ZVec.Extensions.VectorData.Manifest;
 using ZVec.Extensions.VectorData.Store;
 using ZVec.Rag.Constants;
@@ -15,6 +16,8 @@ internal static class RagCollectionAccessor
     /// <summary>
     /// Ensures the RAG collection exists, translating stamp failures to <see cref="ZVecRagInitializationException"/>.
     /// </summary>
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "ZVecRagRecordV1 uses source-generated schema and mapper; GetCollection does not require dynamic code at runtime.")]
+    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "ZVecRagRecordV1 uses source-generated schema and mapper; GetCollection does not require unreferenced code at runtime.")]
     public static async Task<VectorStoreCollection<string, ZVecRagRecordV1>> EnsureCollectionAsync(
         ZVecVectorStore store,
         ZVecVectorStoreOptions storeOptions,

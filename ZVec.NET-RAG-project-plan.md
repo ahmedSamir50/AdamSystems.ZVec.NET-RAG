@@ -12,11 +12,11 @@
 
 ## 0. TL;DR
 
-**Build a `Microsoft.Extensions.VectorData` connector for ZVec.NET as the v1 centerpiece, plus a batteries-included `ZVec.Rag` RAG orchestration layer that factors the RAG patterns already proven in sample code into a reusable, AOT-audited NuGet.** Ship a `dotnet new rag` template. Target the MAUI Blazor Hybrid flagship demo (already proven in the demos repo). Ride the local-first AI wave. 16–21 weeks to v1.0 (includes Phase 1.5 Risk Hardening Sprint and Phase 2 Contract Sprint).
+**Build a `Microsoft.Extensions.VectorData` connector for ZVec.NET as the v1 centerpiece, plus a batteries-included `ZVec.Rag` RAG orchestration layer that factors the RAG patterns already proven in sample code into a reusable, AOT-audited NuGet.** Ship a `dotnet new zvec-rag` template. Target the MAUI Blazor Hybrid flagship demo (already proven in the demos repo). Ride the local-first AI wave. 16–21 weeks to v1.0 (includes Phase 1.5 Risk Hardening Sprint and Phase 2 Contract Sprint).
 
 **Why this project, in one sentence:**
 
-> ZVec.NET already gives .NET the embedded vector database (no Qdrant, no pgvector, no Azure bill). Path B gives .NET the **Microsoft.Extensions.VectorData connector** that makes ZVec.NET a first-class citizen in the M.E.AI ecosystem, plus a **batteries-included RAG starter** that lifts proven sample patterns into a reusable library — so any .NET dev can do `dotnet new rag` and have a working local-first RAG app in 60 seconds.
+> ZVec.NET already gives .NET the embedded vector database (no Qdrant, no pgvector, no Azure bill). Path B gives .NET the **Microsoft.Extensions.VectorData connector** that makes ZVec.NET a first-class citizen in the M.E.AI ecosystem, plus a **batteries-included RAG starter** that lifts proven sample patterns into a reusable library — so any .NET dev can do `dotnet new zvec-rag` and have a working local-first RAG app in 60 seconds.
 
 ---
 
@@ -37,7 +37,7 @@ A batteries-included RAG orchestration layer that wires together:
 - **ZVec.Extensions.VectorData** (the connector above)
 - Optional local LLM recipes (Ollama via M.E.AI, LLamaSharp adapter, ONNX Runtime adapter)
 
-Plus a `dotnet new rag` template that scaffolds a working RAG app in 60 seconds.
+Plus a `dotnet new zvec-rag` template that scaffolds a working RAG app in 60 seconds.
 
 **Working name:** `ZVec.Rag` (alt: `ZVec.RagKit`, `ZVec.RagStarter`). The connector package: `ZVec.Extensions.VectorData`.
 
@@ -57,7 +57,7 @@ Plus a `dotnet new rag` template that scaffolds a working RAG app in 60 seconds.
 | **Embedded persistent vector DB** | sqlite-vec (alpha, single maintainer), M.E.VectorData.InMemory (testing-only per Microsoft docs), LM-Kit.NET (closed-source commercial) | ❌ **NO mature OSS option** |
 | **M.E.VectorData connector for ZVec.NET** | **Does not exist** | ❌ **Gap** |
 | **Batteries-included RAG starter** | LangChain.NET (stale, April 2024), KernelMemory (deprecated), SmartRAG (single maintainer), Azure samples (educational only) | ❌ **NO mature OSS option** |
-| **`dotnet new rag` template** | Does not exist | ❌ **Gap** |
+| **`dotnet new zvec-rag` template** | Does not exist | ❌ **Gap** |
 
 ### 2.2 Microsoft's own community is asking for this
 
@@ -88,7 +88,7 @@ The vector DB itself is built and shipped. ZVec.NET v1.0.0-beta.5 (Aug 2026) pro
 | **`Microsoft.Extensions.VectorData` connector** | Unlocks ecosystem adoption (SK, AF, community RAG tools). Without this, ZVec.NET is an island. | Medium — well-defined conformance surface |
 | **`Microsoft.Extensions.AI` integration** | Today samples hardcode LM Studio at `http://127.0.0.1:1234/v1`. M.E.AI integration lets users swap to Azure / OpenAI / Ollama / ONNX / LLamaSharp via DI. | Low — adapter pattern |
 | **Factored RAG library** | Today RAG code lives scattered across 4 sample apps + 3 demos, each reinventing ingest/embed/cite/stream. | Medium — pattern extraction, not greenfield |
-| **`dotnet new rag` template** | Distribution moat. Microsoft won't ship a ZVec template. | Low — template authoring |
+| **`dotnet new zvec-rag` template** | Distribution moat. Microsoft won't ship a ZVec template. | Low — template authoring |
 | **AOT / trim audit** | ZVec.NET uses AOT-friendly patterns (`ReadOnlyMemory<float>` pin, SafeHandles) but has zero `[DynamicallyAccessedMembers]` annotations and zero published AOT verification. | Medium — annotation pass + CI test |
 | **Cohesive story / branding** | ZVec.NET's repo has no GitHub topics, no tagline, no "no cloud, no Python" pitch. The story needs to be told. | Low — content work |
 
@@ -126,8 +126,8 @@ flowchart TB
       vd6["DI services.AddZVecVectorStore"]
     end
     subgraph zvecRag ["ZVec.Rag thin integration layer"]
-      rag1["IRagPipeline orchestrator\nthin wrapper delegates to M.E.AI + DataIngestion"]
-      rag2["Ingestion PDF/Word/MD/HTML to chunks\ndelegates to M.E.DataIngestion"]
+      rag1["IRagPipeline orchestrator\nthin wrapper delegates to M.E.AI"]
+      rag2["Ingestion text/md in core\nIZVecTextChunker ACL PDF optional ZVec.Rag.Pdf"]
       rag3["Embedding chunks to vectors\ndelegates to M.E.AI IEmbeddingGenerator"]
       rag4["Storage vectors to ZVec.NET\nvia ZVec.Extensions.VectorData"]
       rag5["Retrieval query to top-K chunks hybrid search"]
@@ -139,7 +139,7 @@ flowchart TB
       rag11["DI services.AddZVecRag"]
     end
     subgraph template ["ZVec.Rag.Template distribution"]
-      tpl1["dotnet new rag Console AspNet Maui variants"]
+      tpl1["dotnet new zvec-rag Console AspNet Maui variants"]
       tpl2["Options --llm ollama azure openai llamasharp"]
       tpl3["Options --embedder ollama azure onnx llamasharp"]
     end
@@ -182,7 +182,7 @@ flowchart TB
 > Your wedge is:
 > 1. The **M.E.VectorData connector** for ZVec.NET (unlocks ecosystem)
 > 2. The **integration glue** that lifts proven sample patterns into a reusable library
-> 3. The **`dotnet new rag` template** (distribution moat)
+> 3. The **`dotnet new zvec-rag` template** (distribution moat)
 > 4. The **MAUI / offline / local-first story** (no competitor occupies this)
 
 ### 4.3 Package layout
@@ -238,9 +238,9 @@ flowchart TB
     onnxP3["Multimodal RAG SourceKind metadata not ZVecModality SG"]
   end
   subgraph templatePkg ["ZVec.Rag.Template v1 distribution"]
-    tplP1["dotnet new rag Console"]
-    tplP2["dotnet new rag-aspnet ASP.NET SSE"]
-    tplP3["dotnet new rag-maui MAUI Blazor offline"]
+    tplP1["dotnet new zvec-rag Console"]
+    tplP2["dotnet new zvec-rag-aspnet ASP.NET SSE"]
+    tplP3["dotnet new zvec-rag-maui MAUI Blazor offline"]
     tplP4["Options --llm --embedder --storage"]
     tplP5["Published ZVec.Rag.Template NuGet"]
   end
@@ -274,7 +274,7 @@ ZVec.Extensions.VectorData         (v1 centerpiece — the bridge)
 ZVec.Rag                           (v1 integration layer — the starter)
 ├─ IRagIngestor, IRagRetriever, IRagGenerator interfaces (SOLID Interface Segregation)
 ├─ IRagPipeline composite facade (delegates to ingestor, retriever, generator — **no decorator middleware**)
-├─ Ingestion (text/md in core; `IRagDocumentReader` + `IZVecTextChunker` ACL for M.E.DataIngestion; PDF via optional `ZVec.Rag.Pdf`)
+├─ Ingestion (text/md in core; `IRagDocumentReader` + in-repo `IZVecTextChunker` ACL; PDF via optional `ZVec.Rag.Pdf` text extract — table QA post-v1 D-7)
 ├─ Embedder Stamp Manifest (zvec_index_manifest.json — ModelId, Dimensions, QuantizeType, storage dtype)
 ├─ Storage (via ZVec.Extensions.VectorData; RAG `OptimizeAsync` delegates to `OptimizeAndReopenAsync` / `lock (_initLock)` — no `ReaderWriterLockSlim`)
 ├─ Retrieval (hybrid: dense + FTS + ZVecRrfReranker, backed by ZVec)
@@ -308,9 +308,9 @@ ZVec.Rag.ONNX                      (v1.1 — ONNX runtime recipe)
 └─ Recipe: multimodal RAG (text + image; `SourceKind` indexed metadata — **not** `[ZVecModality]` SG filter)
 
 ZVec.Rag.Template                  (v1 distribution)
-├─ dotnet new rag template (Console variant)
-├─ dotnet new rag-aspnet template (ASP.NET Core + SSE streaming)
-├─ dotnet new rag-maui template (MAUI Blazor Hybrid + offline)
+├─ dotnet new zvec-rag template (Console variant)
+├─ dotnet new zvec-rag-aspnet template (ASP.NET Core + SSE streaming)
+├─ dotnet new zvec-rag-maui template (MAUI Blazor Hybrid + offline)
 ├─ Template options: --llm, --embedder, --storage
 └─ Published as ZVec.Rag.Template NuGet
 
@@ -348,7 +348,7 @@ app.MapPost("/chat", async (string question, IRagPipeline rag, CancellationToken
 app.Run();
 ```
 
-That's it. No Azure. No Python. No Qdrant. Connector Native AOT verified (Phase 0); full pipeline AOT is Phase 2 gate (Story 2.7). The virality lives in this 20-line demo.
+That's it. No Azure. No Python. No Qdrant. Connector Native AOT verified (Phase 0); full pipeline AOT verified on 3 desktop RIDs (Story 2.7). The virality lives in this 20-line demo.
 
 ---
 
@@ -380,7 +380,7 @@ That's it. No Azure. No Python. No Qdrant. Connector Native AOT verified (Phase 
 
 ### Epic 2 — `ZVec.Rag` integration layer
 
-> **Story ID map:** Project-plan Epic 2 checkboxes **2.1–2.15** are a legacy breakdown. The locked execution plan uses **implementation-plan Stories 2.1–2.8**. Same-numbered items are **not** the same work unless labeled below.
+> **Story ID map:** Project-plan Epic 2 checkboxes **2.1–2.15** are a legacy breakdown. The locked execution plan uses **implementation-plan Stories 2.1–2.9**. Same-numbered items are **not** the same work unless labeled below (e.g. project-plan **2.9** = citation tracking; implementation-plan **Story 2.9** = section-summary helper).
 
 - [ ] 2.1 `IRagPipeline` orchestrator (thin wrapper) — **maps to implementation-plan Story 2.1** (split interfaces + facade + `ContextPacker` + `AddZVecRag`)
 - [ ] 2.2 `IRagIngestor` — text/markdown chunking in core via in-repo `IZVecTextChunker` ACL (**implementation-plan Story 2.2**; PDF/HTML via optional `ZVec.Rag.Pdf`, not core)
@@ -400,7 +400,7 @@ That's it. No Azure. No Python. No Qdrant. Connector Native AOT verified (Phase 
 
 ### Epic 3 — Local LLM recipes
 
-> **Story ID map:** Matches **implementation-plan Epic 4** (LLM recipe packages). Implementation-plan Epic 3 is the `dotnet new rag` template — not this epic.
+> **Story ID map:** Matches **implementation-plan Epic 4** (LLM recipe packages). Implementation-plan Epic 3 is the `dotnet new zvec-rag` template — not this epic.
 
 - [ ] 3.1 `ZVec.Rag.Ollama` recipe (pre-wired Ollama via M.E.AI's `OpenAIClient.GetEmbeddingGenerator(...)`)
 - [ ] 3.2 `ZVec.Rag.LLamaSharp` (LLamaSharpChatClient + LLamaSharpEmbedder as M.E.AI adapters)
@@ -408,16 +408,16 @@ That's it. No Azure. No Python. No Qdrant. Connector Native AOT verified (Phase 
 - [ ] 3.4 Recipe: fully local RAG (LLamaSharp + ZVec, zero network calls)
 - [ ] 3.5 Recipe: multimodal RAG (CLIP ONNX + ZVec, see `demos/01-clip-onnx`)
 
-### Epic 4 — `dotnet new rag` template
+### Epic 4 — `dotnet new zvec-rag` template
 
 > **Story ID map:** Matches **implementation-plan Epic 3** (template + samples). Implementation-plan Epic 4 is LLM recipe adapters — not this epic.
 
-- [ ] 4.1 `dotnet new rag` (Console variant, ~50 LOC)
-- [ ] 4.2 `dotnet new rag-aspnet` (ASP.NET Core + SSE streaming)
-- [ ] 4.3 `dotnet new rag-maui` (MAUI Blazor Hybrid + offline)
+- [ ] 4.1 `dotnet new zvec-rag` (Console variant, ~50 LOC)
+- [ ] 4.2 `dotnet new zvec-rag-aspnet` (ASP.NET Core + SSE streaming)
+- [ ] 4.3 `dotnet new zvec-rag-maui` (MAUI Blazor Hybrid + offline)
 - [ ] 4.4 Template options: `--llm ollama|azure|openai|llamasharp`, `--embedder ollama|azure|onnx|llamasharp`, `--storage zvec`
 - [ ] 4.5 Published as `ZVec.Rag.Template` NuGet
-- [ ] 4.6 Install docs: `dotnet new install ZVec.Rag.Template && dotnet new rag -n MyRagApp`
+- [ ] 4.6 Install docs: `dotnet new install ZVec.Rag.Template && dotnet new zvec-rag -n MyRagApp`
 
 ### Epic 5 — Sample apps (factored from existing, not greenfield)
 
@@ -456,6 +456,8 @@ That's it. No Azure. No Python. No Qdrant. Connector Native AOT verified (Phase 
 - [ ] 8.4 Schema migrations for evolving record types
 - [ ] 8.5 Encrypted-at-rest storage (for regulated industries)
 - [ ] 8.6 win-arm64 support (blocked by `alibaba/zvec#622` — unblock when MSVC issue resolved)
+- [ ] 8.7 **Complex-document ingest (D-7)** — layout-aware readers (PDF tables, PPT slides, DOCX styles, Excel sheets) emit parse tree **before** stamps; additive `HeadingPath` + `ParentChunkId` on `ZVecRagRecordV1` (`ChunkId` formula unchanged); `ContextPacker` may fetch parent text later; owner: `zvec-architect-strategy-expert`. Post-v1; blocks table QA claims until tasked.
+- [ ] 8.8 **Query complexity (D-8)** — router (pointed vs summarize vs compare), sub-question decomposition, auto-retrieval metadata filters; owner: `zvec-architect-strategy-expert`. Post-v1; blocks research-assistant epic until tasked.
 
 ---
 
@@ -532,7 +534,7 @@ That's it. No Azure. No Python. No Qdrant. Connector Native AOT verified (Phase 
 ### 7.4 Future threats
 
 - **Microsoft ships a first-party embedded VectorData connector** (LiteDB or otherwise) — would partially commoditize the wedge. Mitigation: ship v1 within 6 months; build brand recognition before Microsoft moves. Track `microsoft/semantic-kernel#13224` quarterly.
-- **Microsoft.Extensions.DataIngestion goes GA with a RAG starter sample** — would partially cover the integration layer. Mitigation: your starter is ZVec-specific and ships as `dotnet new rag` template (Microsoft won't ship a ZVec template).
+- **Microsoft.Extensions.DataIngestion goes GA with a RAG starter sample** — would partially cover the integration layer. Mitigation: your starter is ZVec-specific and ships as `dotnet new zvec-rag` template (Microsoft won't ship a ZVec template).
 - **LM-Kit.NET open-sources** — unlikely (commercial business model). If they do, they'd be a serious competitor.
 - **A maintained sqlite-vec .NET wrapper emerges** — possible. Mitigation: ZVec's performance advantage (3.63 ms query vs alpha sqlite-vec) + your dual-package ownership is defensible.
 - **`ydotnet`-style dead project revives** — not applicable to vector DBs. No equivalent threat.
@@ -560,7 +562,7 @@ This story is **rare and defensible** because:
 | Phase | Timeline | Stars | Trigger |
 |---|---|---|---|
 | Launch | Month 1 | 100–300 | ZVec.Rag launches; blog post; Reddit r/dotnet; HN |
-| Early adoption | Months 2–4 | 500–1.5k | `dotnet new rag` template goes viral |
+| Early adoption | Months 2–4 | 500–1.5k | `dotnet new zvec-rag` template goes viral |
 | Inflection | Months 4–9 | 1.5k–5k | Conference talk + "no cloud, no Python" pitch resonates |
 | Growth | Year 2 | 5k–15k | Local-first AI wave crests; MAUI/Blazor Hybrid adoption grows |
 | Steady-state | Year 3+ | 8k–25k | Default .NET choice for embedded RAG |
@@ -647,7 +649,8 @@ It's also **the only candidate we've evaluated that leverages an existing asset*
   - ContextPacker (`MaxContextTokens`, `GenerationReserveTokens`, optional `LostInTheMiddle` reorder — **prompt order independent of `CitationOrder`**)
   - Ingestion dataflow: bounded `Channels` (no `Task.Run` chunker wrapper); DI-registered `IZVecTextChunker` (no `Activator`); core text/md only
   - Story 2.7: `ZVec.Rag.AotTestApp` pipeline AOT gate (M.E.AI + plain-text `IngestTextAsync` via Channels + DI chunker + Tiktoken)
-  - Story 2.8: `IRagEvaluator` in `ZVec.Rag.Testing` (Recall@K/MRR/nDCG)
+  - Story 2.8: `IRagEvaluator` in `ZVec.Rag.Testing` (Recall@K/MRR/nDCG + `RecallAtKLift`)
+  - Story 2.9: Optional section-summary helper — second collection `rag_section_summaries`, parallel union+boost retrieve, packer prepends summary (`GenerateSummaries` default OFF; closes D-9; **not** Advanced RAG / RAPTOR)
   - Multi-turn conversation history (`IList<ChatMessage>`)
   - Citation tracking (chunk IDs → source doc + page + offset + `RankScore` / `DenseScore` distinction)
   - Streaming IAsyncEnumerable<RagChunk> with `app.MapRagSseEndpoint` unbuffered SSE helper (`HttpContext.RequestAborted` linked to `AskAsync`)
@@ -656,9 +659,9 @@ It's also **the only candidate we've evaluated that leverages an existing asset*
 
 **Ship v0.5.0.** Submit talk to NDC / .NET Conf.
 
-### Phase 3 — `dotnet new rag` template + samples (3–4 weeks)
+### Phase 3 — `dotnet new zvec-rag` template + samples (3–4 weeks)
 
-- `dotnet new rag` (Console, AspNet, MAUI variants)
+- `dotnet new zvec-rag` (Console, AspNet, MAUI variants)
 - Template options (--llm, --embedder, --storage)
 - Pre-embedded micro-fixture (100 pre-computed chunks) shipped with template for 60s working onboarding
 - Sample 01: RAG your docs in 60 seconds (Console)
@@ -710,7 +713,7 @@ It's also **the only candidate we've evaluated that leverages an existing asset*
 - All of `ZVec.Extensions.VectorData` (the connector — must be free for ecosystem adoption)
 - All of `ZVec.Rag` core (IRagPipeline, ingestion, retrieval, generation, streaming)
 - In-memory + Ollama + LLamaSharp + ONNX recipes
-- `dotnet new rag` template
+- `dotnet new zvec-rag` template
 - All samples
 
 **Commercial (ZVec.Rag Pro):**

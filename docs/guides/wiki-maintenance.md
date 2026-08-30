@@ -24,7 +24,7 @@ Update these pages when making related code changes:
 | `OptimizeAndReopenAsync` lifecycle | `architecture/vectordata-connector.md` |
 | Roslyn analyzers `ZVEC001` / `ZVEC002` | `architecture/native-aot-memory.md`, `reference/zvec-net-aot-recommendations.md`, `reference/api.md` |
 | CI / pre-commit quality gate | `guides/testing-strategy.md`, `guides/code-standards.md`, `reference/zvec-net-aot-recommendations.md` |
-| Agent harness / skills | `.agents/AGENTS.md`, `.agents/skills/*/SKILL.md` (cross-reference from `guides/code-standards.md`) |
+| Agent skills / spec-lock | `.agents/AGENTS.md`, `.agents/skills/*/SKILL.md` (cross-reference from `guides/code-standards.md`) |
 
 ## Architecture diagrams
 

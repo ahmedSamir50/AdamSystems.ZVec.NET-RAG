@@ -26,6 +26,7 @@ public sealed partial class ZVecVectorizableRecordCollection<TRecord, TKey>
     /// <item><description>Annotated reflection fallback via <see cref="ZVecCollectionSchemaBuilder.From{TRecord}"/>.</description></item>
     /// </list>
     /// </summary>
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "Reflection schema fallback is only used for dynamic Dictionary collections; AOT apps use source-generated record schemas.")]
     private ZVecCollectionSchema BuildCollectionSchema()
     {
         var generatedFactory = ZVecCollectionSchemaRegistry.Get<TRecord>();
@@ -41,6 +42,13 @@ public sealed partial class ZVecVectorizableRecordCollection<TRecord, TKey>
                 _options);
         }
 
+        return BuildCollectionSchemaReflectionFallback();
+    }
+
+    [RequiresUnreferencedCode("Reflection-based schema building may be trimmed under Native AOT. Use the source generator or supply a VectorStoreCollectionDefinition.")]
+    [RequiresDynamicCode("Reflection-based schema building requires dynamic code generation.")]
+    private ZVecCollectionSchema BuildCollectionSchemaReflectionFallback()
+    {
         return ZVecVectorIndexResolver.ApplyStoreVectorOptions(BuildCollectionSchemaFromReflection(), _options);
     }
 

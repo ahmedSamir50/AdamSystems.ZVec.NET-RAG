@@ -35,6 +35,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="Fixtures\**\*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\ZVec.Rag\ZVec.Rag.csproj" />
     <ProjectReference Include="..\..\src\ZVec.Rag.Testing\ZVec.Rag.Testing.csproj" />
     <ProjectReference Include="..\..\src\ZVec.Extensions.VectorData\ZVec.Extensions.VectorData.csproj" />

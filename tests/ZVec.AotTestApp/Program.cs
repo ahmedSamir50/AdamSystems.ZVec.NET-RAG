@@ -84,7 +84,7 @@ public static class Program
             Directory.CreateDirectory(options.StoragePath);
 
             var store = new ZVecVectorStore(new ZVecFactory(), options);
-            var collection = store.GetCollection<string, SampleAotDoc>("aot_test_collection");
+            var collection = GetSampleAotCollection(store);
             Console.WriteLine($"[AOT Test 4] ZVecVectorStore + collection resolved: {collection.Name}");
 
             // Test 5: Filter Expression Translation under AOT (no Expression.Compile)
@@ -143,4 +143,9 @@ public static class Program
             return 1;
         }
     }
+
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "SampleAotDoc uses source-generated schema and mapper; GetCollection does not require dynamic code at runtime.")]
+    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "SampleAotDoc uses source-generated schema and mapper; GetCollection does not require unreferenced code at runtime.")]
+    private static VectorStoreCollection<string, SampleAotDoc> GetSampleAotCollection(ZVecVectorStore store) =>
+        store.GetCollection<string, SampleAotDoc>("aot_test_collection");
 }

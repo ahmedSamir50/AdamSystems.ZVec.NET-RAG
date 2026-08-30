@@ -87,7 +87,16 @@ jobs:
           dotnet-version: 8.0.x
 
       - name: Publish RAG AOT Harness
-        run: dotnet publish tests/ZVec.Rag.AotTestApp/ZVec.Rag.AotTestApp.csproj -c Release -r ${{ matrix.rid }} /p:PublishAot=true
+        shell: bash
+        run: dotnet publish tests/ZVec.Rag.AotTestApp/ZVec.Rag.AotTestApp.csproj -c Release -r ${{ matrix.rid }} /p:PublishAot=true /p:TrimmerSingleWarn=false 2>&1 | tee rag-aot-publish.log
+
+      - name: Verify RAG AOT Trim Warnings
+        shell: bash
+        run: |
+          if rg "IL2026|IL3050" rag-aot-publish.log; then
+            echo "FAIL: RAG AOT publish emitted IL2026/IL3050 trim warnings"
+            exit 1
+          fi
 
       - name: Run RAG AOT Harness
         shell: bash

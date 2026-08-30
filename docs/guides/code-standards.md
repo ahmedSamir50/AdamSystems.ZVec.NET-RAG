@@ -71,9 +71,9 @@ This document outlines the non-negotiable coding standards, design principles, a
 
 ---
 
-## 9. CI Quality Gate & Agent Harness
+## 9. CI Quality Gate & Agent Loop
 
 - **Quality gate workflow**: [`.github/workflows/quality-gate.yml`](https://github.com/ahmedsamir50/AdamSystems.ZVec.NET-RAG/blob/main/.github/workflows/quality-gate.yml) — build, format, tests, line-count cap, dummy-test detection, AOT publish smoke.
 - **Pre-commit hook**: [`.githooks/pre-commit`](https://github.com/ahmedsamir50/AdamSystems.ZVec.NET-RAG/blob/main/.githooks/pre-commit) — enable with `git config core.hooksPath .githooks`.
-- **Agent rules**: [`.agents/AGENTS.md`](https://github.com/ahmedsamir50/AdamSystems.ZVec.NET-RAG/blob/main/.agents/AGENTS.md) — mandatory implementation loop (WRITE → TEST → REVIEW → VERIFY → DOC → MERGE).
+- **Agent rules**: [`.agents/AGENTS.md`](https://github.com/ahmedsamir50/AdamSystems.ZVec.NET-RAG/blob/main/.agents/AGENTS.md) — mandatory implementation loop (PLAN → WRITE → TEST → REVIEW → VERIFY → DOC → MERGE).
 - **ZVec.NET reference path**: resolve via `ZVEC_NET_REFERENCE_PATH` env var; fallback to NuGet `ZVec.NET` on CI/Linux/Mac.

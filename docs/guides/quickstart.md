@@ -15,7 +15,7 @@ dotnet new install ZVec.Rag.Template
 ## 2. Scaffold Application
 
 ```bash
-dotnet new rag -n MyLocalRagApp --llm ollama --embedder ollama
+dotnet new zvec-rag -n MyLocalRagApp --llm ollama --embedder ollama
 ```
 
 ---
@@ -58,7 +58,7 @@ app.Run();
 
 Core `ZVec.Rag` ingests **text and markdown** only. For PDF documents, add the optional `ZVec.Rag.Pdf` package.
 
-> **Status:** Planned — `ZVec.Rag.Pdf` and `PdfDocumentReader` ship in Sample 02 (`02-local-first-pdf-chat`). Not in core or the Story 2.7 AOT harness.
+> **Status:** Planned — `ZVec.Rag.Pdf` and `PdfDocumentReader` ship in Sample 02 (`02-local-first-pdf-chat`). Not in core or `ZVec.Rag.AotTestApp`.
 
 ```csharp
 // Planned: optional ZVec.Rag.Pdf — not in core AOT path

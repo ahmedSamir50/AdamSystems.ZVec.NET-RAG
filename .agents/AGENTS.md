@@ -69,10 +69,11 @@ All expert agents working in this workspace MUST adhere to the following non-neg
 
 ## Implementation Loop (MANDATORY for all code changes)
 
-1. **WRITE** — Expert agent writes implementation
+0. **PLAN** — `zvec-architect-strategy-expert` + `zvec-gap-detection-expert` (`spec_lock`). Produce a plan that satisfies the **Plan quality contract** (Allowed files, Forbidden, public copy / banned words, tests, verify commands). If the plan is vague, **do not WRITE**.
+1. **WRITE** — Expert agent writes **only what the plan allows**
 2. **TEST** — Run `dotnet test` — ALL tests must pass
 3. **GAP DETECT** — `zvec-gap-detection-expert` scans the diff:
-   - Scans diff against `.agents/gaps/patterns.md`
+   - Scans diff against `.agents/gaps/patterns.md` **and** the plan's Allowed/Forbidden lists
    - Cross-references against `.agents/gaps/registry.md` + architecture docs
    - Produces structured report in `.agents/gaps/reports/`
    - Updates `.agents/gaps/registry.md`
@@ -80,12 +81,15 @@ All expert agents working in this workspace MUST adhere to the following non-neg
    - If P2+ gaps found → WARN, allow continue but track
 4. **REVIEW** — `zvec-code-reviewer-expert` reviews the diff:
    - Consumes `.agents/gaps/reports/latest.md` as input (gaps already found)
+   - **REJECT** invented code not listed in the approved plan
    - Focuses on design quality, SOLID, naming, docs
    - If REJECTED → return to step 1 with specific fixes
    - If APPROVED → proceed to step 5
 5. **VERIFY** — Re-run full quality gate (tests + AOT + format + line count + no magic strings + no dummy tests)
-6. **DOC** — Update `docs/` if any public API or behavior changed
-7. **MERGE** — Only after steps 1–6 all pass
+6. **DOC** — Update `docs/` only with sentences the plan listed; lexicon firewall (never `harness` / `spec_lock` / `WRITE` in README, `docs/**`, or NuGet READMEs)
+7. **MERGE** — Only after steps 0–6 all pass
+
+**If WRITE needs a workaround not in the plan** (re-embed, extra suppress, new public API): **STOP**, amend the plan, re-run spec_lock. Do not green tests by inventing a path.
 
 Every skill MUST reference this loop and specify which step it governs.
 

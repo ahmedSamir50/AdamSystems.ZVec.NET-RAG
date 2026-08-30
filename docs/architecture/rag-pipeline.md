@@ -2,11 +2,11 @@
 
 `ZVec.Rag` provides a batteries-included RAG orchestration layer (`IRagPipeline`, `IRagIngestor`, `IRagRetriever`, `IRagGenerator`) built on top of Microsoft AI ecosystem primitives:
 
-> **Status:** Stories 2.1–2.3 and 2.6 shipped (Channels ACL, `OptimizeAsync`, `CitationOrder`, `MapRagSseEndpoint`, `IRagSecuritySanitizer`). Stories 2.4.3–2.8 (Verify snapshots, evaluation, pipeline AOT gate closure) remain planned.
+> **Status:** Stories 2.1–2.3, 2.4.3 (Verify snapshots), 2.6, 2.7 (pipeline AOT), and 2.8 (`IRagEvaluator`) shipped. **Architecture class:** v1 pipeline is Naive RAG (single-shot hybrid retrieve + pack + one generate) per [Liu axes](https://www.youtube.com/watch?v=dI_TmTW9S4c&t=4778s); complex-document ingest (D-7 / Epic 8.7) and query routing (D-8 / Epic 8.8) are post-v1.
 ```mermaid
 flowchart LR
   reader["1. Document Reader\nMD / TXT in core\nPDF via ZVec.Rag.Pdf"]
-  chunker["2. Text Chunker\nToken / Markdown AST / Sentence / Sliding"]
+  chunker["2. Text Chunker\nToken / Markdown / Sentence"]
   embedder["3. Vector Embedder\nIEmbeddingGenerator string Embedding"]
   store["4. Persistent Store\nZVec.VectorData + ZVec FTS Index"]
   reader --> chunker --> embedder --> store
@@ -20,17 +20,49 @@ Ingestion is transparently divided into four distinct, pluggable stages (ZVec-ow
 
 1. **Document Readers (`IRagDocumentReader`)** — format parsing ACL:
    - `PlainTextDocumentReader` (Default in core `ZVec.Rag`): Fast UTF-8 stream reader for plain text and Markdown.
-   - `PdfDocumentReader`: Optional `ZVec.Rag.Pdf` package — **not** referenced by core or the AOT harness.
+   - `PdfDocumentReader`: Optional `ZVec.Rag.Pdf` package — **not** referenced by core or `ZVec.Rag.AotTestApp`.
    - `HtmlDocumentReader`: Optional future package for DOM stripping.
 2. **Text Chunkers (`IZVecTextChunker`)** — separate from readers:
-   - `TokenTextChunker` (Default): Splits text strictly on token boundaries using `Microsoft.ML.Tokenizers` (e.g. 512 tokens with 64-token overlap).
-   - `MarkdownHeadingChunker`: AST-aware chunker preserving section titles (`# H1`, `## H2`) attached as metadata to child paragraphs.
-   - `SentenceTextChunker`: Prevents splitting mid-sentence for high-precision semantic search.
+   - `TokenTextChunker` (Default): Splits text on token boundaries using `Microsoft.ML.Tokenizers` (512 tokens, 64-token overlap — sliding window is **inside** this chunker, not a separate strategy).
+   - `MarkdownHeadingChunker`: **Heading-split** chunker — splits on `#` / `##` lines, then runs `TokenTextChunker` per section. It does **not** attach heading text as metadata on child chunks today; long sections can drop the title on later token windows. **Planned (D-7 / Epic 8.7):** `HeadingPath` and `ParentChunkId` on `ZVecRagRecordV1` so chunks stay coherent with their parent heading/page/table node.
+   - `SentenceTextChunker`: Splits on sentence boundaries to avoid mid-sentence cuts.
 3. **Deterministic Chunk ID Generator**:
    - Chunk IDs are generated using content-addressable SHA256 hashes: `ChunkId = SHA256(doc_uri | strategy_id | chunk_index)`. This ensures stability across re-ingestion and native content-based deduplication.
 4. **Bounded Channel Dataflow Graph**:
    - Ingestion executes over bounded `System.Threading.Channels`: Document Parsing (Capacity 1024) $\rightarrow$ Deduplication (Capacity 2048) $\rightarrow$ Batch Embedding (Batch size 32) $\rightarrow$ Batch Vector Insertion (Batch size 100). `IngestionCheckpoint` deferred post-v1.
    - **Async contract:** `IZVecTextChunker` `IEnumerable<TextChunk>` is pushed into the bounded channel writer on the **caller continuation** — never `Task.Run`. Use `ConfigureAwait(false)` on every await. `EnsureCollectionExistsAsync` ForceYields then opens native on that worker; the first channel await is the consumer `WaitToReadAsync` on an empty channel; producer `WriteAsync` yields only when the channel is full (capacity 1024). ASP.NET Core has no request `SynchronizationContext`. Native upsert/query occupy that worker for the P/Invoke duration.
+   - **In-process queue (not NATS):** `IngestionChannelPump` + `RagIngestor` already use bounded `System.Threading.Channels` (parse capacity 1024, wait-on-full backpressure). `IngestTextAsync` awaits pipeline completion so demos and `ZVec.Rag.AotTestApp` get deterministic results — that is **same-call, in-process** queuing, not direct synchronous embed. NATS/Rabbit/Azure Service Bus would be a **post-v1** optional `IIngestBus` for distributed multi-producer ETL; it is **not** core `ZVec.Rag` (extra daemon, serialize/deserialize overhead, not in AOT graph, CI cannot assume a broker).
+
+### 1.1 Parent / heading coherence (D-7 — planned, not shipped)
+
+Sliding 64-token overlap inside `TokenTextChunker` is a boundary patch, not structural coherence. Today `TextChunk` is `(Text, Offset)` only; `ZVecRagRecordV1` has no `HeadingPath` or `ParentChunkId`; `Citation` cannot show “this slice belongs to H2 Revenue.” `MarkdownHeadingChunker` splits on `^#{1,6}` then token-splits — it does **not** copy the heading onto later windows.
+
+**Planned additive schema (Epic 8.7 / D-7 — do not change `ChunkId = SHA256(doc_uri | strategy_id | chunk_index)`):**
+
+| Field | Type | Purpose |
+|---|---|---|
+| `HeadingPath` | indexed string | Breadcrumb from parse tree (e.g. `H1/H2 Revenue`) |
+| `ParentChunkId` | indexed string, nullable | Heading/page/table node chunk id; empty for roots |
+
+**Sequence:** layout-aware reader emits tree → stamp chunks → embed → (later) `ContextPacker` may fetch parent text by `ParentChunkId` ([Liu index≠synthesis](https://www.youtube.com/watch?v=dI_TmTW9S4c&t=4778s)). Org formats (PDF tables, PPT slides, DOCX styles, Excel sheets) need readers **before** stamps mean anything — PdfPig text flatten alone cannot invent parents.
+
+### 1.2 Optional section-summary helper (Story 2.9 — planned, default OFF)
+
+Optional `IngestOptions.GenerateSummaries` (default **false**) improves **retrieve and pack accuracy** — not a new RAG product class (still Naive one-shot generate; **not** Advanced RAG, **not** RAPTOR).
+
+**Ingest (when on):** split source into **sections** (default `SummarySectionMaxTokens` = 2048) → `IChatClient` summary per section (default `MaxSummaryTokens` = 128, one LLM call per section) → upsert `ZVecRagSectionSummaryV1` into collection **`rag_section_summaries`** (`embed(Summary)`); chunk the section → upsert children into **`rag_chunks`** with **`embed(Text)` unchanged** and indexed **`SectionSummaryId`** FK. `ChunkId` formula unchanged.
+
+**Retrieve (when on):** **parallel hybrid** on both collections — union + **parent boost** (keep direct chunk hits; boost chunks whose parent summary also matched; add children of top matching summaries). **Pack:** prepend the short section summary so the generator is not blind (e.g. “5V” + “X1000” context); **cite** child `ChunkId` / `Text` only.
+
+**When off / AOT:** single-collection chunk retrieve as today (`ZVec.Rag.AotTestApp` keeps `GenerateSummaries = false`).
+
+**Re-ingest from scratch** if you flip summaries on/off, change embedder model/dimensions/quantize, or change chunker settings — ingestion is not an in-place edit (see README).
+
+**Prompt:** section aboutness entailed by the source; preserve verbatim IDs/numbers/names/dates/URLs/table cells; `IRagSecuritySanitizer` on source and stored summary.
+
+**Eval:** Story 2.8 `RecallAtKLift` on child `ChunkId`s; Story 2.9 contract test (summary path retrieves children when query token is only in summary); optional local real Lift@K — not README marketing.
+
+**Separate from D-7:** extractive `HeadingPath` / `ParentChunkId` (layout parse tree) stays Epic 8.7 post-v1.
 
 ---
 
@@ -39,8 +71,8 @@ Ingestion is transparently divided into four distinct, pluggable stages (ZVec-ow
 - **ContextPacker (Story 2.1.3)**: `IRagGenerator` uses `ContextPacker` to enforce `MaxContextTokens`, reserve `GenerationReserveTokens` for the LLM reply, account for chat-template overhead, and optionally apply Lost-in-the-Middle reordering. Token budgeting is **inside** the generator — not a decorator middleware pipeline.
 - **Prompt order ≠ citation list order:** `ContextPackingStrategy.LostInTheMiddle` permutes only the `<retrieved_context>` block sent to the LLM. `RagChunk.Citations` is always sorted by `CitationOrder` (`ScoreDescending` default) and keyed by `ChunkId` / `RankScore` — independent of prompt string order. LLM citation markers (if used) reference `ChunkId`, not 1-based prompt positions.
 - **Primary Tokenizer Engine (`Microsoft.ML.Tokenizers`)**: Tiktoken BPE (`cl100k_base`, `o200k_base`) is in-box and AOT-safe. SentencePiece/WordPiece vocab files load via `FileStream` from shipped Content (not `EmbeddedResource`) unless trim-tested.
-- **RAG Evaluation Module (`IRagEvaluator`, Story 2.8)** in `ZVec.Rag.Testing`:
-  - **Retrieval (CI-cheap, no LLM):** Recall@K, MRR, nDCG via `DeterministicEvaluator` / `SemanticTestEmbedder`.
+- **RAG Evaluation Module (`IRagEvaluator`, Story 2.8 — shipped)** in `ZVec.Rag.Testing`:
+  - **Retrieval (CI-cheap, no LLM):** Recall@K, MRR, nDCG via `DeterministicEvaluator` / `SemanticTestEmbedder`; `RecallAtKLift` for paired on/off summary-helper comparisons (Story 2.9).
   - **Generation (optional):** Faithfulness, Answer Relevance, Context Precision via LLM-as-Judge (`IChatClient`) — off by default in CI.
 
 ---

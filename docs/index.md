@@ -12,7 +12,7 @@ Welcome to the official technical wiki for **`ZVec.Rag`** and **`ZVec.Extensions
 
 1. **`ZVec.Extensions.VectorData`**: A first-party style connector enabling any .NET app using `IVectorStore` or `IVectorizedSearch<TRecord>` to persist vectors locally with zero cloud dependencies.
 2. **`ZVec.Rag`**: A batteries-included integration library wiring document ingestion, hybrid search, citation tracking, and streaming generation.
-3. **`ZVec.Rag.Template`**: A `dotnet new rag` template that scaffolds a working RAG solution in 60 seconds.
+3. **`ZVec.Rag.Template`**: A `dotnet new zvec-rag` template that scaffolds a working RAG solution in 60 seconds.
 
 ---
 

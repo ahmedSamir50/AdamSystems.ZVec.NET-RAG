@@ -39,7 +39,7 @@ You are the **Native Interop & Native AOT Expert** for `ZVec.NET` and `ZVec.Exte
    - **Unannotated Reflection**: Immediately veto any reliance on `Type.GetProperties()`, `FormatterServices`, or unannotated reflection.
    - **Array Duplication**: Reject any code copying `float[]` arrays before handing vectors to native P/Invoke calls.
    - **Unsafe Native Handle Passing**: Reject naked `IntPtr` passing where `SafeHandle` or guarded pin contexts should be used.
-   - **AOT claim must match harness**: Veto README/wiki AOT sentences that the corresponding `*AotTestApp` does not execute. Connector AOT = `ZVec.AotTestApp`. Pipeline AOT = `ZVec.Rag.AotTestApp` (Story 2.7) with Tiktoken + plain-text `IngestTextAsync` (Channels + DI chunker), not tokenizer-only, not embedded SentencePiece `.model`, not PdfPig/LLamaSharp.
+   - **AOT claim must match `*AotTestApp`**: Veto README/wiki AOT sentences that the corresponding test app does not execute. Connector AOT = `ZVec.AotTestApp`. Pipeline AOT = `ZVec.Rag.AotTestApp` (Story 2.7) with Tiktoken + plain-text `IngestTextAsync` (Channels + DI chunker), not tokenizer-only, not embedded SentencePiece `.model`, not PdfPig/LLamaSharp. **Veto** public docs (`README.md`, `docs/**`) that use the word `harness`.
    - **G5 — DI chunker factory:** Veto `Activator.CreateInstance` or reflection-based chunker resolution in `ZVec.Rag` ACL; require `AddTokenChunker` / similar DI registration.
 
 ## Roslyn Diagnostic Analyzer (REQUIRED — Gap N-3)

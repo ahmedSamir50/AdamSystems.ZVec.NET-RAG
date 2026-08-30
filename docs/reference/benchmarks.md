@@ -20,4 +20,4 @@ Performance benchmark baselines for `ZVec.NET-RAG` compared against embedded and
 | INT8 | ~0.95–0.98x (corpus-dependent) | 77 MB | ✅ Recommended |
 | RaBitQ | Higher compression | Lower | ❌ x86_64/AVX2 only |
 
-Run `IRagEvaluator` (Story 2.8) with `DeterministicEvaluator` in CI; optional real MiniLM fixture for integration benchmarks.
+`IRagEvaluator` / `DeterministicEvaluator` / `SemanticTestEmbedder` run in unit and integration tests (seed fixture under `tests/ZVec.Rag.Tests/Fixtures/`). There is **no** public Recall@K CI job or marketing number. Optional real MiniLM fixture for local integration benchmarks stays gitignored.

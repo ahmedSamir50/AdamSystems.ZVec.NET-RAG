@@ -1,0 +1,23 @@
+---
+description: Plans must run spec_lock, include Allowed/Forbidden lists, and never leak internal jargon into public docs. Implementation agents must not invent paths the plan did not name.
+alwaysApply: true
+---
+
+# Plan quality (before WRITE)
+
+Before implementing an unchecked story or a "fix the docs" dump:
+
+1. Read and execute `.agents/gaps/spec-lock.md`.
+2. Read `.agents/gaps/registry.md` (open `D-*` for this epic must be tasked or deferred with owner).
+
+A Cursor or implementation plan is **invalid** unless it has all of:
+
+- **Allowed files** — exhaustive list of paths that may change
+- **Forbidden** — explicit "do not invent" list
+- **Public copy** — exact wording or banned words for README / `docs/**` / package READMEs
+- **Tests** — names and assertions; Red before Green
+- **Verification commands** — exact commands that must pass
+
+Public and developer docs (`README.md`, `docs/**`, `src/*/README.md`) must **never** contain the word `harness`. That word is internal (`.agents/**` only).
+
+Implementation agents must not add retrieval, embed, SSE, or AOT behavior that the plan did not name. If a workaround is needed, **amend the plan and re-run spec_lock** — do not green tests by inventing a path.

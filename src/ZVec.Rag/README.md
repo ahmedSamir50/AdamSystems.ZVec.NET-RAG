@@ -27,9 +27,9 @@ services.AddZVecRag(opts =>
 | If you need… | Also install… |
 |---|---|
 | Pure vector storage (Semantic Kernel / Agent Framework) | **`ZVec.Extensions.VectorData`** |
-| Unit test fakes (`DeterministicEmbedder`, `FakeChatClient`) | **`ZVec.Rag.Testing`** |
+| Unit test fakes (`DeterministicEmbedder`, `FakeChatClient`, `IRagEvaluator`) | **`ZVec.Rag.Testing`** |
 | Local LLM adapters (LLamaSharp, ONNX) | Planned **Story 4.1** — not in this package yet |
-| `dotnet new rag` template | Planned **Story 3.1** |
+| `dotnet new zvec-rag` template | Planned **Story 3.1** |
 
 ## License
 

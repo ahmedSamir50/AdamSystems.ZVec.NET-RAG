@@ -80,7 +80,7 @@ public static class ZVecMapper
 `ZVec.AotTestApp.exe` was compiled with `/p:PublishAot=true` and executed against `ZVec.NET v1.0.0-beta.5`:
 
 ```text
-=== ZVec.NET Native AOT Audit Harness Starting ===
+=== ZVec.NET Native AOT Audit Starting ===
 [AOT Test 1] Generated schema resolved: aot_schema_probe (Vectors: 2, Fields: 0)
 [AOT Test 2] ZVecDoc created via generated mapper. Id: doc_aot_001, Fields Count: 2
 [AOT Test 3] Document restored: Id=doc_aot_001, Title=AOT Document Test, VectorDim=768
@@ -98,9 +98,9 @@ Even with `ZVec.NET` annotated, `ZVec.Extensions.VectorData` ships:
 
 1. **`ZVecRecordMetadataGenerator`** (Roslyn Source Generator) — emits static `IZVecRecordMapper<TRecord>` classes, `BuildSchema(collectionName)` factories, and `VectorStoreCollectionDefinition` metadata at build time for `[VectorStore*]` POCOs. Registers via `[ModuleInitializer]` into `ZVecRecordMapperRegistry` and `ZVecCollectionSchemaRegistry`.
 2. **`ZVec.Extensions.VectorData.Analyzers`** — emits **`ZVEC001`** / **`ZVEC002`** IDE diagnostics when record types lack generated mappers or reflection is used outside approved fallback paths.
-3. **`ZVec.AotTestApp`** — Native AOT audit harness exercising generated schema/mapper round-trip, filter translation via `ZVecFilterRecordModel`, upsert/search, and a **`ReflectionFallbackRecord`** reference to surface trim warnings (`IL2026` / `IL3050`) for non-source-generated types during CI publish.
+3. **`ZVec.AotTestApp`** — Native AOT audit test app exercising generated schema/mapper round-trip, filter translation via `ZVecFilterRecordModel`, upsert/search, and a **`ReflectionFallbackRecord`** reference to surface trim warnings (`IL2026` / `IL3050`) for non-source-generated types during CI publish.
 
-4. **`ZVec.Rag.AotTestApp`** (Story 2.7, planned) — Pipeline AOT gate for `ZVec.Rag` (M.E.AI + plain-text `IngestTextAsync` via bounded Channels + DI `IZVecTextChunker` + Tiktoken). Must run a real `cl100k_base`/`o200k_base` tokenize step. SentencePiece models ship as Content/`FileStream`, not EmbeddedResource. Excludes `ZVec.Rag.Pdf` and `ZVec.Rag.LLamaSharp`.
+4. **`ZVec.Rag.AotTestApp`** (Story 2.7, verified) — Pipeline AOT gate for `ZVec.Rag` (M.E.AI + plain-text `IngestTextAsync` via bounded Channels + DI `IZVecTextChunker` + Tiktoken + hybrid retrieve + `AskAsync`). `rag-aot-smoke` fails on `IL2026`/`IL3050`. Excludes `ZVec.Rag.Pdf`, `ZVec.Rag.LLamaSharp`, and SSE.
 
 Filter translation for VectorStore-only POCOs uses `ZVecFilterRecordModel`, which reads source-generated `VectorStoreCollectionDefinition` metadata when `[ZVec*]` attributes are absent.
 

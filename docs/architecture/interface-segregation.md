@@ -1,6 +1,6 @@
 # RAG Pipeline Interface Segregation (ISP)
 
-> **Status:** Stories 2.1–2.3 shipped — ISP facades, Channels ingestion ACL, `OptimizeAsync`, full `CitationOrder`, `MapRagSseEndpoint`. Story 2.6 (sanitizer) shipped. Story 2.7 (pipeline AOT) remains planned.
+> **Status:** Stories 2.1–2.3 shipped — ISP facades, Channels ingestion ACL, `OptimizeAsync`, full `CitationOrder`, `MapRagSseEndpoint`. Story 2.6 (sanitizer) shipped. Story 2.7 (pipeline AOT) and Story 2.8 (`IRagEvaluator`) shipped.
 
 The `ZVec.Rag` framework enforces strict **Interface Segregation Principle (ISP)** compliance to eliminate God interfaces and allow application components to depend strictly on the capabilities they require.
 

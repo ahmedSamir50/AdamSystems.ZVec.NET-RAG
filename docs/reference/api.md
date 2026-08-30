@@ -77,12 +77,12 @@ Complete API reference surface for `ZVec.Extensions.VectorData` and `ZVec.Rag`.
 
 - **`IRagPipeline`**: Composite facade (`IRagIngestor` + `IRagRetriever` + `IRagGenerator`).
 - **`RagChunk`**: Streamed response chunk (`Text`, `Citations`, `IsFinal`, `Usage`).
-- **`Citation`**: `SourceDoc`, `SourceUri`, `SourceHash`, `Page`, `Offset`, `ChunkIndex`, `ChunkId`, `RankScore`, `DenseScore`, `FtsScore`. Hybrid search sets `RankScore` from fused RRF; `DenseScore`/`FtsScore` remain `0` until connector exposes per-leg scores.
+- **`Citation`**: `SourceDoc`, `SourceUri`, `SourceHash`, `Page`, `Offset`, `ChunkIndex`, `ChunkId`, `RankScore`, `DenseScore`, `FtsScore`. Hybrid search sets `RankScore` from fused RRF. `DenseScore` is cosine similarity (clamped to `[0, 1]`) between the query embedding and the **stored** chunk vector when hybrid search returns it (`IncludeVectors = true`). Empty stored vector → `DenseScore = 0` (retrieve does not re-embed chunk text). `FtsScore` remains `0` until connector exposes per-leg FTS scores.
 - **`CitationOrder`**: `ScoreDescending` (default), `ChunkOrderAscending`, `SourceDocThenChunkOrder`, `PageAscending`, `None`. UI list order; independent of `ContextPacker` prompt order.
 
 ### SSE
 
-- **`MapRagSseEndpoint(pattern)`**: Maps GET endpoint; reads `question` query string; writes `text/event-stream`; `FlushAsync` after each chunk; links `HttpContext.RequestAborted` into `AskAsync`. Requires `FrameworkReference Microsoft.AspNetCore.App` on `ZVec.Rag`; trim-annotated in `Streaming/`.
+- **`MapRagSseEndpoint(pattern)`**: Maps GET endpoint; reads `question` query string; writes `text/event-stream`; `FlushAsync` after each chunk; links `HttpContext.RequestAborted` into `AskAsync`. JSON payload uses **camelCase** (`text`, `isFinal`, `citations`, nested citation fields). Requires `FrameworkReference Microsoft.AspNetCore.App` on `ZVec.Rag`; trim-annotated in `Streaming/`.
 
 ### Options
 

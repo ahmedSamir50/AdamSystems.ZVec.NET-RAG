@@ -14,10 +14,13 @@ Reference from test projects only (not production apps).
 
 ## Shipped today
 
-- **`DeterministicEmbedder`** — hash-based `IEmbeddingGenerator<string, Embedding<float>>`
+- **`DeterministicEmbedder`** — hash-based `IEmbeddingGenerator<string, Embedding<float>>` (pipeline wiring tests)
 - **`FakeChatClient`** — configurable streaming/non-streaming `IChatClient`
+- **`SemanticTestEmbedder`** — token-overlap embedder that preserves lexical rank order for retrieval metric tests
+- **`IRagEvaluator` / `DeterministicEvaluator`** — Recall@K, MRR, nDCG, and `RecallAtKLift` over ranked chunk ids
+- **`IRagGenerationEvaluator` / `LlmJudgeGenerationEvaluator`** — optional Faithfulness / Context Precision via `IChatClient` (off in CI)
 
-`SemanticTestEmbedder` and `IRagEvaluator` ship in **Story 2.8**.
+In-repo labeled **seed** fixtures live under `tests/ZVec.Rag.Tests/Fixtures/` (two queries today; not packed into this NuGet).
 
 ## Cross-navigation
 

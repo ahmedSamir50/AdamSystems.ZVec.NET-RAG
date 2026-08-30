@@ -53,8 +53,7 @@ public sealed partial class ZVecVectorizableRecordCollection<TRecord, TKey>
         return _cachedDenseIndexParam;
     }
 
-    [RequiresUnreferencedCode("Source generated mappers should be used for Native AOT. Reflection fallback may be trimmed.")]
-    [RequiresDynamicCode("Reflection fallback requires dynamic code generation.")]
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "Reflection mapping fallback is only used for dynamic Dictionary collections; AOT apps use source-generated mappers.")]
     private ZVecDoc MapToDoc(TRecord record)
     {
         if (_mapper != null)
@@ -62,6 +61,24 @@ public sealed partial class ZVecVectorizableRecordCollection<TRecord, TKey>
             return _mapper.ToDoc(record, _typeModel!);
         }
 
+        return MapToDocReflection(record);
+    }
+
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "Reflection mapping fallback is only used for dynamic Dictionary collections; AOT apps use source-generated mappers.")]
+    private TRecord MapFromDoc(ZVecDoc doc)
+    {
+        if (_mapper != null)
+        {
+            return _mapper.FromDoc(doc, _typeModel!);
+        }
+
+        return MapFromDocReflection(doc);
+    }
+
+    [RequiresUnreferencedCode("Source generated mappers should be used for Native AOT. Reflection fallback may be trimmed.")]
+    [RequiresDynamicCode("Reflection fallback requires dynamic code generation.")]
+    private ZVecDoc MapToDocReflection(TRecord record)
+    {
         if (_typeModel == null)
         {
             throw new InvalidOperationException(ZVecErrorMessages.TypeModelUninitialized);
@@ -72,13 +89,8 @@ public sealed partial class ZVecVectorizableRecordCollection<TRecord, TKey>
 
     [RequiresUnreferencedCode("Source generated mappers should be used for Native AOT. Reflection fallback may be trimmed.")]
     [RequiresDynamicCode("Reflection fallback requires dynamic code generation.")]
-    private TRecord MapFromDoc(ZVecDoc doc)
+    private TRecord MapFromDocReflection(ZVecDoc doc)
     {
-        if (_mapper != null)
-        {
-            return _mapper.FromDoc(doc, _typeModel!);
-        }
-
         if (_typeModel == null)
         {
             throw new InvalidOperationException(ZVecErrorMessages.TypeModelUninitialized);
@@ -95,6 +107,7 @@ public sealed partial class ZVecVectorizableRecordCollection<TRecord, TKey>
                 field.Property.SetValue(record, val);
             }
         }
+
         foreach (var vec in _typeModel.Vectors)
         {
             if (doc.DenseVectors.TryGetValue(vec.StorageName, out var dense))
@@ -102,6 +115,7 @@ public sealed partial class ZVecVectorizableRecordCollection<TRecord, TKey>
                 vec.Property.SetValue(record, dense);
             }
         }
+
         return record;
     }
 }

@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.VectorData;
 using ZVec.Extensions.VectorData.Constants;
@@ -46,6 +47,8 @@ public sealed class ZVecVectorStore : VectorStore
     }
 
     /// <inheritdoc />
+    [RequiresDynamicCode("Vector store collection creation may use reflection fallback for non-source-generated record types.")]
+    [RequiresUnreferencedCode("Vector store collection creation may use reflection fallback for non-source-generated record types.")]
     public override VectorStoreCollection<TKey, TRecord> GetCollection<TKey, TRecord>(
         string name,
         VectorStoreCollectionDefinition? definition = null)

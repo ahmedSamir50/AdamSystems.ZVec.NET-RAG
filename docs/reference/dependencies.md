@@ -6,7 +6,7 @@ This document tracks upstream Microsoft ecosystem packages, community signals, a
 
 > [!NOTE]
 > **Implementation Status Banner — Story 2.4 (partial)**:
-> `DeterministicEmbedder` and `FakeChatClient` ship in `ZVec.Rag.Testing`. `SemanticTestEmbedder` / `IRagEvaluator` remain Story 2.8. Roslyn SDK is pinned to `Microsoft.CodeAnalysis.CSharp` `4.12.0` (matching .NET 9 SDK wave) and `Microsoft.Extensions.VectorData.Abstractions` `10.9.0` in CPM.
+> `DeterministicEmbedder` and `FakeChatClient` ship in `ZVec.Rag.Testing`. `SemanticTestEmbedder`, `IRagEvaluator`, and `DeterministicEvaluator` ship in Story 2.8. Roslyn SDK is pinned to `Microsoft.CodeAnalysis.CSharp` `4.12.0` (matching .NET 9 SDK wave) and `Microsoft.Extensions.VectorData.Abstractions` `10.9.0` in CPM.
 
 ---
 
@@ -40,4 +40,4 @@ This document tracks upstream Microsoft ecosystem packages, community signals, a
 - **GitHub Repository**: [`ahmedSamir50/AdamSystems.ZVec.NET`](https://github.com/ahmedSamir50/AdamSystems.ZVec.NET)
 - **Engine Version**: `1.0.0-beta.5+zvec.0.6.0`
 - **Supported RIDs (9 HARD)**: `win-x64`, `linux-x64`, `linux-arm64`, `osx-arm64`, `osx-x64`, `android-arm64`, `android-x64`, `ios-arm64`, `iossimulator-arm64`
-- **Native AOT Status**: Verified 100% Native AOT clean under `PublishAot=true` via Phase 0 audit harness.
+- **Native AOT Status**: Verified 100% Native AOT clean under `PublishAot=true` via Phase 0 `ZVec.AotTestApp`.

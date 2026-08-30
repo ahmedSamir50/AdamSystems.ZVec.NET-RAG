@@ -16,7 +16,7 @@
 
 Every User Story and Task in this implementation plan MUST pass audit by the designated Expert Persona:
 
-- 📐 **`zvec-architect-strategy-expert`**: Product positioning ("No cloud, no Python, no kidding"), kill criteria monitoring, developer onboarding (`dotnet new rag`), enterprise vs OSS licensing, risk mitigation options with Pros/Cons.
+- 📐 **`zvec-architect-strategy-expert`**: Product positioning ("No cloud, no Python, no kidding"), kill criteria monitoring, developer onboarding (`dotnet new zvec-rag`), enterprise vs OSS licensing, risk mitigation options with Pros/Cons.
 - 🔌 **`zvec-vectordata-expert`**: Conformance to `Microsoft.Extensions.VectorData`, AST filter translation (`VectorDataFilter` -> `ZVecFilterBuilder`), Roslyn Source Generation, schema mappings.
 - ⚡ **`zvec-rag-pipeline-expert`**: Integration with `M.E.AI`, hybrid search (dense + FTS + RRF), citation tracking, SSE streaming, MAUI/ASP.NET recipes, test fakes. Chunking uses in-repo `IZVecTextChunker` ACL (no `M.E.DataIngestion` PackageReference).
 - 🛡️ **`zvec-native-aot-expert`**: Native interop with ZVec C++ core, `SafeZvecHandle` lifecycle, zero-copy memory pinning, Native AOT trim auditing, 9 multi-platform RIDs.
@@ -64,10 +64,10 @@ flowchart TB
       end
       subgraph testing ["ZVec.Rag.Testing"]
         testProj["net8 net9 net10 fakes"]
-        testFiles["DeterministicEmbedder\nFakeChatClient\nSemanticTestEmbedder IRagEvaluator Story 2.8 deferred"]
+        testFiles["DeterministicEmbedder\nFakeChatClient\nSemanticTestEmbedder\nIRagEvaluator DeterministicEvaluator"]
       end
       subgraph template ["ZVec.Rag.Template"]
-        tplProj["dotnet new rag template"]
+        tplProj["dotnet new zvec-rag template"]
       end
     end
     subgraph tests ["tests/"]
@@ -114,9 +114,9 @@ ZVec.NET-RAG.slnx
  │    │    └── ZVec.Rag.Testing.csproj (TFMs: net8.0;net9.0;net10.0 — Unit testing fakes)
  │    │         ├── DeterministicEmbedder.cs (hash-based test embedder)
  │    │         └── FakeChatClient.cs (dual streaming/non-streaming test chat client)
- │    │         # SemanticTestEmbedder / IRagEvaluator — Story 2.8 (not shipped yet)
+ │    │         ├── Evaluation/ (IRagEvaluator, DeterministicEvaluator, SemanticTestEmbedder)
  │    └── ZVec.Rag.Template/
- │         └── ZVec.Rag.Template.csproj (dotnet new rag project template)
+ │         └── ZVec.Rag.Template.csproj (dotnet new zvec-rag project template)
  └── tests/
       ├── ZVec.AotTestApp/ (Exe - Native AOT publish verification — connector only)
       ├── ZVec.Rag.AotTestApp/ (Exe - Phase 2 RAG pipeline AOT gate: M.E.AI + Tokenizers + text ingest)
@@ -282,7 +282,7 @@ ZVec.NET-RAG.slnx
   - [x] **Task 2.3.2**: Implement `RagChunk` record (`Text`, `Citations`, `IsFinal`, `Usage`) and `Citation` record (`SourceDoc`, `SourceUri`, `SourceHash`, `Page`, `Offset`, `ChunkIndex`, `ChunkId`, `RankScore`, `DenseScore`, `FtsScore`). Default hybrid search reranking to `ZVecRrfReranker`. Expand `CitationOrder` enum (`ScoreDescending`, `ChunkOrderAscending`, `SourceDocThenChunkOrder`, `PageAscending`, `None`). `RagChunk.Citations` is always sorted by `CitationOrder` for UI — independent of `ContextPacker` prompt permutation (see Task 2.1.3). **Deferred (D-2):** `ICrossEncoderReranker` / `LlmReranker` ONNX cross-encoder reranking is post-v1.1; default hybrid fusion remains `ZVecRrfReranker` until explicitly tasked.
   - [x] **Task 2.3.3**: Implement ASP.NET Core SSE endpoint helper `app.MapRagSseEndpoint(...)` using `Response.BodyWriter.FlushAsync()` for real-time unbuffered web streaming. **Must** pass `HttpContext.RequestAborted` (linked) as the `CancellationToken` to `generator.AskAsync(...)` so client disconnect cancels LLM generation. Integration test with `WebApplicationFactory`: start SSE stream, disconnect mid-stream, assert `FakeChatClient` received cancellation and no further tokens were requested.
 - [x] **Story 2.4: Standalone `ZVec.Rag.Testing` Package & CI Fakes** (Owner: `zvec-rag-pipeline-expert`, `zvec-architect-strategy-expert`)
-  - [x] **Task 2.4.1 (TDD)**: Create `src/ZVec.Rag.Testing/ZVec.Rag.Testing.csproj` NuGet package containing `DeterministicEmbedder` (hash-based pipeline unit tests) and `FakeChatClient`. **`SemanticTestEmbedder` deferred to Story 2.8.**
+  - [x] **Task 2.4.1 (TDD)**: Create `src/ZVec.Rag.Testing/ZVec.Rag.Testing.csproj` NuGet package containing `DeterministicEmbedder` (hash-based pipeline unit tests) and `FakeChatClient`. **`SemanticTestEmbedder` / `IRagEvaluator` shipped in Story 2.8.**
   - [x] **Task 2.4.2**: Implement `FakeChatClient` supporting both non-streaming (`GetResponseAsync`) and streaming (`GetStreamingResponseAsync`) execution paths with configurable token sequences and sentinel final chunks.
   - [x] **Task 2.4.3**: Add snapshot test suite using `Verify.XunitV3` with named snapshots (`UseFileName("cl100k-nomic-v1")`) for prompt formatting and citation outputs.
 - [x] **Story 2.5: Multi-Package README Governance & Cross-Navigation** (Owner: `zvec-architect-strategy-expert`, `zvec-code-reviewer-expert`)
@@ -290,34 +290,44 @@ ZVec.NET-RAG.slnx
   - [x] **Task 2.5.2**: Add cross-navigation section ("If you need X, additionally install Y...") to each package `README.md`.
   - [x] **Task 2.5.3**: Maintain central repo `README.md` as an executive summary of all package READMEs and keep synchronized on every developer/skill turn.
   - [x] **Task 2.5.4**: Add `dotnet pack` for the three shipping packages to `.github/workflows/quality-gate.yml` (no 90% Coverlet repo gate in Phase 2).
-- [ ] **Story 2.7: RAG Pipeline Native AOT Gate (`ZVec.Rag.AotTestApp`)** (Owner: `zvec-native-aot-expert`, Reviewer: `zvec-rag-pipeline-expert`)
+- [x] **Story 2.7: RAG Pipeline Native AOT Gate (`ZVec.Rag.AotTestApp`)** (Owner: `zvec-native-aot-expert`, Reviewer: `zvec-rag-pipeline-expert`)
   - [x] **Task 2.7.1**: Create `tests/ZVec.Rag.AotTestApp` referencing `ZVec.Rag` + `Microsoft.Extensions.AI.Abstractions` + `Microsoft.ML.Tokenizers` with plain-text ingestion only (`PublishAot=true`, 3 desktop RIDs). Harness **must** execute a full plain-text `IngestTextAsync` pipeline (bounded `System.Threading.Channels` + DI-registered `IZVecTextChunker` + Tiktoken tokenization) — not tokenizer-only and not PDF. Real Tiktoken step (`cl100k_base` or `o200k_base`) required. Do not require embedded SentencePiece `.model` files in the AOT gate.
-  - [x] **Task 2.7.2**: Isolate non-AOT packages (`ZVec.Rag.Pdf`, `ZVec.Rag.LLamaSharp`) behind `[RequiresUnreferencedCode]`; omit from AOT harness.
-  - **Task 2.7.3**: Verify `rag-aot-smoke` CI job passes on all 3 desktop RIDs (`linux-x64`, `win-x64`, `osx-x64`) with `TreatWarningsAsErrors` and zero trim/AOT warnings (`IL2026`, `IL3050`) in publish output.
-  - **Acceptance Criteria**: Connector AOT (Story 0.2) remains closed; full pipeline AOT is a Phase 2 gate — do not claim pipeline AOT until Story 2.7 (including Task 2.7.3) passes.
-- [ ] **Story 2.8: RAG Evaluation Harness (`IRagEvaluator`)** (Owner: `zvec-rag-pipeline-expert`, Reviewer: `zvec-architect-strategy-expert`)
-  - **Task 2.8.1 (TDD)**: Implement `IRagEvaluator` in `ZVec.Rag.Testing` with Recall@K, MRR, nDCG on in-repo labeled fixtures (`tests/ZVec.Rag.Tests/Fixtures/`, ~50–200 Q/A pairs). Optional gitignored BEIR download script for local SOTA checks — not shipped in the Testing NuGet. `SemanticTestEmbedder` for metric unit tests. Sample 03 INT8 gate = Recall@K ≥ 0.95 vs FP32 Flat on the **same** shipped fixture (not BEIR SOTA).
-  - **Task 2.8.2**: Add optional LLM-as-judge Faithfulness/Context Precision evaluators (off by default in CI); `DeterministicEvaluator` for CI.
+  - [x] **Task 2.7.2**: Isolate non-AOT packages (`ZVec.Rag.Pdf`, `ZVec.Rag.LLamaSharp`) behind `[RequiresUnreferencedCode]`; omit from `ZVec.Rag.AotTestApp`.
+  - [x] **Task 2.7.3**: Verify `rag-aot-smoke` CI job passes on all 3 desktop RIDs (`linux-x64`, `win-x64`, `osx-x64`) with `TreatWarningsAsErrors` and zero trim/AOT warnings (`IL2026`, `IL3050`) in publish output. Harness runs `IngestTextAsync`, `RetrieveAsync`, and `AskAsync` (`FakeChatClient`).
+  - **Acceptance Criteria**: Connector AOT (Story 0.2) remains closed; pipeline AOT verified on 3 desktop RIDs (text ingest + retrieve + Ask; no PDF/SSE/LLamaSharp).
+- [x] **Story 2.8: RAG Evaluation Harness (`IRagEvaluator`)** (Owner: `zvec-rag-pipeline-expert`, Reviewer: `zvec-architect-strategy-expert`)
+  - [x] **Task 2.8.1 (TDD)**: Implement `IRagEvaluator` in `ZVec.Rag.Testing` with Recall@K, MRR, nDCG on in-repo labeled fixtures (`tests/ZVec.Rag.Tests/Fixtures/`, ~50–200 Q/A pairs). Add `RecallAtKLift(baseline, treatment)` returning `{ Baseline, Treatment, Delta, RelativeLift }` with \(\mathrm{Lift}@K=(R_{new}-R_{base})/R_{base}\); if \(R_{base}=0\), `RelativeLift` is null and report \(\Delta\) only. Unit-test the formula. Optional gitignored BEIR download script for local SOTA checks — not shipped in the Testing NuGet. `SemanticTestEmbedder` for metric unit tests. Sample 03 INT8 gate = Recall@K ≥ 0.95 vs FP32 Flat on the **same** shipped fixture (not BEIR SOTA).
+  - [x] **Task 2.8.2**: Add optional LLM-as-judge Faithfulness/Context Precision evaluators (off by default in CI); `DeterministicEvaluator` for CI.
   - **Acceptance Criteria**: Closes gap D-1; no RAGAS/LangSmith dependency.
+- [ ] **Story 2.9: Optional Section-Summary Helper (`GenerateSummaries`)** (Owner: `zvec-rag-pipeline-expert`, Reviewer: `zvec-security-expert`, `zvec-native-aot-expert`)
+  - **Note:** implementation-plan **Story 2.9** ≠ project-plan Epic 2 checkbox **2.9** (citation tracking).
+  - **Task 2.9.1 (TDD)**: Add `IngestOptions.GenerateSummaries` (default `false`), `MaxSummaryTokens` (default `128`), `SummarySectionMaxTokens` (default `2048`). When enabled: split source into sections → `IChatClient` section summary (one call per section, channel stage before child embed) → upsert `ZVecRagSectionSummaryV1` into collection `rag_section_summaries` (own hybrid index, `embed(Summary)`); chunk section → upsert `ZVecRagRecordV1` into `rag_chunks` with `embed(Text)` unchanged and indexed `SectionSummaryId` FK. `ChunkId` formula unchanged. Re-ingest from scratch if the flag or section knobs change (document in README).
+  - **Task 2.9.2**: When enabled, `RagRetriever` runs **parallel hybrid** on both collections (union + parent boost: keep chunk hits; boost chunks whose parent summary also hit; add children of top-S matching summaries). `ContextPacker` prepends the section summary string; citations and pack body remain child `Text` only. Optional exclusive `SectionGate` (summary-first filter only) deferred post-v1 if tasked.
+  - **Task 2.9.3**: `IRagSecuritySanitizer` on source before summarize and on stored summary; trusted system policy (aboutness entailed by section + preserve verbatim IDs/numbers/names/dates/URLs/table cells). `ZVec.Rag.AotTestApp` keeps `GenerateSummaries = false` (no second collection in that smoke).
+  - **Task 2.9.4 (TDD)**: Contract test (not SOTA marketing): fixture where section text lacks query token Y, `FakeChatClient` summary states Y, child chunks lack Y; query Y must retrieve gold child `ChunkId` via summary collection path; assert with `SemanticTestEmbedder` / `IRagEvaluator`. Compare Lift@K vs `GenerateSummaries = false` baseline using Story 2.8 helper.
+  - **Task 2.9.5 (optional, local)**: Real `IEmbeddingGenerator` paired Lift@K on same fixture — gitignored/local only; not README marketing or CI merge gate.
+  - **Acceptance Criteria**: Closes gap D-9; default OFF; helps retrieve/cite accuracy — **not** Advanced RAG, not RAPTOR; no public Recall@K number until optional 2.9.5 run.
 - [x] **Story 2.6: Threat Model & Security Prompt Injection Filter** (Owner: `zvec-rag-pipeline-expert`, `zvec-architect-strategy-expert`)
   - [x] **Task 2.6.1 (TDD)**: Write unit tests in `RagSecuritySanitizerTests.cs` verifying sanitization of prompt injection tokens and system instruction overrides in ingested chunks.
   - [x] **Task 2.6.2**: Implement `IRagSecuritySanitizer` interface and default `DefaultRagSecuritySanitizer` in `ZVec.Rag`.
   - [x] **Task 2.6.3**: Document RAG threat model in `docs/architecture/security-threat-model.md`.
 
+> **Deferred (post-v1, Liu axes):** **D-3** `IRagMigrationManager` shadow rebuild + atomic swap — **explicitly deferred post-Story 2.8 / pre-v1.1** (owner: `zvec-rag-pipeline-expert`); error strings and wiki reference interface only until tasked. **D-7** complex-document ingest (`HeadingPath`, `ParentChunkId`, layout-aware readers) → project-plan Epic 8.7. **D-8** query complexity (router, sub-questions, auto-retrieval filters) → Epic 8.8. **D-9** optional section-summary helper (second collection, parallel union+boost retrieve) → **Story 2.9** (v1 Phase 2, default OFF). v1 `ZVec.Rag` remains Naive RAG (single-shot hybrid top-k + one generate). Task **3.2.2** Sample 02 / `ZVec.Rag.Pdf` = **PdfPig text extract only** — not financial table-cell QA (D-7).
+
 ---
 
-### Phase 3: `dotnet new rag` Template & Sample Suite (Weeks 16–18)
+### Phase 3: `dotnet new zvec-rag` Template & Sample Suite (Weeks 16–18)
 
 > **Story ID map:** This implementation plan Epic 3 = template/samples, Epic 4 = LLM recipes. Project-plan **Epic headers are inverted** (Epic 3 = LLM recipes, Epic 4 = template) — each project-plan header is labeled with the matching implementation-plan epic. **Do not assume same epic number means same work across files.**
 
 #### Epic 3: Scaffolding Template & Reference Applications
 
 - [ ] **Story 3.1: Project Template `ZVec.Rag.Template`** (Owner: `zvec-architect-strategy-expert`)
-  - **Task 3.1.1**: Create `dotnet new rag` template definitions (`template.json`) supporting Console, ASP.NET Core SSE, and MAUI Blazor Hybrid flags (`--llm`, `--embedder`, `--storage`). Include pre-embedded micro-fixture (100 pre-computed chunks) for instant 60s working onboarding. Note: Blazor WASM is explicitly excluded due to native C++ interop constraints.
+  - **Task 3.1.1**: Create `dotnet new zvec-rag` template definitions (`template.json`, package `ZVec.Rag.Template`) with shortNames `zvec-rag`, `zvec-rag-aspnet`, `zvec-rag-maui` supporting Console, ASP.NET Core SSE, and MAUI Blazor Hybrid flags (`--llm`, `--embedder`, `--storage`). Include pre-embedded micro-fixture (100 pre-computed chunks) for instant 60s working onboarding. Note: Blazor WASM is explicitly excluded due to native C++ interop constraints. Do **not** use generic `rag` as primary shortName (ZVec-specific, not a generic RAG scaffold).
   - **Task 3.1.2**: Package and test `ZVec.Rag.Template` NuGet.
 - [ ] **Story 3.2: Reference Sample Applications** (Owner: `zvec-rag-pipeline-expert`)
   - **Task 3.2.1**: Implement `01-rag-your-docs` (Console 60s doc ingestion demo, <50 LOC).
-  - **Task 3.2.2**: Implement `02-local-first-pdf-chat` (ASP.NET Core SSE web app, bilingual EN/AR fixtures; references optional `ZVec.Rag.Pdf`).
+  - **Task 3.2.2**: Implement `02-local-first-pdf-chat` (ASP.NET Core SSE web app, bilingual EN/AR fixtures; references optional `ZVec.Rag.Pdf` — **PdfPig text extract only**; document no table-cell QA until D-7 / Epic 8.7).
   - **Task 3.2.3**: Implement `03-offline-phone-rag` (MAUI Blazor Hybrid retrieve+cite sample: ship read-only index built on desktop; `EnableMmap = true`, `ReadOnly = true`; corpus ≤ 20k chunks; **Flat index default** for exact recall; optional HNSW+INT8 only if desktop Recall@K ≥ 0.95 relative to FP32 Flat on shipped fixture via Story 2.8 `IRagEvaluator`; fallback FP16 Flat if INT8 fails; **no on-device LLamaSharp**). **Never open a ZVec collection on the MAUI UI/main thread** — initialize on a background thread during startup with a loading spinner until `IZvecCollection<T>` is ready (exception to ingest `Task.Run` ban; collection open only). **Gate:** cannot mark complete until Task 1.10.1 simulator launch + GC passes **or** residual iOS finalizer risk is documented in `docs/architecture/native-aot-memory.md`.
   - **Task 3.2.4**: Implement `04-airgapped-enterprise-rag` (ASP.NET Core + LLamaSharp local model).
 - [ ] **Story 3.3: MAUI Binary Size & Cold-Start Profiling** (Owner: `zvec-architect-strategy-expert`, `zvec-performance-expert`)

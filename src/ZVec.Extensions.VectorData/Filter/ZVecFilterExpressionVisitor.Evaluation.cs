@@ -152,11 +152,7 @@ public static partial class ZVecFilterExpressionVisitor
                 }
 
             case NewArrayExpression newArray:
-                var arrayElements = Array.CreateInstance(newArray.Type.GetElementType()!, newArray.Expressions.Count);
-                for (int i = 0; i < newArray.Expressions.Count; i++)
-                    arrayElements.SetValue(Evaluate(newArray.Expressions[i]), i);
-
-                return arrayElements;
+                return CreateEvaluatedArray(newArray);
         }
 
         if (expression.Type.IsByRefLike)
@@ -165,5 +161,79 @@ public static partial class ZVecFilterExpressionVisitor
         throw new ZVecFilterTranslationException(
             ZVecErrorMessages.UnsupportedFilterExpression(
                 ZVecErrorMessages.CannotStaticallyEvaluateExpressionUnderAot(expression.ToString())));
+    }
+
+    private static Array CreateEvaluatedArray(NewArrayExpression newArray)
+    {
+        Type? elementType = newArray.Type.GetElementType();
+        if (elementType == typeof(string))
+        {
+            var values = new string[newArray.Expressions.Count];
+            for (int i = 0; i < values.Length; i++)
+            {
+                values[i] = (string)Evaluate(newArray.Expressions[i])!;
+            }
+
+            return values;
+        }
+
+        if (elementType == typeof(int))
+        {
+            var values = new int[newArray.Expressions.Count];
+            for (int i = 0; i < values.Length; i++)
+            {
+                values[i] = (int)Evaluate(newArray.Expressions[i])!;
+            }
+
+            return values;
+        }
+
+        if (elementType == typeof(long))
+        {
+            var values = new long[newArray.Expressions.Count];
+            for (int i = 0; i < values.Length; i++)
+            {
+                values[i] = (long)Evaluate(newArray.Expressions[i])!;
+            }
+
+            return values;
+        }
+
+        if (elementType == typeof(Guid))
+        {
+            var values = new Guid[newArray.Expressions.Count];
+            for (int i = 0; i < values.Length; i++)
+            {
+                values[i] = (Guid)Evaluate(newArray.Expressions[i])!;
+            }
+
+            return values;
+        }
+
+        if (elementType == typeof(DateTime))
+        {
+            var values = new DateTime[newArray.Expressions.Count];
+            for (int i = 0; i < values.Length; i++)
+            {
+                values[i] = (DateTime)Evaluate(newArray.Expressions[i])!;
+            }
+
+            return values;
+        }
+
+        if (elementType == typeof(DateTimeOffset))
+        {
+            var values = new DateTimeOffset[newArray.Expressions.Count];
+            for (int i = 0; i < values.Length; i++)
+            {
+                values[i] = (DateTimeOffset)Evaluate(newArray.Expressions[i])!;
+            }
+
+            return values;
+        }
+
+        throw new ZVecFilterTranslationException(
+            ZVecErrorMessages.UnsupportedFilterExpression(
+                ZVecErrorMessages.CannotStaticallyEvaluateExpressionUnderAot(newArray.Type.Name)));
     }
 }

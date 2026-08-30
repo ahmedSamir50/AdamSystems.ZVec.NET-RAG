@@ -44,6 +44,8 @@ or before starting an unchecked epic:
 Follow [`.agents/gaps/spec-lock.md`](../../gaps/spec-lock.md). **Do not start WRITE**
 until the checklist is green or contradictions are amended in docs.
 
+Treat **plans** (Cursor plans, implementation-plan stories) as artifacts. **P1** if a plan instructs README or `docs/**` to use the word `harness`. Post-WRITE: `.agents/gaps/reports/latest.md` must match shipped checkboxes (do not leave "do not claim X" after Story X is checked).
+
 **Gate:** P1 spec contradiction → `write_allowed: false` (do not start WRITE).
 P2 → record as Spec Gap (`S-*`) and amend the spec first. Phase 2 Design Gaps
 (`D-*`) **block WRITE of that epic** — they are not "do not block forever."

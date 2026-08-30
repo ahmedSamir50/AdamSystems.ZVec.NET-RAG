@@ -48,12 +48,8 @@ public static class RagSseEndpointExtensions
             streamCitations: true,
             cancellationToken: linkedCts.Token).ConfigureAwait(false))
         {
-            string payload = JsonSerializer.Serialize(new
-            {
-                text = chunk.Text,
-                isFinal = chunk.IsFinal,
-                citations = chunk.Citations
-            });
+            var payloadModel = new RagSsePayload(chunk.Text, chunk.IsFinal, chunk.Citations);
+            string payload = JsonSerializer.Serialize(payloadModel, RagSseJsonContext.Default.RagSsePayload);
 
             await httpContext.Response.WriteAsync($"data: {payload}\n\n", linkedCts.Token).ConfigureAwait(false);
             await httpContext.Response.BodyWriter.FlushAsync(linkedCts.Token).ConfigureAwait(false);

@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using ZVec.Extensions.VectorData.Constants;
 using ZVec.Extensions.VectorData.Store;
@@ -13,7 +14,8 @@ public static class ZVecIndexManifestManager
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        WriteIndented = true
+        WriteIndented = true,
+        TypeInfoResolver = ZVecIndexManifestJsonContext.Default
     };
 
     /// <summary>
@@ -96,7 +98,7 @@ public static class ZVecIndexManifestManager
         try
         {
             string json = File.ReadAllText(manifestPath);
-            var manifest = JsonSerializer.Deserialize<ZVecIndexManifest>(json, JsonOptions);
+            var manifest = JsonSerializer.Deserialize(json, ZVecIndexManifestJsonContext.Default.ZVecIndexManifest);
             if (manifest == null)
             {
                 throw new ZVecManifestException(ZVecManifestFailureReason.Corrupt, collectionPath);
@@ -142,7 +144,7 @@ public static class ZVecIndexManifestManager
         string finalPath = Path.Combine(collectionPath, ZVecManifestFileNames.IndexManifest);
         string tempPath = Path.Combine(collectionPath, ZVecManifestFileNames.IndexManifestTemp);
 
-        string json = JsonSerializer.Serialize(manifest, JsonOptions);
+        string json = JsonSerializer.Serialize(manifest, ZVecIndexManifestJsonContext.Default.ZVecIndexManifest);
         File.WriteAllText(tempPath, json);
 
         if (File.Exists(finalPath))

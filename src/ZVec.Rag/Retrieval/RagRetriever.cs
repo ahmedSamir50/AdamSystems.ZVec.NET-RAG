@@ -57,7 +57,11 @@ public sealed class RagRetriever : IRagRetriever
         int effectiveTop = topK ?? _ragOptions.RetrieveTopK;
         string[] keywords = TokenizeKeywords(query);
 
-        var hybridOptions = new ZVecHybridSearchOptions<ZVecRagRecordV1> { RrfK = _ragOptions.RrfK };
+        var hybridOptions = new ZVecHybridSearchOptions<ZVecRagRecordV1>
+        {
+            RrfK = _ragOptions.RrfK,
+            IncludeVectors = true
+        };
 
         var citations = new List<Citation>();
         await foreach (var result in hybrid.HybridSearchAsync(
@@ -67,7 +71,7 @@ public sealed class RagRetriever : IRagRetriever
             hybridOptions,
             cancellationToken).ConfigureAwait(false))
         {
-            citations.Add(MapToCitation(result.Record, (float)(result.Score ?? 0d)));
+            citations.Add(MapToCitation(result.Record, (float)(result.Score ?? 0d), queryVector));
         }
 
         return SortCitations(citations, _ragOptions.CitationOrder);
@@ -92,7 +96,10 @@ public sealed class RagRetriever : IRagRetriever
         };
     }
 
-    private static Citation MapToCitation(ZVecRagRecordV1 record, float rankScore)
+    private static Citation MapToCitation(
+        ZVecRagRecordV1 record,
+        float rankScore,
+        ReadOnlyMemory<float> queryVector)
     {
         return new Citation(
             record.SourceDoc,
@@ -104,8 +111,36 @@ public sealed class RagRetriever : IRagRetriever
             record.ChunkId,
             record.Text,
             RankScore: rankScore,
-            DenseScore: 0f,
+            DenseScore: ComputeCosineSimilarity(queryVector, record.DenseVector),
             FtsScore: 0f);
+    }
+
+    public static float ComputeCosineSimilarity(ReadOnlyMemory<float> left, ReadOnlyMemory<float> right)
+    {
+        if (left.IsEmpty || right.IsEmpty || left.Length != right.Length)
+        {
+            return 0f;
+        }
+
+        ReadOnlySpan<float> leftSpan = left.Span;
+        ReadOnlySpan<float> rightSpan = right.Span;
+        double dot = 0d;
+        double leftMag = 0d;
+        double rightMag = 0d;
+        for (int i = 0; i < leftSpan.Length; i++)
+        {
+            dot += leftSpan[i] * rightSpan[i];
+            leftMag += leftSpan[i] * leftSpan[i];
+            rightMag += rightSpan[i] * rightSpan[i];
+        }
+
+        if (leftMag <= 0d || rightMag <= 0d)
+        {
+            return 0f;
+        }
+
+        double cosine = dot / (Math.Sqrt(leftMag) * Math.Sqrt(rightMag));
+        return (float)Math.Clamp(cosine, 0d, 1d);
     }
 
     private static string[] TokenizeKeywords(string query)
