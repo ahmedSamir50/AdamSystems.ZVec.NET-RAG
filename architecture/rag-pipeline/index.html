@@ -1,0 +1,1687 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Local-first RAG for .NET. No cloud. No Python. No kidding.">
+      
+      
+        <meta name="author" content="Ahmed Samir (Adam Systems)">
+      
+      
+        <link rel="canonical" href="https://ahmedsamir50.github.io/AdamSystems.ZVec.NET-RAG/architecture/rag-pipeline/">
+      
+      
+        <link rel="prev" href="../vectordata-connector/">
+      
+      
+        <link rel="next" href="../score-semantics/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/zvec-icon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>RAG Pipeline Architecture - ZVec.NET-RAG Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="custom">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#rag-pipeline-document-ingestion-architecture" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="ZVec.NET-RAG Documentation" class="md-header__button md-logo" aria-label="ZVec.NET-RAG Documentation" data-md-component="logo">
+      
+  <img src="../../assets/zvec-icon.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            ZVec.NET-RAG Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              RAG Pipeline Architecture
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/ahmedsamir50/AdamSystems.ZVec.NET-RAG" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ahmedsamir50/AdamSystems.ZVec.NET-RAG
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Overview
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../overview/" class="md-tabs__link">
+          
+  
+  
+  Architecture & Theory
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../guides/quickstart/" class="md-tabs__link">
+          
+  
+  
+  Developer Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../reference/api/" class="md-tabs__link">
+          
+  
+  
+  Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="ZVec.NET-RAG Documentation" class="md-nav__button md-logo" aria-label="ZVec.NET-RAG Documentation" data-md-component="logo">
+      
+  <img src="../../assets/zvec-icon.png" alt="logo">
+
+    </a>
+    ZVec.NET-RAG Documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/ahmedsamir50/AdamSystems.ZVec.NET-RAG" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ahmedsamir50/AdamSystems.ZVec.NET-RAG
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture & Theory
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture & Theory
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../interface-segregation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Interface Segregation (ISP)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../di-composition/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    DI & Lifecycle Composition
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../vectordata-connector/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    VectorData Connector Design
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RAG Pipeline Architecture
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RAG Pipeline Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-document-ingestion-pipeline-architecture-iragingestor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Document Ingestion Pipeline Architecture (IRagIngestor)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Document Ingestion Pipeline Architecture (IRagIngestor)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11-parent-heading-coherence-d-7-planned-not-shipped" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 Parent / heading coherence (D-7 — planned, not shipped)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-optional-section-summary-helper-story-29-shipped-default-off" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 Optional section-summary helper (Story 2.9 — shipped, default OFF)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-context-packing-tokenizer-rag-evaluation-framework" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Context Packing, Tokenizer &amp; RAG Evaluation Framework
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-anti-corruption-layer-acl-migration-security" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Anti-Corruption Layer (ACL), Migration &amp; Security
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-retrieval-re-ranking-citation-generation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Retrieval, Re-Ranking &amp; Citation Generation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-production-rag-ops-library-vs-host-d-10-epic-89-planned-not-shipped" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Production RAG ops — library vs host (D-10 / Epic 8.9 — planned, not shipped)
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../score-semantics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Metric Score Semantics & Normalization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../security-threat-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security Threat Model & Prompt Injection
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../hybrid-search-rrf/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Hybrid Search & RRF Math
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../native-aot-memory/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Native AOT & Zero-Copy Memory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Developer Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Developer Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quickstart (60 Seconds)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/migration-from-inmemory/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migrate from VectorData.InMemory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/multimodal-rag/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multimodal RAG (Text + Image)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/mobile-memory-budget/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Mobile Memory Budget & Quantization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/quantization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Vector Quantization & Index Rebuild
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/testing-strategy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TDD & Testing Strategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/code-standards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code Standards & Conventions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/wiki-maintenance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MkDocs & Wiki Maintenance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/citation-schema/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Citation Schema & DDL Immutability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/index-selection/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Index Selection & Parameter Tuning
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/dependencies/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dependency Matrix
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/versioning/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Versioning
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/zvec-net-aot-recommendations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ZVec.NET Native AOT Spec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/benchmarks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance Benchmarks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-document-ingestion-pipeline-architecture-iragingestor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Document Ingestion Pipeline Architecture (IRagIngestor)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Document Ingestion Pipeline Architecture (IRagIngestor)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11-parent-heading-coherence-d-7-planned-not-shipped" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 Parent / heading coherence (D-7 — planned, not shipped)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-optional-section-summary-helper-story-29-shipped-default-off" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 Optional section-summary helper (Story 2.9 — shipped, default OFF)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-context-packing-tokenizer-rag-evaluation-framework" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Context Packing, Tokenizer &amp; RAG Evaluation Framework
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-anti-corruption-layer-acl-migration-security" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Anti-Corruption Layer (ACL), Migration &amp; Security
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-retrieval-re-ranking-citation-generation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Retrieval, Re-Ranking &amp; Citation Generation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-production-rag-ops-library-vs-host-d-10-epic-89-planned-not-shipped" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Production RAG ops — library vs host (D-10 / Epic 8.9 — planned, not shipped)
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/ahmedsamir50/AdamSystems.ZVec.NET-RAG/edit/master/docs/architecture/rag-pipeline.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="rag-pipeline-document-ingestion-architecture">RAG Pipeline &amp; Document Ingestion Architecture</h1>
+<p><code>ZVec.Rag</code> provides a batteries-included RAG orchestration layer (<code>IRagPipeline</code>, <code>IRagIngestor</code>, <code>IRagRetriever</code>, <code>IRagGenerator</code>) built on top of Microsoft AI ecosystem primitives:</p>
+<blockquote>
+<p><strong>Status:</strong> Stories 2.1–2.3, 2.4.3 (Verify snapshots), 2.6, 2.7 (pipeline AOT), 2.8 (<code>IRagEvaluator</code>), and <strong>2.9</strong> (optional section-summary helper, default OFF) shipped. <strong>Architecture class:</strong> v1 pipeline is Naive RAG (single-shot hybrid retrieve + pack + one generate) per <a href="https://www.youtube.com/watch?v=dI_TmTW9S4c&amp;t=4778s">Liu axes</a>; complex-document ingest (D-7 / Epic 8.7), query routing (D-8 / Epic 8.8), and production RAG ops (D-10 / Epic 8.9) are post-v1.
+<pre class="mermaid"><code>flowchart LR
+  reader["1. Document Reader\nMD / TXT in core\nPDF via ZVec.Rag.Pdf"]
+  chunker["2. Text Chunker\nToken / Markdown / Sentence"]
+  embedder["3. Vector Embedder\nIEmbeddingGenerator string Embedding"]
+  store["4. Persistent Store\nZVec.VectorData + ZVec FTS Index"]
+  reader --&gt; chunker --&gt; embedder --&gt; store</code></pre></p>
+</blockquote>
+<hr />
+<h2 id="1-document-ingestion-pipeline-architecture-iragingestor">1. Document Ingestion Pipeline Architecture (<code>IRagIngestor</code>)</h2>
+<p>Ingestion is transparently divided into four distinct, pluggable stages (ZVec-owned ACL; no <code>Microsoft.Extensions.DataIngestion</code> dependency in core):</p>
+<ol>
+<li><strong>Document Readers (<code>IRagDocumentReader</code>)</strong> — format parsing ACL:</li>
+<li><code>PlainTextDocumentReader</code> (Default in core <code>ZVec.Rag</code>): Fast UTF-8 stream reader for plain text and Markdown.</li>
+<li><code>PdfDocumentReader</code>: Optional <code>ZVec.Rag.Pdf</code> package — <strong>not</strong> referenced by core or <code>ZVec.Rag.AotTestApp</code>.</li>
+<li><code>HtmlDocumentReader</code>: Optional future package for DOM stripping.</li>
+<li><strong>Text Chunkers (<code>IZVecTextChunker</code>)</strong> — separate from readers:</li>
+<li><code>TokenTextChunker</code> (Default): Splits text on token boundaries using <code>Microsoft.ML.Tokenizers</code> (512 tokens, 64-token overlap — sliding window is <strong>inside</strong> this chunker, not a separate strategy).</li>
+<li><code>MarkdownHeadingChunker</code>: <strong>Heading-split</strong> chunker — splits on <code>#</code> / <code>##</code> lines, then runs <code>TokenTextChunker</code> per section. It does <strong>not</strong> attach heading text as metadata on child chunks today; long sections can drop the title on later token windows. <strong>Planned (D-7 / Epic 8.7):</strong> <code>HeadingPath</code> and <code>ParentChunkId</code> on <code>ZVecRagRecordV1</code> so chunks stay coherent with their parent heading/page/table node.</li>
+<li><code>SentenceTextChunker</code>: Splits on sentence boundaries to avoid mid-sentence cuts.</li>
+<li><strong>Deterministic Chunk ID Generator</strong>:</li>
+<li>Chunk IDs are generated using content-addressable SHA256 hashes: <code>ChunkId = SHA256(doc_uri | strategy_id | chunk_index)</code>. This ensures stability across re-ingestion and native content-based deduplication.</li>
+<li><strong>Bounded Channel Dataflow Graph</strong>:</li>
+<li>Ingestion executes over bounded <code>System.Threading.Channels</code>: Document Parsing (Capacity 1024) <span class="arithmatex">\(\rightarrow\)</span> Deduplication (Capacity 2048) <span class="arithmatex">\(\rightarrow\)</span> Batch Embedding (Batch size 32) <span class="arithmatex">\(\rightarrow\)</span> Batch Vector Insertion (Batch size 100). <code>IngestionCheckpoint</code> deferred post-v1.</li>
+<li><strong>Async contract:</strong> <code>IZVecTextChunker</code> <code>IEnumerable&lt;TextChunk&gt;</code> is pushed into the bounded channel writer on the <strong>caller continuation</strong> — never <code>Task.Run</code>. Use <code>ConfigureAwait(false)</code> on every await. <code>EnsureCollectionExistsAsync</code> ForceYields then opens native on that worker; the first channel await is the consumer <code>WaitToReadAsync</code> on an empty channel; producer <code>WriteAsync</code> yields only when the channel is full (capacity 1024). ASP.NET Core has no request <code>SynchronizationContext</code>. Native upsert/query occupy that worker for the P/Invoke duration.</li>
+<li><strong>In-process queue (not NATS):</strong> <code>IngestionChannelPump</code> + <code>RagIngestor</code> already use bounded <code>System.Threading.Channels</code> (parse capacity 1024, wait-on-full backpressure). <code>IngestTextAsync</code> awaits pipeline completion so demos and <code>ZVec.Rag.AotTestApp</code> get deterministic results — that is <strong>same-call, in-process</strong> queuing, not direct synchronous embed. NATS/Rabbit/Azure Service Bus would be a <strong>post-v1</strong> optional <code>IIngestBus</code> for distributed multi-producer ETL; it is <strong>not</strong> core <code>ZVec.Rag</code> (extra daemon, serialize/deserialize overhead, not in AOT graph, CI cannot assume a broker).</li>
+</ol>
+<h3 id="11-parent-heading-coherence-d-7-planned-not-shipped">1.1 Parent / heading coherence (D-7 — planned, not shipped)</h3>
+<p>Sliding 64-token overlap inside <code>TokenTextChunker</code> is a boundary patch, not structural coherence. Today <code>TextChunk</code> is <code>(Text, Offset)</code> only; <code>ZVecRagRecordV1</code> has no <code>HeadingPath</code> or <code>ParentChunkId</code>; <code>Citation</code> cannot show “this slice belongs to H2 Revenue.” <code>MarkdownHeadingChunker</code> splits on <code>^#{1,6}</code> then token-splits — it does <strong>not</strong> copy the heading onto later windows.</p>
+<p><strong>Planned additive schema (Epic 8.7 / D-7 — do not change <code>ChunkId = SHA256(doc_uri | strategy_id | chunk_index)</code>):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>HeadingPath</code></td>
+<td>indexed string</td>
+<td>Breadcrumb from parse tree (e.g. <code>H1/H2 Revenue</code>)</td>
+</tr>
+<tr>
+<td><code>ParentChunkId</code></td>
+<td>indexed string, nullable</td>
+<td>Heading/page/table node chunk id; empty for roots</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Sequence:</strong> layout-aware reader emits tree → stamp chunks → embed → (later) <code>ContextPacker</code> may fetch parent text by <code>ParentChunkId</code> (<a href="https://www.youtube.com/watch?v=dI_TmTW9S4c&amp;t=4778s">Liu index≠synthesis</a>). Org formats (PDF tables, PPT slides, DOCX styles, Excel sheets) need readers <strong>before</strong> stamps mean anything — PdfPig text flatten alone cannot invent parents.</p>
+<h3 id="12-optional-section-summary-helper-story-29-shipped-default-off">1.2 Optional section-summary helper (Story 2.9 — shipped, default OFF)</h3>
+<p>Optional <code>IngestOptions.GenerateSummaries</code> (default <strong>false</strong>) improves <strong>retrieve and pack accuracy</strong> — not a new RAG product class (still Naive one-shot generate; <strong>not</strong> Advanced RAG, <strong>not</strong> RAPTOR).</p>
+<p><strong>Ingest (when on):</strong> split source into <strong>sections</strong> (default <code>SummarySectionMaxTokens</code> = 2048) → <code>IChatClient</code> summary per section (default <code>MaxSummaryTokens</code> = 128, one LLM call per section) → upsert <code>ZVecRagSectionSummaryV1</code> into collection <strong><code>rag_section_summaries</code></strong> (<code>embed(Summary)</code>) (or <code>ZVecRagOptions.SummaryCollectionName</code> / <code>{CollectionName}_summaries</code> when <code>CollectionName</code> is not <code>rag_chunks</code>); chunk the section → upsert children into <strong><code>rag_chunks</code></strong> with <strong><code>embed(Text)</code> unchanged</strong> and indexed <strong><code>SectionSummaryId</code></strong> FK. <code>ChunkId</code> formula unchanged.</p>
+<p><strong>Retrieve (when on):</strong> <strong>parallel hybrid</strong> on both collections — union + <strong>parent boost</strong> (keep direct chunk hits; boost chunks whose parent summary also matched; add children of top matching summaries). <strong>Pack:</strong> prepend the short section summary so the generator is not blind (e.g. “5V” + “X1000” context); <strong>cite</strong> child <code>ChunkId</code> / <code>Text</code> only.</p>
+<p><strong>When off / AOT:</strong> single-collection chunk retrieve as today (<code>ZVec.Rag.AotTestApp</code> keeps <code>GenerateSummaries = false</code>).</p>
+<p><strong>Re-ingest from scratch</strong> if you flip summaries on/off, change embedder model/dimensions/quantize, or change chunker settings — ingestion is not an in-place edit (see README).</p>
+<p><strong>Prompt:</strong> section aboutness entailed by the source; preserve verbatim IDs/numbers/names/dates/URLs/table cells; <code>IRagSecuritySanitizer</code> on source and stored summary.</p>
+<p><strong>Eval:</strong> Story 2.8 <code>RecallAtKLift</code> on child <code>ChunkId</code>s; Story 2.9 contract test (summary path retrieves children when query token is only in summary); optional local real Lift@K — not README marketing.</p>
+<p><strong>Separate from D-7:</strong> extractive <code>HeadingPath</code> / <code>ParentChunkId</code> (layout parse tree) stays Epic 8.7 post-v1.</p>
+<hr />
+<h2 id="2-context-packing-tokenizer-rag-evaluation-framework">2. Context Packing, Tokenizer &amp; RAG Evaluation Framework</h2>
+<ul>
+<li><strong>ContextPacker (Story 2.1.3)</strong>: <code>IRagGenerator</code> uses <code>ContextPacker</code> to enforce <code>MaxContextTokens</code>, reserve <code>GenerationReserveTokens</code> for the LLM reply, account for chat-template overhead, and optionally apply Lost-in-the-Middle reordering. Token budgeting is <strong>inside</strong> the generator — not a decorator middleware pipeline.</li>
+<li><strong>Prompt order ≠ citation list order:</strong> <code>ContextPackingStrategy.LostInTheMiddle</code> permutes only the <code>&lt;retrieved_context&gt;</code> block sent to the LLM. <code>RagChunk.Citations</code> is always sorted by <code>CitationOrder</code> (<code>ScoreDescending</code> default) and keyed by <code>ChunkId</code> / <code>RankScore</code> — independent of prompt string order. LLM citation markers (if used) reference <code>ChunkId</code>, not 1-based prompt positions.</li>
+<li><strong>Primary Tokenizer Engine (<code>Microsoft.ML.Tokenizers</code>)</strong>: Tiktoken BPE (<code>cl100k_base</code>, <code>o200k_base</code>) is in-box and AOT-safe. SentencePiece/WordPiece vocab files load via <code>FileStream</code> from shipped Content (not <code>EmbeddedResource</code>) unless trim-tested.</li>
+<li><strong>RAG Evaluation Module (<code>IRagEvaluator</code>, Story 2.8 — shipped)</strong> in <code>ZVec.Rag.Testing</code>:</li>
+<li><strong>Retrieval (CI-cheap, no LLM):</strong> Recall@K, MRR, nDCG via <code>DeterministicEvaluator</code> / <code>SemanticTestEmbedder</code>; <code>RecallAtKLift</code> for paired on/off summary-helper comparisons (Story 2.9).</li>
+<li><strong>Generation (optional):</strong> Faithfulness, Answer Relevance, Context Precision via LLM-as-Judge (<code>IChatClient</code>) — off by default in CI.</li>
+</ul>
+<hr />
+<h2 id="3-anti-corruption-layer-acl-migration-security">3. Anti-Corruption Layer (ACL), Migration &amp; Security</h2>
+<ol>
+<li><strong>Ingestion Anti-Corruption Layer</strong>: Split into <code>IRagDocumentReader</code> (format parsing) and <code>IZVecTextChunker</code> (chunking via <code>Microsoft.ML.Tokenizers</code>). Core <code>ZVec.Rag</code> ships text/md only; PDF via optional <code>ZVec.Rag.Pdf</code>. SSE helpers (<code>MapRagSseEndpoint</code>) require <code>FrameworkReference</code> <code>Microsoft.AspNetCore.App</code> on <code>ZVec.Rag</code> (isolated in <code>Streaming/</code> with trim annotations; Story 2.7 console AOT does not claim SSE).</li>
+<li><strong>Embedder Stamp Manifest (<code>zvec_index_manifest.json</code>)</strong>: On index creation, <code>ZVecIndexManifestManager</code> writes a manifest recording <code>ModelId</code>, <code>Dimensions</code>, <code>QuantizeType</code>, embedding storage dtype, and timestamp. Writes use atomic <code>*.tmp</code> + <code>File.Replace</code>. Startup validation throws <code>ZVecEmbedderMismatchException</code> on model/quantize mismatch; <code>ZVecManifestException</code> (<code>Missing</code> / <code>Corrupt</code>) when the collection exists but the manifest does not. <code>ZVec.Rag</code> init (Task 2.1.4) wraps mismatch as <code>ZVecRagInitializationException</code> with remediation: delete storage, use a new <code>StoragePath</code>, or run <code>IRagMigrationManager</code>.</li>
+<li><strong>Embedding Migration Manager (<code>IRagMigrationManager</code>)</strong>: Automates background re-indexing when embedding models or dimensions change, performing shadow collection builds and atomic index swaps.</li>
+<li><strong>Security Threat Model &amp; Prompt Isolation (<code>IRagSecuritySanitizer</code>, Story 2.6)</strong>: Retrieved chunks are sanitized at retrieve/pack time (delimiter/chunk-marker escape). <code>RagGenerator</code> places trusted policy in <code>ChatRole.System</code> only; <code>&lt;retrieved_context&gt;</code> lives in a separate <code>ChatRole.User</code> message. Does not eliminate all prompt injection — see <code>security-threat-model.md</code>.</li>
+</ol>
+<hr />
+<h2 id="4-retrieval-re-ranking-citation-generation">4. Retrieval, Re-Ranking &amp; Citation Generation</h2>
+<ul>
+<li><strong>Hybrid Search &amp; Fusion</strong>: Native ZVec dense vector search + FTS keyword matching fused via Reciprocal Rank Fusion (<code>ZVecRrfReranker</code>, default <span class="arithmatex">\(k=60\)</span>).</li>
+<li><strong>Re-Ranking Engines (<code>LlmReranker</code> / <code>ICrossEncoderReranker</code>)</strong>: Pluggable re-ranking hook (deferred D-2, post-v1.1) enabling <code>LlmReranker</code> (via <code>IChatClient</code> prompt) and ONNX cross-encoders (<code>bge-reranker-v2-m3</code>). Default hybrid fusion remains <code>ZVecRrfReranker</code>.</li>
+<li><strong>Citation Tracking</strong>: Round-trip metadata (<code>SourceDoc</code>, <code>SourceUri</code>, <code>SourceHash</code>, <code>Page</code>, <code>Offset</code>, <code>ChunkIndex</code>, <code>ChunkId</code>) into streaming <code>RagChunk</code> records, with distinct <code>RankScore</code>, <code>DenseScore</code>, and <code>FtsScore</code>. UI citation lists use <code>CitationOrder</code>; prompt packing uses <code>ContextPacker</code> strategy — these are decoupled.</li>
+<li><strong>SSE Response Helpers</strong>: Real-time unbuffered Server-Sent Events endpoint helpers (<code>app.MapRagSseEndpoint(...)</code>) calling <code>Response.BodyWriter.FlushAsync()</code> after every chunk. <strong>Must</strong> pass <code>HttpContext.RequestAborted</code> as the <code>CancellationToken</code> to <code>IRagGenerator.AskAsync(...)</code> so client disconnect cancels LLM token generation.</li>
+</ul>
+<hr />
+<h2 id="5-production-rag-ops-library-vs-host-d-10-epic-89-planned-not-shipped">5. Production RAG ops — library vs host (D-10 / Epic 8.9 — planned, not shipped)</h2>
+<p>v1 <code>ZVec.Rag</code> does <strong>not</strong> ship production alerting, cascading retrieve fallbacks, circuit-breaker / half-open health probes, or query / embedding / vector-search / LLM response caches. Those are <strong>post-v1 Epic 8.9 / D-10</strong> and belong in the <strong>host application</strong> (<code>Microsoft.Extensions.AI</code> caching decorators, <code>Microsoft.Extensions.Http.Resilience</code> / Polly, Aspire/Grafana alert rules).</p>
+<table>
+<thead>
+<tr>
+<th>Concern</th>
+<th>v1 <code>ZVec.Rag</code></th>
+<th>Host / later epic</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Retrieve path</td>
+<td>Hybrid dense + FTS + RRF (<code>RagRetriever</code>) — <strong>primary</strong>, not a degraded fallback</td>
+<td>Optional extractive-only via <code>RetrieveAsync</code> without <code>AskAsync</code></td>
+</tr>
+<tr>
+<td>Retrieval quality</td>
+<td>Offline <code>IRagEvaluator</code> (Story 2.8) — not live production gauges</td>
+<td>Host dashboards if needed</td>
+</tr>
+<tr>
+<td>Stage latency / tokens</td>
+<td>Shipped <code>ZVecRagTelemetry</code> (<code>ActivitySource</code>, <code>zvec.rag.tokens</code>, <code>zvec.rag.stage.duration</code>) — host OTLP export</td>
+<td>Host alert thresholds</td>
+</tr>
+<tr>
+<td>Cascading fallbacks</td>
+<td>Not shipped — typed exceptions; SSE cancel on disconnect</td>
+<td>Host middleware / Polly</td>
+</tr>
+<tr>
+<td>Query / embed / LLM caches</td>
+<td>Not shipped</td>
+<td>Host <code>IDistributedCache</code> / <code>HybridCache</code> or M.E.AI decorators</td>
+</tr>
+</tbody>
+</table>
+<p>Do not add <code>IRagFallbackPipeline</code> or in-library cache types without amending the plan and re-running spec_lock.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "navigation.instant", "content.code.copy", "content.action.edit"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+        <script src="https://unpkg.com/mermaid@10/dist/mermaid.min.js"></script>
+      
+    
+  </body>
+</html>

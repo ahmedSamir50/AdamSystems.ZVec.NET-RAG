@@ -1,0 +1,2083 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Local-first RAG for .NET. No cloud. No Python. No kidding.">
+      
+      
+        <meta name="author" content="Ahmed Samir (Adam Systems)">
+      
+      
+        <link rel="canonical" href="https://ahmedsamir50.github.io/AdamSystems.ZVec.NET-RAG/reference/api/">
+      
+      
+        <link rel="prev" href="../../guides/wiki-maintenance/">
+      
+      
+        <link rel="next" href="../citation-schema/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/zvec-icon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>API Reference - ZVec.NET-RAG Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="custom">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#api-reference" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="ZVec.NET-RAG Documentation" class="md-header__button md-logo" aria-label="ZVec.NET-RAG Documentation" data-md-component="logo">
+      
+  <img src="../../assets/zvec-icon.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            ZVec.NET-RAG Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              API Reference
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/ahmedsamir50/AdamSystems.ZVec.NET-RAG" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ahmedsamir50/AdamSystems.ZVec.NET-RAG
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Overview
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../architecture/overview/" class="md-tabs__link">
+          
+  
+  
+  Architecture & Theory
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../guides/quickstart/" class="md-tabs__link">
+          
+  
+  
+  Developer Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="./" class="md-tabs__link">
+          
+  
+  
+  Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="ZVec.NET-RAG Documentation" class="md-nav__button md-logo" aria-label="ZVec.NET-RAG Documentation" data-md-component="logo">
+      
+  <img src="../../assets/zvec-icon.png" alt="logo">
+
+    </a>
+    ZVec.NET-RAG Documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/ahmedsamir50/AdamSystems.ZVec.NET-RAG" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ahmedsamir50/AdamSystems.ZVec.NET-RAG
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture & Theory
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture & Theory
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/interface-segregation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Interface Segregation (ISP)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/di-composition/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    DI & Lifecycle Composition
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/vectordata-connector/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    VectorData Connector Design
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/rag-pipeline/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RAG Pipeline Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/score-semantics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Metric Score Semantics & Normalization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/security-threat-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security Threat Model & Prompt Injection
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/hybrid-search-rrf/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Hybrid Search & RRF Math
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/native-aot-memory/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Native AOT & Zero-Copy Memory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Developer Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Developer Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quickstart (60 Seconds)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/migration-from-inmemory/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migrate from VectorData.InMemory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/multimodal-rag/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multimodal RAG (Text + Image)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/mobile-memory-budget/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Mobile Memory Budget & Quantization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/quantization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Vector Quantization & Index Rebuild
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/testing-strategy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TDD & Testing Strategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/code-standards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code Standards & Conventions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/wiki-maintenance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MkDocs & Wiki Maintenance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#zvecextensionsvectordata-namespaces" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ZVec.Extensions.VectorData (namespaces)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ZVec.Extensions.VectorData (namespaces)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#store-zvecextensionsvectordatastore" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Store (ZVec.Extensions.VectorData.Store)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#collection-zvecextensionsvectordatacollection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Collection (ZVec.Extensions.VectorData.Collection)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#manifest-zvecextensionsvectordatamanifest" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Manifest (ZVec.Extensions.VectorData.Manifest)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#filter-zvecextensionsvectordatafilter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Filter (ZVec.Extensions.VectorData.Filter)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#constants-analyzers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Constants &amp; analyzers
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#zvecrag" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ZVec.Rag
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ZVec.Rag">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#document-readers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Document readers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ingestion-iragingestor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ingestion (IRagIngestor)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#chunking-acl" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Chunking ACL
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#retrieval-citations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Retrieval &amp; citations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sse" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SSE
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Options
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#connector-zvecvectorizablerecordcollection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Connector (ZVecVectorizableRecordCollection)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#zvecragtesting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ZVec.Rag.Testing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#zvecragllamasharp" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ZVec.Rag.LLamaSharp
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#zvecragonnx" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ZVec.Rag.ONNX
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#zvecragtelemetry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ZVec.Rag.Telemetry
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../citation-schema/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Citation Schema & DDL Immutability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../index-selection/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Index Selection & Parameter Tuning
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dependencies/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dependency Matrix
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../versioning/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Versioning
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../zvec-net-aot-recommendations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ZVec.NET Native AOT Spec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../benchmarks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance Benchmarks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#zvecextensionsvectordata-namespaces" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ZVec.Extensions.VectorData (namespaces)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ZVec.Extensions.VectorData (namespaces)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#store-zvecextensionsvectordatastore" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Store (ZVec.Extensions.VectorData.Store)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#collection-zvecextensionsvectordatacollection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Collection (ZVec.Extensions.VectorData.Collection)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#manifest-zvecextensionsvectordatamanifest" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Manifest (ZVec.Extensions.VectorData.Manifest)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#filter-zvecextensionsvectordatafilter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Filter (ZVec.Extensions.VectorData.Filter)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#constants-analyzers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Constants &amp; analyzers
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#zvecrag" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ZVec.Rag
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ZVec.Rag">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#document-readers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Document readers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ingestion-iragingestor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ingestion (IRagIngestor)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#chunking-acl" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Chunking ACL
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#retrieval-citations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Retrieval &amp; citations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sse" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SSE
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Options
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#connector-zvecvectorizablerecordcollection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Connector (ZVecVectorizableRecordCollection)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#zvecragtesting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ZVec.Rag.Testing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#zvecragllamasharp" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ZVec.Rag.LLamaSharp
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#zvecragonnx" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ZVec.Rag.ONNX
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#zvecragtelemetry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ZVec.Rag.Telemetry
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/ahmedsamir50/AdamSystems.ZVec.NET-RAG/edit/master/docs/reference/api.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="api-reference">API Reference</h1>
+<p>Complete API reference surface for <code>ZVec.Extensions.VectorData</code> and <code>ZVec.Rag</code>.</p>
+<h2 id="zvecextensionsvectordata-namespaces"><code>ZVec.Extensions.VectorData</code> (namespaces)</h2>
+<table>
+<thead>
+<tr>
+<th>Namespace</th>
+<th>Key types</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ZVec.Extensions.VectorData.Store</code></td>
+<td><code>ZVecVectorStore</code>, <code>ZVecVectorStoreOptions</code></td>
+</tr>
+<tr>
+<td><code>ZVec.Extensions.VectorData.Collection</code></td>
+<td><code>ZVecVectorizableRecordCollection&lt;TRecord, TKey&gt;</code>, <code>ZVecScoreNormalizer</code></td>
+</tr>
+<tr>
+<td><code>ZVec.Extensions.VectorData.Filter</code></td>
+<td><code>ZVecFilterExpressionVisitor</code>, <code>ZVecFilterRecordModel</code></td>
+</tr>
+<tr>
+<td><code>ZVec.Extensions.VectorData.Mapping</code></td>
+<td><code>IZVecRecordMapper&lt;T&gt;</code>, <code>ZVecRecordMapperRegistry</code>, <code>ZVecCollectionSchemaRegistry</code>, <code>ZVecVectorDataSchemaBuilder</code>, <code>ZVecVectorIndexResolver</code></td>
+</tr>
+<tr>
+<td><code>ZVec.Extensions.VectorData.Hybrid</code></td>
+<td><code>ZVecHybridSearchOptions&lt;TRecord&gt;</code></td>
+</tr>
+<tr>
+<td><code>Microsoft.Extensions.DependencyInjection</code></td>
+<td><code>AddZVecVectorStore</code> extension</td>
+</tr>
+<tr>
+<td><code>ZVec.Extensions.VectorData.Constants</code></td>
+<td><code>ZVecConstants</code>, <code>ZVecWellKnownMemberNames</code>, <code>ZVecDirectoryNames</code>, <code>ZVecErrorMessages</code>, <code>ZVecManifestFileNames</code></td>
+</tr>
+<tr>
+<td><code>ZVec.Extensions.VectorData.Manifest</code></td>
+<td><code>ZVecIndexManifest</code>, <code>ZVecIndexManifestManager</code>, <code>ZVecEmbedderMismatchException</code>, <code>ZVecManifestException</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="store-zvecextensionsvectordatastore">Store (<code>ZVec.Extensions.VectorData.Store</code>)</h3>
+<ul>
+<li><strong><code>ZVecVectorStore</code></strong>: <code>IVectorStore</code> implementation backed by <code>IZvecFactory</code>.</li>
+<li><strong><code>ZVecVectorStoreOptions</code></strong>: Configuration options (<code>StoragePath</code>, <code>ModelId</code>, <code>MaxConcurrentNativeCalls</code>, <code>EnableMmap</code>, <code>ReadOnly</code>, <code>MemoryLimitMb</code>, <code>DefaultQuantizeType</code>, optional custom <code>IZvecFactory</code>).</li>
+</ul>
+<h3 id="collection-zvecextensionsvectordatacollection">Collection (<code>ZVec.Extensions.VectorData.Collection</code>)</h3>
+<ul>
+<li><strong><code>ZVecVectorizableRecordCollection&lt;TRecord, TKey&gt;</code></strong>: <code>IVectorizableRecordCollection</code> + <code>IKeywordHybridSearchable&lt;TRecord&gt;</code>.</li>
+<li><strong><code>ZVecScoreNormalizer</code></strong>: Converts native dense-query distances to VectorData similarity scores (hybrid RRF scores are not re-normalized).</li>
+</ul>
+<h3 id="manifest-zvecextensionsvectordatamanifest">Manifest (<code>ZVec.Extensions.VectorData.Manifest</code>)</h3>
+<ul>
+<li><strong><code>ZVecIndexManifestManager</code></strong>: Writes and validates <code>zvec_index_manifest.json</code> on collection open (atomic <code>*.tmp</code> + <code>File.Replace</code>).</li>
+<li><strong><code>ZVecEmbedderMismatchException</code></strong>: Model/dimension/quantize/storage dtype mismatch with remediation guidance.</li>
+<li><strong><code>ZVecManifestException</code></strong>: Missing or corrupt manifest (<code>ZVecManifestFailureReason</code>).</li>
+</ul>
+<h3 id="filter-zvecextensionsvectordatafilter">Filter (<code>ZVec.Extensions.VectorData.Filter</code>)</h3>
+<ul>
+<li><strong><code>ZVecFilterExpressionVisitor</code></strong>: AST visitor translating <code>Expression&lt;Func&lt;TRecord, bool&gt;&gt;</code> predicates to <code>ZVecFilterBuilder</code> (partials under <code>Filter/</code>). Supports 12 operators including relational, logical, <code>ContainAny</code>, <code>In</code>, direct boolean members, and null checks.</li>
+<li><strong><code>ZVecFilterTranslationException</code></strong>: Translation failure with structured <strong><code>ZVecFilterErrorCode</code></strong>.</li>
+</ul>
+<h3 id="constants-analyzers">Constants &amp; analyzers</h3>
+<ul>
+<li><strong><code>ZVecErrorMessages</code></strong>, <strong><code>ZVecWellKnownMemberNames</code></strong>, <strong><code>ZVecDirectoryNames</code></strong>: Zero-magic-string helpers under <code>Constants/</code>.</li>
+<li><strong><code>ZVec.Extensions.VectorData.Analyzers</code></strong>: Roslyn analyzers <strong><code>ZVEC001</code></strong> / <strong><code>ZVEC002</code></strong>.</li>
+</ul>
+<h2 id="zvecrag"><code>ZVec.Rag</code></h2>
+<table>
+<thead>
+<tr>
+<th>Namespace</th>
+<th>Key types</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ZVec.Rag.Abstractions</code></td>
+<td><code>IRagIngestor</code>, <code>IRagRetriever</code>, <code>IRagGenerator</code>, <code>IRagPipeline</code>, <code>IRagDocumentReader</code>, <code>IZVecTextChunker</code></td>
+</tr>
+<tr>
+<td><code>ZVec.Rag</code></td>
+<td><code>RagPipeline</code></td>
+</tr>
+<tr>
+<td><code>ZVec.Rag.Generation</code></td>
+<td><code>ContextPacker</code>, <code>RagGenerator</code></td>
+</tr>
+<tr>
+<td><code>ZVec.Rag.Ingestion</code></td>
+<td><code>RagIngestor</code>, <code>PlainTextDocumentReader</code>, <code>TokenTextChunker</code>, <code>MarkdownHeadingChunker</code>, <code>SentenceTextChunker</code>, <code>ZVecChunkIdGenerator</code>, <code>ZVecTokenizerResolver</code>, <code>ZVecTextChunkerRegistry</code></td>
+</tr>
+<tr>
+<td><code>ZVec.Rag.Pdf</code></td>
+<td><code>PdfDocumentReader</code>, <code>CompositeRagDocumentReader</code>, <code>AddZVecRagPdf</code></td>
+</tr>
+<tr>
+<td><code>ZVec.Rag.Retrieval</code></td>
+<td><code>RagRetriever</code></td>
+</tr>
+<tr>
+<td><code>ZVec.Rag.Streaming</code></td>
+<td><code>RagSseEndpointExtensions</code> (<code>MapRagSseEndpoint</code>)</td>
+</tr>
+<tr>
+<td><code>ZVec.Rag.Models</code></td>
+<td><code>Citation</code>, <code>RagChunk</code>, <code>IngestionResult</code>, <code>IngestOptions</code>, <code>IngestTextRequest</code>, <code>TextChunk</code>, <code>DuplicateMode</code>, <code>CitationOrder</code>, <code>ContextPackingStrategy</code></td>
+</tr>
+<tr>
+<td><code>ZVec.Rag.Options</code></td>
+<td><code>ZVecRagOptions</code></td>
+</tr>
+<tr>
+<td><code>ZVec.Rag.Schema</code></td>
+<td><code>ZVecRagRecordV1</code>, <code>ZVecRagSectionSummaryV1</code></td>
+</tr>
+<tr>
+<td><code>ZVec.Rag.Exceptions</code></td>
+<td><code>ZVecRagInitializationException</code></td>
+</tr>
+<tr>
+<td><code>ZVec.Rag.Internal</code></td>
+<td><code>RagCollectionProvider</code> (scoped native handle; releases on scope dispose)</td>
+</tr>
+<tr>
+<td><code>Microsoft.Extensions.DependencyInjection</code></td>
+<td><code>AddZVecRag</code>, <code>AddTokenChunker</code>, <code>AddMarkdownChunker</code>, <code>AddSentenceChunker</code>, <code>AddZVecRagPdf</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="document-readers">Document readers</h3>
+<ul>
+<li><strong><code>IRagDocumentReader.ReadAsync(stream, contentType, cancellationToken)</code></strong>: Format ACL entry point. Core ships <code>PlainTextDocumentReader</code> (text/markdown). PDF requires <code>ZVec.Rag.Pdf</code> and <code>AddZVecRagPdf()</code>.</li>
+<li><strong><code>ZVecRagConstants.PdfContentType</code></strong>: <code>application/pdf</code>.</li>
+<li><strong><code>PdfDocumentReader</code></strong>: PdfPig text extract only (no table parsing). Trim-annotated; not in Native AOT smoke.</li>
+<li><strong><code>AddZVecRagPdf()</code></strong>: Replaces <code>IRagDocumentReader</code> with <code>CompositeRagDocumentReader</code> routing PDF vs text.</li>
+</ul>
+<h3 id="ingestion-iragingestor">Ingestion (<code>IRagIngestor</code>)</h3>
+<ul>
+<li><strong><code>IngestTextAsync</code></strong>: Chunk, embed, and upsert plain text or markdown.</li>
+<li><strong><code>IngestDocumentAsync</code></strong>: Stream ingest with <code>contentType</code> (<code>text/plain</code>, <code>text/markdown</code>, or <code>application/pdf</code> when <code>ZVec.Rag.Pdf</code> is installed).</li>
+<li><strong><code>IngestBatchAsync</code></strong>: Sequential multi-document ingest; auto-runs <strong><code>OptimizeAsync</code></strong> after the batch.</li>
+<li><strong><code>OptimizeAsync</code></strong>: Delegates to <code>ZVecVectorizableRecordCollection.OptimizeAndReopenAsync</code> (native optimize outside lock; dispose-reopen inside <code>lock (_initLock)</code>).</li>
+</ul>
+<h3 id="chunking-acl">Chunking ACL</h3>
+<ul>
+<li><strong><code>IZVecTextChunker</code></strong>: Sync <code>IEnumerable&lt;TextChunk&gt;</code> (text + char offset). Output is pushed into bounded channels — never <code>Task.Run</code>.</li>
+<li><strong><code>TokenTextChunker</code></strong>: Default strategy <code>token-v1</code> (512 max tokens, 64 overlap via <code>AddTokenChunker</code>).</li>
+<li><strong><code>MarkdownHeadingChunker</code></strong>: Strategy <code>markdown-heading-v1</code>; line <code>#</code> heading boundaries + token cap.</li>
+<li><strong><code>SentenceTextChunker</code></strong>: Strategy <code>sentence-v1</code>; no mid-sentence splits.</li>
+<li><strong><code>DuplicateMode</code></strong>: <code>Replace</code> (delete all <code>SourceDoc</code> chunks, paged <code>GetAsync</code>), <code>Append</code> (<code>max(ChunkIndex)+1</code>), <code>Skip</code> (no-op if any chunk exists).</li>
+</ul>
+<h3 id="retrieval-citations">Retrieval &amp; citations</h3>
+<ul>
+<li><strong><code>IRagPipeline</code></strong>: Composite facade (<code>IRagIngestor</code> + <code>IRagRetriever</code> + <code>IRagGenerator</code>).</li>
+<li><strong><code>RagChunk</code></strong>: Streamed response chunk (<code>Text</code>, <code>Citations</code>, <code>IsFinal</code>, <code>Usage</code>).</li>
+<li><strong><code>Citation</code></strong>: <code>SourceDoc</code>, <code>SourceUri</code>, <code>SourceHash</code>, <code>Page</code>, <code>Offset</code>, <code>ChunkIndex</code>, <code>ChunkId</code>, <code>RankScore</code>, <code>DenseScore</code>, <code>FtsScore</code>, optional <code>SectionSummaryId</code> / <code>SectionSummary</code> (packing only; <code>Text</code> stays child chunk text). Hybrid search sets <code>RankScore</code> from fused RRF. <code>DenseScore</code> is cosine similarity (clamped to <code>[0, 1]</code>) between the query embedding and the <strong>stored</strong> chunk vector when hybrid search returns it (<code>IncludeVectors = true</code>). Empty stored vector → <code>DenseScore = 0</code> (retrieve does not re-embed chunk text). <code>FtsScore</code> remains <code>0</code> until connector exposes per-leg FTS scores.</li>
+<li><strong><code>CitationOrder</code></strong>: <code>ScoreDescending</code> (default), <code>ChunkOrderAscending</code>, <code>SourceDocThenChunkOrder</code>, <code>PageAscending</code>, <code>None</code>. UI list order; independent of <code>ContextPacker</code> prompt order.</li>
+</ul>
+<h3 id="sse">SSE</h3>
+<ul>
+<li><strong><code>MapRagSseEndpoint(pattern)</code></strong>: Maps GET endpoint; reads <code>question</code> query string; writes <code>text/event-stream</code>; <code>FlushAsync</code> after each chunk; links <code>HttpContext.RequestAborted</code> into <code>AskAsync</code>. JSON payload uses <strong>camelCase</strong> (<code>text</code>, <code>isFinal</code>, <code>citations</code>, nested citation fields). Requires <code>FrameworkReference Microsoft.AspNetCore.App</code> on <code>ZVec.Rag</code>; trim-annotated in <code>Streaming/</code>.</li>
+</ul>
+<h3 id="options">Options</h3>
+<ul>
+<li><strong><code>ZVecRagOptions</code></strong>: <code>StoragePath</code>, <code>Embedder</code>, <code>Chat</code>, <code>RrfK</code>, <code>MaxContextTokens</code>, <code>GenerationReserveTokens</code>, <code>GenerateSummaries</code> (retrieve/pack; default false), <code>CollectionName</code> (default rag_chunks), <code>SummaryCollectionName</code> (null = resolve), <code>TokenizerEncoding</code>, <code>TokenizerModelPath</code>, nested <code>ZVecVectorStoreOptions</code>.</li>
+<li><strong>Summary collection resolve:</strong> if <code>SummaryCollectionName</code> is set (non-whitespace), use it; else if <code>CollectionName</code> is <code>rag_chunks</code>, use <code>rag_section_summaries</code>; else use <code>CollectionName</code> + <code>_summaries</code>.</li>
+<li><strong><code>IngestOptions</code></strong>: <code>GenerateSummaries</code> (ingest; default <code>false</code>), <code>MaxSummaryTokens</code> (default <code>128</code>), <code>SummarySectionMaxTokens</code> (default <code>2048</code>), <code>OnDuplicate</code>, <code>SourceUri</code>, <code>Page</code>, <code>Chunker</code>.</li>
+<li><strong><code>ZVecRagConstants.SectionSummaryCollectionName</code></strong>: <code>rag_section_summaries</code>.</li>
+<li><strong><code>ZVecRagSectionSummaryV1</code></strong>: <code>SectionSummaryId</code>, <code>SourceDoc</code>, <code>SourceUri</code>, <code>SectionIndex</code>, <code>Summary</code>, <code>DenseVector</code>.</li>
+<li><strong><code>ZVecRagRecordV1.SectionSummaryId</code></strong>: indexed FK to parent section summary when ingest summaries are enabled.</li>
+<li><strong><code>ZVecRagInitializationException</code></strong>: Wraps embedder stamp mismatch with delete-path / <code>IRagMigrationManager</code> remediation.</li>
+</ul>
+<h3 id="connector-zvecvectorizablerecordcollection">Connector (<code>ZVecVectorizableRecordCollection</code>)</h3>
+<ul>
+<li><strong><code>ReleaseNativeHandle()</code></strong>: Disposes native read-write handle without deleting on-disk data. Called by scoped <code>RagCollectionProvider</code> on scope dispose so subsequent scopes can reopen the same collection path.</li>
+</ul>
+<h2 id="zvecragtesting"><code>ZVec.Rag.Testing</code></h2>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>DeterministicEmbedder</code></td>
+<td>Hash-based <code>IEmbeddingGenerator</code> for fast CI tests</td>
+</tr>
+<tr>
+<td><code>FakeChatClient</code></td>
+<td>Dual streaming/non-streaming <code>IChatClient</code> fake (<code>LastStreamingCallWasCanceled</code>, <code>TokensYielded</code>, optional <code>UsageDetails</code> on final streaming update)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="zvecragllamasharp"><code>ZVec.Rag.LLamaSharp</code></h2>
+<table>
+<thead>
+<tr>
+<th>Namespace</th>
+<th>Key types</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ZVec.Rag.LLamaSharp</code></td>
+<td><code>LLamaSharpChatClient</code>, <code>LLamaSharpEmbedder</code>, <code>LLamaSharpOptions</code>, <code>LLamaSharpConstants</code></td>
+</tr>
+<tr>
+<td><code>Microsoft.Extensions.DependencyInjection</code></td>
+<td><code>AddZVecRagLLamaSharp</code></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong><code>LLamaSharpChatClient</code></strong>: <code>IChatClient</code> over local GGUF weights (<code>GetResponseAsync</code>, <code>GetStreamingResponseAsync</code>). Honors <code>CancellationToken</code>. <code>[RequiresUnreferencedCode]</code> — not in <code>ZVec.Rag.AotTestApp</code>.</li>
+<li><strong><code>LLamaSharpEmbedder</code></strong>: <code>IEmbeddingGenerator&lt;string, Embedding&lt;float&gt;&gt;</code> when the GGUF exposes embeddings.</li>
+<li><strong><code>AddZVecRagLLamaSharp</code></strong>: Registers singleton chat + embed adapters; sets <code>ZVecRagOptions.Chat</code> / <code>Embedder</code> when null.</li>
+</ul>
+<h2 id="zvecragonnx"><code>ZVec.Rag.ONNX</code></h2>
+<table>
+<thead>
+<tr>
+<th>Namespace</th>
+<th>Key types</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ZVec.Rag.ONNX</code></td>
+<td><code>OnnxEmbedder</code>, <code>OnnxEmbedderOptions</code>, <code>OnnxEmbeddingModelKind</code>, <code>ClipImagePreprocessor</code>, <code>OnnxConstants</code></td>
+</tr>
+<tr>
+<td><code>ZVec.Rag.ONNX.Schema</code></td>
+<td><code>ZVecRagMultimodalRecordV1</code> (512-d CLIP; indexed <code>SourceKind</code> = <code>text</code> | <code>image</code>)</td>
+</tr>
+<tr>
+<td><code>Microsoft.Extensions.DependencyInjection</code></td>
+<td><code>AddZVecRagOnnxEmbedder</code></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong><code>OnnxEmbedder</code></strong>: Text embeddings for <code>MiniLm</code>, <code>EmbeddingGemma</code>, <code>ClipText</code>. <code>EmbedImageAsync</code> when <code>ModelKind == ClipText</code> and <code>VisionModelPath</code> is set.</li>
+<li><strong><code>ClipImagePreprocessor</code></strong>: ImageSharp NCHW tensor with documented CLIP mean/std in <code>OnnxConstants</code>.</li>
+<li><strong><code>AddZVecRagOnnxEmbedder</code></strong>: Registers singleton <code>OnnxEmbedder</code>; assigns <code>ZVecRagOptions.Embedder</code> only when dimensions match <code>ZVecRagRecordV1.DefaultDimensions</code> (768).</li>
+</ul>
+<h2 id="zvecragtelemetry"><code>ZVec.Rag.Telemetry</code></h2>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ZVecRagTelemetry.ActivitySource</code></td>
+<td>OpenTelemetry activities: <code>ingest</code>, <code>retrieve</code>, <code>generate</code></td>
+</tr>
+<tr>
+<td><code>ZVecRagTelemetry.Meter</code></td>
+<td><code>zvec.rag.tokens</code> counter; <code>zvec.rag.stage.duration</code> histogram (ms)</td>
+</tr>
+</tbody>
+</table>
+<p>Tag keys: <code>stage</code> (<code>ingest</code> | <code>retrieve</code> | <code>generate</code> | <code>embed</code> | <code>chat</code>), <code>direction</code> (<code>input</code> | <code>output</code>) for token counter. Host apps subscribe via <code>AddOpenTelemetry().WithTracing(t =&gt; t.AddSource("ZVec.Rag")).WithMetrics(m =&gt; m.AddMeter("ZVec.Rag"))</code> — not shipped inside <code>ZVec.Rag</code>.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "navigation.instant", "content.code.copy", "content.action.edit"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+        <script src="https://unpkg.com/mermaid@10/dist/mermaid.min.js"></script>
+      
+    
+  </body>
+</html>
